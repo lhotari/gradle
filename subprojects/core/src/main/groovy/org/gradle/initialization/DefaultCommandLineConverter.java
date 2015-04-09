@@ -50,6 +50,8 @@ public class DefaultCommandLineConverter extends AbstractCommandLineConverter<St
 
     private static final String CONFIGURE_ON_DEMAND = "configure-on-demand";
 
+    private static final String WATCH = "watch";
+
     private final CommandLineConverter<LoggingConfiguration> loggingConfigurationCommandLineConverter = new LoggingCommandLineConverter();
     private final SystemPropertiesCommandLineConverter systemPropertiesCommandLineConverter = new SystemPropertiesCommandLineConverter();
     private final ProjectPropertiesCommandLineConverter projectPropertiesCommandLineConverter = new ProjectPropertiesCommandLineConverter();
@@ -84,6 +86,7 @@ public class DefaultCommandLineConverter extends AbstractCommandLineConverter<St
                 deprecated("Prefer to use --parallel if you want to build in parallel and use --max-workers to set the number of executor threads.").incubating();
         parser.option(MAX_WORKERS).hasArgument().hasDescription("Configure the number of concurrent workers Gradle is allowed to use.").incubating();
         parser.option(CONFIGURE_ON_DEMAND).hasDescription("Only relevant projects are configured in this build run. This means faster build for large multi-project builds.").incubating();
+        parser.option(WATCH).hasDescription("Gradle will execute a build and determine any files that are inputs to that build. Gradle will then watch for changes to those input files, and re-execute the build when any file changes.").incubating();
         parser.allowOneOf(MAX_WORKERS, PARALLEL_THREADS);
     }
 
@@ -187,6 +190,10 @@ public class DefaultCommandLineConverter extends AbstractCommandLineConverter<St
 
         if (options.hasOption(CONFIGURE_ON_DEMAND)) {
             startParameter.setConfigureOnDemand(true);
+        }
+
+        if (options.hasOption(WATCH)) {
+            startParameter.setWatchMode(true);
         }
 
         return startParameter;

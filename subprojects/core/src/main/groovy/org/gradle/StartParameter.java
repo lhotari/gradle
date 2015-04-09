@@ -75,6 +75,7 @@ public class StartParameter extends LoggingConfiguration implements Serializable
     private boolean parallelProjectExecution;
     private boolean configureOnDemand;
     private int maxWorkerCount;
+    private boolean watchMode;
 
     /**
      * Sets the project's cache location. Set to null to use the default location.
@@ -132,6 +133,7 @@ public class StartParameter extends LoggingConfiguration implements Serializable
         p.initScripts = new ArrayList<File>(initScripts);
         p.dryRun = dryRun;
         p.projectCacheDir = projectCacheDir;
+        p.watchMode = watchMode;
         return p;
     }
 
@@ -159,6 +161,7 @@ public class StartParameter extends LoggingConfiguration implements Serializable
         p.parallelProjectExecution = parallelProjectExecution;
         p.configureOnDemand = configureOnDemand;
         p.maxWorkerCount = maxWorkerCount;
+        p.watchMode = watchMode;
         return p;
     }
 
@@ -676,6 +679,7 @@ public class StartParameter extends LoggingConfiguration implements Serializable
                 + ", parallelProjectExecution=" + parallelProjectExecution
                 + ", configureOnDemand=" + configureOnDemand
                 + ", maxWorkerCount=" + maxWorkerCount
+                + ", watchMode=" + watchMode
                 + '}';
     }
 
@@ -689,5 +693,15 @@ public class StartParameter extends LoggingConfiguration implements Serializable
     @Incubating
     public void setConfigureOnDemand(boolean configureOnDemand) {
         this.configureOnDemand = configureOnDemand;
+    }
+
+    @Incubating
+    public boolean isWatchMode() {
+        return watchMode;
+    }
+
+    @Incubating
+    public void setWatchMode(boolean watchMode) {
+        this.watchMode = watchMode;
     }
 }
