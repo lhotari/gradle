@@ -21,6 +21,7 @@ import org.gradle.initialization.DefaultGradleLauncher;
 import org.gradle.initialization.GradleLauncherFactory;
 import org.gradle.internal.invocation.BuildAction;
 import org.gradle.internal.invocation.BuildActionRunner;
+import org.gradle.internal.invocation.BuildController;
 
 public class InProcessBuildActionExecuter implements BuildActionExecuter<BuildActionParameters> {
     private final GradleLauncherFactory gradleLauncherFactory;
@@ -32,8 +33,30 @@ public class InProcessBuildActionExecuter implements BuildActionExecuter<BuildAc
     }
 
     public Object execute(BuildAction action, BuildRequestContext buildRequestContext, BuildActionParameters actionParameters) {
+        return doExecute(action, createBuildController(action, buildRequestContext, actionParameters));
+
+    }
+
+    protected BuildController createBuildController(BuildAction action, BuildRequestContext buildRequestContext, BuildActionParameters actionParameters) {
+        BuildController buildController;
+        if(action.getStartParameter().isWatchMode()) {
+            buildController = createWatchModeBuildController(action, buildRequestContext, actionParameters);
+        } else {
+            buildController = createDefaultBuildController(action, buildRequestContext, actionParameters);
+        }
+        return buildController;
+    }
+
+    private BuildController createWatchModeBuildController(BuildAction action, BuildRequestContext buildRequestContext, BuildActionParameters actionParameters) {
+        return new WatchModeBuildController(gradleLauncherFactory, action.getStartParameter(), buildRequestContext);
+    }
+
+    private BuildController createDefaultBuildController(BuildAction action, BuildRequestContext buildRequestContext, BuildActionParameters actionParameters) {
         DefaultGradleLauncher gradleLauncher = (DefaultGradleLauncher) gradleLauncherFactory.newInstance(action.getStartParameter(), buildRequestContext);
-        DefaultBuildController buildController = new DefaultBuildController(gradleLauncher);
+        return new DefaultBuildController(gradleLauncher);
+    }
+
+    private Object doExecute(BuildAction action, BuildController buildController) {
         buildActionRunner.run(action, buildController);
         return buildController.getResult();
     }

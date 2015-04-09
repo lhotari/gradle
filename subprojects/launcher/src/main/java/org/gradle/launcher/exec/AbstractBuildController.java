@@ -32,6 +32,10 @@ public abstract class AbstractBuildController implements BuildController {
 
     abstract void stopLauncher();
 
+    protected void resetState() {
+        state = State.Created;
+    }
+
     @Override
     public boolean hasResult() {
         return hasResult;
