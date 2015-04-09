@@ -37,4 +37,8 @@ class DefaultBuildController extends AbstractBuildController {
         return gradleLauncher;
     }
 
+    @Override
+    void stopLauncher() {
+        gradleLauncher.stop();
+    }
 }

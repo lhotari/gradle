@@ -19,6 +19,7 @@ package org.gradle.launcher.exec;
 import org.gradle.BuildResult;
 import org.gradle.api.internal.GradleInternal;
 import org.gradle.initialization.DefaultGradleLauncher;
+import org.gradle.initialization.GradleLauncher;
 import org.gradle.internal.invocation.BuildController;
 
 public abstract class AbstractBuildController implements BuildController {
@@ -27,7 +28,9 @@ public abstract class AbstractBuildController implements BuildController {
     private boolean hasResult;
     private Object result;
 
-    abstract DefaultGradleLauncher getLauncher();
+    abstract protected DefaultGradleLauncher getLauncher();
+
+    abstract void stopLauncher();
 
     @Override
     public boolean hasResult() {
@@ -61,11 +64,15 @@ public abstract class AbstractBuildController implements BuildController {
     }
 
     private GradleInternal check(BuildResult buildResult) {
-        state = State.Completed;
-        if (buildResult.getFailure() != null) {
-            throw new ReportedException(buildResult.getFailure());
+        try {
+            state = State.Completed;
+            if (buildResult.getFailure() != null) {
+                throw new ReportedException(buildResult.getFailure());
+            }
+            return (GradleInternal) buildResult.getGradle();
+        } finally {
+            stopLauncher();
         }
-        return (GradleInternal) buildResult.getGradle();
     }
 
     public State getState() {
