@@ -35,6 +35,28 @@ public class InProcessBuildActionExecuter implements BuildActionExecuter<BuildAc
     }
 
     public Object execute(BuildAction action, BuildRequestContext buildRequestContext, BuildActionParameters actionParameters) {
+        if(action.getStartParameter().isWatchMode()) {
+            return doExecuteWatchMode(action, buildRequestContext);
+        } else {
+            return doExecute(action, buildRequestContext);
+        }
+    }
+    
+    protected Object doExecuteWatchMode(BuildAction action, BuildRequestContext buildRequestContext) {
+        System.out.println ("----- WATCH MODE -----");
+        while(!buildRequestContext.getCancellationToken().isCancellationRequested()) {
+            doExecute(action, buildRequestContext);
+            System.out.println("-------- WAITING -------");
+            try {
+                Thread.sleep(5000L);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
+        return null;
+    }
+
+    protected Object doExecute(BuildAction action, BuildRequestContext buildRequestContext) {
         DefaultGradleLauncher gradleLauncher = (DefaultGradleLauncher) gradleLauncherFactory.newInstance(action.getStartParameter(), buildRequestContext);
         try {
             DefaultBuildController buildController = new DefaultBuildController(gradleLauncher);
