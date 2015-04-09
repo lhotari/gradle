@@ -17,7 +17,10 @@
 package org.gradle.launcher.exec;
 
 import org.gradle.StartParameter;
+import org.gradle.api.Task;
+import org.gradle.api.execution.TaskExecutionListener;
 import org.gradle.api.internal.GradleInternal;
+import org.gradle.api.tasks.TaskState;
 import org.gradle.initialization.BuildRequestContext;
 import org.gradle.initialization.DefaultGradleLauncher;
 import org.gradle.initialization.GradleLauncherFactory;
@@ -54,9 +57,11 @@ public class WatchModeBuildController extends AbstractBuildController {
 
     @Override
     public GradleInternal run() {
-        GradleInternal gradle = getGradle();
+        GradleInternal gradle = null;
         while(!buildRequestContext.getCancellationToken().isCancellationRequested()) {
             System.out.println("----- WATCH MODE -----");
+            gradle = getGradle();
+            gradle.addListener(new TaskInputsTaskListener());
             super.run();
             System.out.println("-------- WAITING -------");
             try {
@@ -66,5 +71,19 @@ public class WatchModeBuildController extends AbstractBuildController {
             }
         }
         return gradle;
+    }
+
+    private static class TaskInputsTaskListener implements TaskExecutionListener {
+
+
+        @Override
+        public void beforeExecute(Task task) {
+
+        }
+
+        @Override
+        public void afterExecute(Task task, TaskState state) {
+            System.out.println("inputs to " + task.getPath() + " are " + task.getInputs());
+        }
     }
 }
