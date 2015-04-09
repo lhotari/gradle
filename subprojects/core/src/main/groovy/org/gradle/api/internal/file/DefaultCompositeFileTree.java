@@ -34,7 +34,7 @@ public class DefaultCompositeFileTree extends CompositeFileTree {
     }
 
     @Override
-    protected List<FileTree> getSourceCollections() {
+    public List<FileTree> getSourceCollections() {
         return fileTrees;
     }
 
