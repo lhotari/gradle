@@ -44,8 +44,9 @@ public class InProcessBuildActionExecuter implements BuildActionExecuter<BuildAc
     
     protected Object doExecuteWatchMode(BuildAction action, BuildRequestContext buildRequestContext) {
         System.out.println ("----- WATCH MODE -----");
+        DefaultGradleLauncher gradleLauncher = createDefaultGradleLauncher(action, buildRequestContext);
         while(!buildRequestContext.getCancellationToken().isCancellationRequested()) {
-            doExecute(action, buildRequestContext);
+            doExecute(action, gradleLauncher);
             System.out.println("-------- WAITING -------");
             try {
                 Thread.sleep(5000L);
@@ -57,7 +58,11 @@ public class InProcessBuildActionExecuter implements BuildActionExecuter<BuildAc
     }
 
     protected Object doExecute(BuildAction action, BuildRequestContext buildRequestContext) {
-        DefaultGradleLauncher gradleLauncher = (DefaultGradleLauncher) gradleLauncherFactory.newInstance(action.getStartParameter(), buildRequestContext);
+        DefaultGradleLauncher gradleLauncher = createDefaultGradleLauncher(action, buildRequestContext);
+        return doExecute(action, gradleLauncher);
+    }
+
+    private Object doExecute(BuildAction action, DefaultGradleLauncher gradleLauncher) {
         try {
             DefaultBuildController buildController = new DefaultBuildController(gradleLauncher);
             buildActionRunner.run(action, buildController);
@@ -65,6 +70,10 @@ public class InProcessBuildActionExecuter implements BuildActionExecuter<BuildAc
         } finally {
             gradleLauncher.stop();
         }
+    }
+
+    private DefaultGradleLauncher createDefaultGradleLauncher(BuildAction action, BuildRequestContext buildRequestContext) {
+        return (DefaultGradleLauncher) gradleLauncherFactory.newInstance(action.getStartParameter(), buildRequestContext);
     }
 
     private static class DefaultBuildController implements BuildController {
