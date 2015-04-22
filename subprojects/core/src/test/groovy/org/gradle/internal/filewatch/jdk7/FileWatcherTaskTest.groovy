@@ -31,8 +31,8 @@ class FileWatcherTaskTest extends Specification {
         changesNotifier = Mock(FileWatcherChangesNotifier)
     }
 
-    private FileWatcherTask createFileWatcherTask() {
-        new FileWatcherTask(watchStrategy, FileWatchInputs.newBuilder().build(), new AtomicBoolean(true), Mock(Runnable)) {
+    private DefaultFileWatcher.FileWatcherTask createFileWatcherTask() {
+        new DefaultFileWatcher.FileWatcherTask(watchStrategy, FileWatchInputs.newBuilder().build(), new AtomicBoolean(true), Mock(Runnable)) {
             int watchLoopCounter = 0
 
             @Override

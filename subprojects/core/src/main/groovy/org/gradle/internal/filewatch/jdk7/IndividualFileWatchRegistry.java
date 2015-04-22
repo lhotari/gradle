@@ -32,7 +32,7 @@ class IndividualFileWatchRegistry extends WatchRegistry<File> {
         individualFilesByParentPath = new HashMap<Path, Set<File>>();
     }
 
-    public void register(Iterable<File> files) throws IOException {
+    public void register(Object key, Iterable<File> files) throws IOException {
         for (File file : files) {
             Path parent = dirToPath(file.getParentFile());
             Set<File> children = individualFilesByParentPath.get(parent);

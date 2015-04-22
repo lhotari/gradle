@@ -16,9 +16,11 @@
 
 package org.gradle.internal.filewatch.jdk7;
 
+import org.gradle.internal.concurrent.Stoppable;
+
 import java.io.IOException;
 import java.nio.file.Path;
 
 interface FileTreeWatchStrategy extends WatchStrategy {
-    void watchFileTree(Path path) throws IOException;
+    Stoppable watchFileTree(Path path) throws IOException;
 }

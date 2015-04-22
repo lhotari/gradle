@@ -46,7 +46,7 @@ class DirTreeWatchRegistry extends WatchRegistry<DirectoryTree> {
         this.pathToDirectoryTree = new HashMap<Path, DirectoryTree>();
     }
 
-    public void register(Iterable<DirectoryTree> trees) throws IOException {
+    public void register(Object key, Iterable<DirectoryTree> trees) throws IOException {
         for(DirectoryTree tree : trees) {
             registerSubDir(tree, dirToPath(tree.getDir()));
         }

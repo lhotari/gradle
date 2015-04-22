@@ -31,7 +31,11 @@ abstract class WatchRegistry<T> {
         this.watchStrategy = watchStrategy;
     }
 
-    abstract public void register(Iterable<T> watchItems) throws IOException;
+    abstract public void markExistingWatchesStale();
+
+    abstract public void removeStaleWatches();
+
+    abstract public void register(Object key, Iterable<T> watchItems) throws IOException;
 
     abstract public void handleChange(ChangeDetails changeDetails, FileWatcherChangesNotifier changesNotifier);
 

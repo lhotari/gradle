@@ -21,7 +21,7 @@ import org.gradle.internal.concurrent.Stoppable;
 import java.io.IOException;
 
 /**
- * Stateless service for creating for multiple watches on different sets of inputs of {@link org.gradle.api.file.DirectoryTree} or individual {@link java.io.File}s
+ * Stateful service for creating for multiple watches on different sets of inputs of {@link org.gradle.api.file.DirectoryTree} or individual {@link java.io.File}s
  *
  * watch method will return a {@link Stoppable} instance. The stop method must be called on this instance to release resources and stop the "file watching session" that the watch
  * method call starts.
@@ -35,7 +35,7 @@ public interface FileWatcher extends Stoppable {
      *
      * @param inputs the directories and files to watch for changes
      */
-    void watch(FileWatchInputs inputs) throws IOException;
+    void watch(Object key, FileWatchInputs inputs) throws IOException;
 
     void markExistingWatchesStale();
     void removeStaleWatches();
