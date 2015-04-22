@@ -21,6 +21,7 @@ import org.gradle.BuildResult;
 import org.gradle.api.Task;
 import org.gradle.api.execution.TaskExecutionListener;
 import org.gradle.api.file.DirectoryTree;
+import org.gradle.api.file.FileBackedDirectoryTree;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.invocation.Gradle;
@@ -44,12 +45,8 @@ class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, Build
 
     FileWatchStrategy(TriggerListener listener, FileWatcherFactory fileWatcherFactory) {
         this.listener = listener;
-        DirectoryTree dir = new DirectoryFileTree(new File("."));
-        dir.getPatterns().exclude("build/**/*", ".gradle/**/*");
-        FileWatchInputs inputs = FileWatchInputs.newBuilder().add(dir).build();
         try {
             this.fileWatcher = fileWatcherFactory.createFileWatcher(new FileChangeCallback(listener));
-            fileWatcher.watch(inputs);
         } catch (IOException e) {
             // TODO:
             UncheckedException.throwAsUncheckedException(e);
@@ -64,7 +61,7 @@ class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, Build
 
     @Override
     public void buildStarted(Gradle gradle) {
-        System.out.println("BUILD STARTED!");
+        fileWatcher.enterRegistrationMode();
     }
 
     @Override
@@ -84,17 +81,32 @@ class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, Build
 
     @Override
     public void buildFinished(BuildResult result) {
-        System.out.println("BUILD FINISHED!");
+        fileWatcher.exitRegistrationMode();
     }
 
     @Override
     public void beforeExecute(Task task) {
-        System.out.println("BEFORE TASK:" + task.getPath());
+        if(task.getInputs().getHasSourceFiles()) {
+            FileWatchInputs.Builder builder = FileWatchInputs.newBuilder();
+            for(DirectoryTree tree : task.getInputs().getSourceFiles().getAsDirectoryTrees()) {
+                if(tree instanceof FileBackedDirectoryTree) {
+                    builder.addFiles(((FileBackedDirectoryTree)tree).getFiles());
+                } else {
+                    builder.add(tree);
+                }
+            }
+            try {
+                fileWatcher.watch(builder.build());
+            } catch (IOException e) {
+                // TODO:
+                UncheckedException.throwAsUncheckedException(e);
+            }
+        }
     }
 
     @Override
     public void afterExecute(Task task, TaskState state) {
-        System.out.println("AFTER TASK:" + task.getPath());
+
     }
 
     static class FileChangeCallback implements Runnable {
