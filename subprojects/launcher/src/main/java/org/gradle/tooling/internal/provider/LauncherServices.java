@@ -57,8 +57,8 @@ public class LauncherServices implements PluginServiceRegistry {
             return continuousModeBuildActionExecuter;
         }
 
-        TriggerGeneratorFactory createTriggerGeneratorFactory(ExecutorFactory executorFactory, FileWatcherService fileWatcherService) {
-            return new DefaultTriggerGeneratorFactory(executorFactory, fileWatcherService);
+        TriggerGeneratorFactory createTriggerGeneratorFactory(ExecutorFactory executorFactory, FileWatcherService fileWatcherService, ListenerManager listenerManager) {
+            return new DefaultTriggerGeneratorFactory(executorFactory, fileWatcherService, listenerManager);
         }
 
         ExecuteBuildActionRunner createExecuteBuildActionRunner() {

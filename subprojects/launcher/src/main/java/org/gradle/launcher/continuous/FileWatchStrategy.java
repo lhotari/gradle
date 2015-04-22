@@ -16,8 +16,15 @@
 
 package org.gradle.launcher.continuous;
 
+import org.gradle.BuildListener;
+import org.gradle.BuildResult;
+import org.gradle.api.Task;
+import org.gradle.api.execution.TaskExecutionListener;
 import org.gradle.api.file.DirectoryTree;
+import org.gradle.api.initialization.Settings;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
+import org.gradle.api.invocation.Gradle;
+import org.gradle.api.tasks.TaskState;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.filewatch.FileWatchInputs;
@@ -31,7 +38,7 @@ import java.io.IOException;
  * Monitors the "current" directory and excludes build/** and .gradle/**
  * TODO: Look for the project directory?
  */
-class FileWatchStrategy implements TriggerStrategy {
+class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, BuildListener {
     private final TriggerListener listener;
     private Stoppable fileWatcher;
 
@@ -52,6 +59,41 @@ class FileWatchStrategy implements TriggerStrategy {
     @Override
     public void run() {
         // TODO: Enforce quiet period here?
+    }
+
+    @Override
+    public void buildStarted(Gradle gradle) {
+        System.out.println("BUILD STARTED!");
+    }
+
+    @Override
+    public void settingsEvaluated(Settings settings) {
+
+    }
+
+    @Override
+    public void projectsLoaded(Gradle gradle) {
+
+    }
+
+    @Override
+    public void projectsEvaluated(Gradle gradle) {
+
+    }
+
+    @Override
+    public void buildFinished(BuildResult result) {
+        System.out.println("BUILD FINISHED!");
+    }
+
+    @Override
+    public void beforeExecute(Task task) {
+        System.out.println("BEFORE TASK:" + task.getPath());
+    }
+
+    @Override
+    public void afterExecute(Task task, TaskState state) {
+        System.out.println("AFTER TASK:" + task.getPath());
     }
 
     static class FileChangeCallback implements Runnable {
