@@ -27,23 +27,19 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultFileWatcher implements FileWatcher {
-    private final ExecutorService executor;
-    private final Runnable callback;
     private final FileWatcherStopper stopper;
     private final FileWatcherTask fileWatcherTask;
 
-    public DefaultFileWatcher(ExecutorService executor, Runnable callback) throws IOException {
-        this.executor = executor;
-        this.callback = callback;
+    public DefaultFileWatcher(ExecutorService executor, WatchStrategy watchStrategy, Runnable callback) throws IOException {
         AtomicBoolean runningFlag = new AtomicBoolean(true);
-        this.fileWatcherTask = new FileWatcherTask(createWatchStrategy(), runningFlag, callback);
+        this.fileWatcherTask = new FileWatcherTask(watchStrategy, runningFlag, callback);
         Future<?> taskCompletion = executor.submit(fileWatcherTask);
         this.stopper = new FileWatcherStopper(runningFlag, taskCompletion);
     }
 
     @Override
-    public void watch(Object key, FileWatchInputs inputs) throws IOException {
-        fileWatcherTask.registerWatches(key, inputs);
+    public void watch(FileWatchInputs inputs) throws IOException {
+        fileWatcherTask.registerWatches(inputs);
     }
 
     @Override
@@ -52,47 +48,13 @@ public class DefaultFileWatcher implements FileWatcher {
     }
 
     @Override
-    public void markExistingWatchesStale() {
-        fileWatcherTask.markExistingWatchesStale();
+    public void enterRegistrationMode() {
+        fileWatcherTask.enterRegistrationMode();
     }
 
     @Override
-    public void removeStaleWatches() {
-        fileWatcherTask.removeStaleWatches();
-    }
-
-    protected WatchStrategy createWatchStrategy() throws IOException {
-        return WatchServiceWatchStrategy.createWatchStrategy();
-    }
-
-    static class FileWatcherStopper implements Stoppable {
-        private final AtomicBoolean runningFlag;
-        private final Future<?> taskCompletion;
-        private static final int STOP_TIMEOUT_SECONDS = 10;
-
-        public FileWatcherStopper(AtomicBoolean runningFlag, Future<?> taskCompletion) {
-            this.runningFlag = runningFlag;
-            this.taskCompletion = taskCompletion;
-        }
-
-        @Override
-        public synchronized void stop() {
-            if (runningFlag.compareAndSet(true, false)) {
-                waitForStop();
-            }
-        }
-
-        private void waitForStop() {
-            try {
-                taskCompletion.get(STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                // ignore
-            } catch (ExecutionException e) {
-                // ignore
-            } catch (TimeoutException e) {
-                throw new RuntimeException("Running FileWatcherService wasn't stopped in timeout limits.", e);
-            }
-        }
+    public void exitRegistrationMode() {
+        fileWatcherTask.exitRegistrationMode();
     }
 
     static class FileWatcherTask implements Runnable {
@@ -116,9 +78,9 @@ public class DefaultFileWatcher implements FileWatcher {
             return new FileWatcherChangesNotifier(callback);
         }
 
-        void registerWatches(Object key, FileWatchInputs inputs) throws IOException {
-            dirTreeWatchRegistry.register(key, inputs.getDirectoryTrees());
-            individualFileWatchRegistry.register(key, inputs.getFiles());
+        void registerWatches(FileWatchInputs inputs) throws IOException {
+            dirTreeWatchRegistry.register(inputs.getDirectoryTrees());
+            individualFileWatchRegistry.register(inputs.getFiles());
         }
 
         public void run() {
@@ -161,14 +123,45 @@ public class DefaultFileWatcher implements FileWatcher {
             return runningFlag.get() && !Thread.currentThread().isInterrupted();
         }
 
-        public void markExistingWatchesStale() {
-            dirTreeWatchRegistry.markExistingWatchesStale();
-            individualFileWatchRegistry.markExistingWatchesStale();
+        public void enterRegistrationMode() {
+            dirTreeWatchRegistry.enterRegistrationMode();
+            individualFileWatchRegistry.enterRegistrationMode();
         }
 
-        public void removeStaleWatches() {
-            dirTreeWatchRegistry.removeStaleWatches();
-            individualFileWatchRegistry.removeStaleWatches();
+        public void exitRegistrationMode() {
+            dirTreeWatchRegistry.exitRegistrationMode();
+            individualFileWatchRegistry.exitRegistrationMode();
+        }
+    }
+
+    static class FileWatcherStopper implements Stoppable {
+        private final AtomicBoolean runningFlag;
+        private final Future<?> taskCompletion;
+
+        private static final int STOP_TIMEOUT_SECONDS = 10;
+
+        public FileWatcherStopper(AtomicBoolean runningFlag, Future<?> taskCompletion) {
+            this.runningFlag = runningFlag;
+            this.taskCompletion = taskCompletion;
+        }
+
+        @Override
+        public synchronized void stop() {
+            if (runningFlag.compareAndSet(true, false)) {
+                waitForStop();
+            }
+        }
+
+        private void waitForStop() {
+            try {
+                taskCompletion.get(STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                // ignore
+            } catch (ExecutionException e) {
+                // ignore
+            } catch (TimeoutException e) {
+                throw new RuntimeException("Running FileWatcherService wasn't stopped in timeout limits.", e);
+            }
         }
     }
 }

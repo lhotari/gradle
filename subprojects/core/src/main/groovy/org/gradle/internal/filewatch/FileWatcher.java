@@ -23,8 +23,10 @@ import java.io.IOException;
 /**
  * Stateful service for creating for multiple watches on different sets of inputs of {@link org.gradle.api.file.DirectoryTree} or individual {@link java.io.File}s
  *
- * watch method will return a {@link Stoppable} instance. The stop method must be called on this instance to release resources and stop the "file watching session" that the watch
- * method call starts.
+ * This is designed to be used in a loop so that all watches get registered again every time. The boundaries of the "registration mode" are marked by calling
+ * enterRegistrationMode and exitRegistrationMode.
+ *
+ * All watching can be stopped by calling the stop method.
  *
  */
 public interface FileWatcher extends Stoppable {
@@ -35,8 +37,19 @@ public interface FileWatcher extends Stoppable {
      *
      * @param inputs the directories and files to watch for changes
      */
-    void watch(Object key, FileWatchInputs inputs) throws IOException;
+    void watch(FileWatchInputs inputs) throws IOException;
 
-    void markExistingWatchesStale();
-    void removeStaleWatches();
+    /**
+     * this method should be called before adding any watches
+     *
+     * it is used to mark the boundaries of the watches so that any stale watches from the previous loop can be removed when exiting the registration mode
+     */
+    void enterRegistrationMode();
+
+    /**
+     * this method is for marking the exit boundary of adding watches.
+     *
+     * any stale watches from the previous loop will be removed at this point. watches can be reused in the next "round" of registrations
+     */
+    void exitRegistrationMode();
 }

@@ -31,6 +31,16 @@ public class Jdk7FileWatcherFactory implements FileWatcherFactory {
 
     @Override
     public FileWatcher createFileWatcher(Runnable callback) throws IOException {
-        return new DefaultFileWatcher(executor, callback);
+        return new DefaultFileWatcher(executor, createWatchStrategy(), callback);
+    }
+
+    /**
+     * create new stateful WatchStrategy instance
+     *
+     * @return new stateful WatchStrategy instance
+     * @throws IOException
+     */
+    protected WatchStrategy createWatchStrategy() throws IOException {
+        return WatchServiceWatchStrategy.createWatchStrategy();
     }
 }
