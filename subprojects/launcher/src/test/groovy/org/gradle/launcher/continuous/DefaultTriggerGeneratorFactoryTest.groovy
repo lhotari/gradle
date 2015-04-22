@@ -17,15 +17,18 @@
 package org.gradle.launcher.continuous
 
 import org.gradle.internal.concurrent.ExecutorFactory
+import org.gradle.internal.event.ListenerManager
 import org.gradle.internal.filewatch.FileWatcher
+import org.gradle.internal.filewatch.FileWatcherFactory
+import org.gradle.internal.nativeintegration.filesystem.FileCanonicalizer
 import org.gradle.util.UsesNativeServices
 import spock.lang.Specification
 
 @UsesNativeServices
 class DefaultTriggerGeneratorFactoryTest extends Specification {
     def executorFactory = Mock(ExecutorFactory)
-    def fileWatcherFactory = Mock(FileWatcher)
-    def triggerGeneratorFactory = new DefaultTriggerGeneratorFactory(executorFactory, fileWatcherFactory)
+    def fileWatcherFactory = Mock(FileWatcherFactory)
+    def triggerGeneratorFactory = new DefaultTriggerGeneratorFactory(executorFactory, fileWatcherFactory, Mock(ListenerManager), Mock(FileCanonicalizer))
     def "creates trigger generator"() {
         expect:
         triggerGeneratorFactory.newInstance(Mock(TriggerListener)) instanceof DefaultTriggerGenerator

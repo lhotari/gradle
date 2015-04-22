@@ -20,21 +20,24 @@ import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.event.ListenerManager;
 import org.gradle.internal.filewatch.FileWatcher;
 import org.gradle.internal.filewatch.FileWatcherFactory;
+import org.gradle.internal.nativeintegration.filesystem.FileCanonicalizer;
 
 public class DefaultTriggerGeneratorFactory implements TriggerGeneratorFactory {
     private final ExecutorFactory executorFactory;
     private final FileWatcherFactory fileWatcherFactory;
     private final ListenerManager listenerManager;
+    private final FileCanonicalizer fileCanonicalizer;
 
-    public DefaultTriggerGeneratorFactory(ExecutorFactory executorFactory, FileWatcherFactory fileWatcherFactory, ListenerManager listenerManager) {
+    public DefaultTriggerGeneratorFactory(ExecutorFactory executorFactory, FileWatcherFactory fileWatcherFactory, ListenerManager listenerManager, FileCanonicalizer fileCanonicalizer) {
         this.executorFactory = executorFactory;
         this.fileWatcherFactory = fileWatcherFactory;
         this.listenerManager = listenerManager;
+        this.fileCanonicalizer = fileCanonicalizer;
     }
 
     @Override
     public TriggerGenerator newInstance(TriggerListener listener) {
-        FileWatchStrategy fileWatchStrategy = new FileWatchStrategy(listener, fileWatcherFactory);
+        FileWatchStrategy fileWatchStrategy = new FileWatchStrategy(listener, fileWatcherFactory, fileCanonicalizer);
         // TODO: will this leak memory?
         listenerManager.addListener(fileWatchStrategy);
         return new DefaultTriggerGenerator(executorFactory.create("trigger"), fileWatchStrategy);

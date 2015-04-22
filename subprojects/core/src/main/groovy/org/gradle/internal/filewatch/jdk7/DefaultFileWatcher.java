@@ -111,6 +111,8 @@ public class DefaultFileWatcher implements FileWatcher {
 
                     @Override
                     public void onChange(ChangeDetails changeDetails) {
+                        System.out.println("change: " + changeDetails.getFullItemPath());
+
                         dirTreeWatchRegistry.handleChange(changeDetails, changesNotifier);
                         individualFileWatchRegistry.handleChange(changeDetails, changesNotifier);
                     }

@@ -23,13 +23,13 @@ import org.gradle.api.execution.TaskExecutionListener;
 import org.gradle.api.file.DirectoryTree;
 import org.gradle.api.file.FileBackedDirectoryTree;
 import org.gradle.api.initialization.Settings;
-import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.tasks.TaskState;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.filewatch.FileWatchInputs;
 import org.gradle.internal.filewatch.FileWatcher;
 import org.gradle.internal.filewatch.FileWatcherFactory;
+import org.gradle.internal.nativeintegration.filesystem.FileCanonicalizer;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,9 +42,11 @@ import java.io.IOException;
 class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, BuildListener {
     private final TriggerListener listener;
     private FileWatcher fileWatcher;
+    private final FileCanonicalizer fileCanonicalizer;
 
-    FileWatchStrategy(TriggerListener listener, FileWatcherFactory fileWatcherFactory) {
+    FileWatchStrategy(TriggerListener listener, FileWatcherFactory fileWatcherFactory, FileCanonicalizer fileCanonicalizer) {
         this.listener = listener;
+        this.fileCanonicalizer = fileCanonicalizer;
         try {
             this.fileWatcher = fileWatcherFactory.createFileWatcher(new FileChangeCallback(listener));
         } catch (IOException e) {
@@ -85,13 +87,18 @@ class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, Build
     }
 
     @Override
-    public void beforeExecute(Task task) {
+    public void beforeExecute(Task task)  {
+        File buildDir = fileCanonicalizer.canonicalize(task.getProject().getBuildDir());
         if(task.getInputs().getHasSourceFiles()) {
             FileWatchInputs.Builder builder = FileWatchInputs.newBuilder();
             for(DirectoryTree tree : task.getInputs().getSourceFiles().getAsDirectoryTrees()) {
                 if(tree instanceof FileBackedDirectoryTree) {
-                    builder.addFiles(((FileBackedDirectoryTree)tree).getFiles());
-                } else {
+                    for(File file : ((FileBackedDirectoryTree)tree).getFiles()) {
+                        if(!isSameOrChildOf(buildDir, file)) {
+                            builder.add(file);
+                        }
+                    }
+                } else if (!isSameOrChildOf(buildDir, tree.getDir())) {
                     builder.add(tree);
                 }
             }
@@ -102,6 +109,18 @@ class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, Build
                 UncheckedException.throwAsUncheckedException(e);
             }
         }
+    }
+
+    private boolean isSameOrChildOf(File root, File file) {
+        File current = file;
+        while (current != null) {
+            current = fileCanonicalizer.canonicalize(current);
+            if(current.equals(root)) {
+                return true;
+            }
+            current = current.getParentFile();
+        }
+        return false;
     }
 
     @Override
