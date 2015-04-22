@@ -19,9 +19,11 @@ package org.gradle.internal.filewatch.jdk7;
 import org.gradle.api.file.DirectoryTree;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.util.PatternSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -66,13 +68,14 @@ class DirTreeWatchRegistry extends WatchRegistry<DirectoryTree> {
 
     @Override
     public void register(Iterable<DirectoryTree> trees) throws IOException {
-        for(DirectoryTree tree : trees) {
+        for(DirectoryTree originalTree : trees) {
+            HashableDirectoryTree tree = new HashableDirectoryTree(originalTree);
             markLive(tree);
             Path rootPath = dirToPath(tree.getDir());
             DirectoryTree existingTree = pathToDirectoryTree.get(rootPath);
             if(existingTree==null) {
                 registerSubDir(tree, rootPath);
-            } else if (!existingTree.equals(tree)) {
+            } else if (!tree.equals(existingTree)) {
                 throw new IllegalStateException("Watching same root path with multiple DirectoryTrees isn't supported yet.");
             }
         }
@@ -180,5 +183,45 @@ class DirTreeWatchRegistry extends WatchRegistry<DirectoryTree> {
     // subclass hook for unit tests
     protected Path walkFileTree(Path start, FileVisitor<? super Path> visitor) throws IOException {
         return Files.walkFileTree(start, visitor);
+    }
+
+    static class HashableDirectoryTree implements DirectoryTree {
+        private final File dir;
+        private final PatternSet patterns;
+
+        public HashableDirectoryTree(DirectoryTree tree) {
+            this.dir = tree.getDir();
+            this.patterns = tree.getPatterns();
+
+        }
+
+        @Override
+        public File getDir() {
+            return dir;
+        }
+
+        @Override
+        public PatternSet getPatterns() {
+            return patterns;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            HashableDirectoryTree that = (HashableDirectoryTree) o;
+
+            if (!dir.equals(that.dir)) return false;
+            return patterns.equals(that.patterns);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = dir.hashCode();
+            result = 31 * result + patterns.hashCode();
+            return result;
+        }
     }
 }
