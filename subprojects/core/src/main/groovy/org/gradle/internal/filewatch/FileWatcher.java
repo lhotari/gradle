@@ -27,15 +27,16 @@ import java.io.IOException;
  * method call starts.
  *
  */
-public interface FileWatcherService {
+public interface FileWatcher extends Stoppable {
     /**
      * Starts watching for file changes on a separate background thread.
      *
      * It is guaranteed that file watching gets activated before this method returns.
      *
      * @param inputs the directories and files to watch for changes
-     * @param callback gets called when file changes are found
-     * @return Stoppable instance for stopping the file watching. Must be called to make sure that resources are released.
      */
-    Stoppable watch(FileWatchInputs inputs, Runnable callback) throws IOException;
+    void watch(FileWatchInputs inputs) throws IOException;
+
+    void markExistingWatchesStale();
+    void removeStaleWatches();
 }

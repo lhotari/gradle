@@ -18,17 +18,19 @@ package org.gradle.internal.filewatch.jdk7;
 
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.filewatch.FileWatchInputs;
-import org.gradle.internal.filewatch.FileWatcherService;
+import org.gradle.internal.filewatch.FileWatcher;
 
 import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DefaultFileWatcher implements FileWatcherService {
+public class DefaultFileWatcher implements FileWatcher {
     private final ExecutorService executor;
+    private final Runnable callback;
 
-    public DefaultFileWatcher(ExecutorService executor) {
+    public DefaultFileWatcher(ExecutorService executor, Runnable callback) {
         this.executor = executor;
+        this.callback = callback;
     }
 
     @Override

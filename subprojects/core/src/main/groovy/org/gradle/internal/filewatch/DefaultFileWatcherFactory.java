@@ -22,31 +22,30 @@ import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.reflect.DirectInstantiator;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 
-public class DefaultFileWatcherService implements FileWatcherService, Stoppable {
+public class DefaultFileWatcherFactory implements FileWatcherFactory, Stoppable {
     private final ExecutorService executor;
     private final JavaVersion javaVersion;
     private final ClassLoader classLoader;
-    private final FileWatcherService fileWatcherService;
+    private final FileWatcherFactory fileWatcherFactory;
 
-    public DefaultFileWatcherService(ExecutorFactory executorFactory) {
-        this(JavaVersion.current(), DefaultFileWatcherService.class.getClassLoader(), executorFactory);
+    public DefaultFileWatcherFactory(ExecutorFactory executorFactory) {
+        this(JavaVersion.current(), DefaultFileWatcherFactory.class.getClassLoader(), executorFactory);
     }
 
-    DefaultFileWatcherService(JavaVersion javaVersion, ClassLoader classLoader, ExecutorFactory executorFactory) {
+    DefaultFileWatcherFactory(JavaVersion javaVersion, ClassLoader classLoader, ExecutorFactory executorFactory) {
         this.javaVersion = javaVersion;
         this.classLoader = classLoader;
         this.executor = executorFactory.create("filewatcher");
-        this.fileWatcherService = createFileWatcherService();
+        this.fileWatcherFactory = createFileWatcherFactory();
     }
 
-    protected FileWatcherService createFileWatcherService() {
+    protected FileWatcherFactory createFileWatcherFactory() {
         if(javaVersion.isJava7Compatible()) {
             Class clazz;
             try {
-                clazz = classLoader.loadClass("org.gradle.internal.filewatch.jdk7.DefaultFileWatcher");
+                clazz = classLoader.loadClass("org.gradle.internal.filewatch.jdk7.Jdk7FileWatcherFactory");
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Cannot find FileWatcherService implementation class", e);
             }
@@ -62,7 +61,7 @@ public class DefaultFileWatcherService implements FileWatcherService, Stoppable 
     }
 
     @Override
-    public Stoppable watch(FileWatchInputs inputs, Runnable callback) throws IOException {
-        return fileWatcherService.watch(inputs, callback);
+    public FileWatcher createFileWatcher(Runnable callback) {
+        return fileWatcherFactory.createFileWatcher(callback);
     }
 }

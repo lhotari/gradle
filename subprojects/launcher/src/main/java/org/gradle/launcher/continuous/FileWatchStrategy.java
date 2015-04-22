@@ -28,7 +28,7 @@ import org.gradle.api.tasks.TaskState;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.filewatch.FileWatchInputs;
-import org.gradle.internal.filewatch.FileWatcherService;
+import org.gradle.internal.filewatch.FileWatcher;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,13 +42,13 @@ class FileWatchStrategy implements TriggerStrategy, TaskExecutionListener, Build
     private final TriggerListener listener;
     private Stoppable fileWatcher;
 
-    FileWatchStrategy(TriggerListener listener, FileWatcherService fileWatcherService) {
+    FileWatchStrategy(TriggerListener listener, FileWatcher fileWatcher) {
         this.listener = listener;
         DirectoryTree dir = new DirectoryFileTree(new File("."));
         dir.getPatterns().exclude("build/**/*", ".gradle/**/*");
         FileWatchInputs inputs = FileWatchInputs.newBuilder().add(dir).build();
         try {
-            this.fileWatcher = fileWatcherService.watch(inputs, new FileChangeCallback(listener));
+            this.fileWatcher = fileWatcher.watch(inputs, new FileChangeCallback(listener));
         } catch (IOException e) {
             // TODO:
             UncheckedException.throwAsUncheckedException(e);

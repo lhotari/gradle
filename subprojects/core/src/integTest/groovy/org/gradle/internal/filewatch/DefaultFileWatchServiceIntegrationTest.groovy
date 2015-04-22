@@ -30,13 +30,13 @@ import spock.lang.IgnoreIf
 import spock.lang.Specification
 
 /**
- * integration tests for {@link DefaultFileWatcherService}
+ * integration tests for {@link DefaultFileWatcherFactory}
  */
 @IgnoreIf({ !JavaVersion.current().java7Compatible })
 class DefaultFileWatchServiceIntegrationTest extends Specification {
     @Rule
     public final TestNameTestDirectoryProvider testDir = new TestNameTestDirectoryProvider();
-    FileWatcherService fileWatcherService
+    FileWatcher fileWatcherService
     File testDir
     long waitForEventsMillis = OperatingSystem.current().isMacOsX() ? 3500L : 1500L
     Stoppable fileWatcher
@@ -44,7 +44,7 @@ class DefaultFileWatchServiceIntegrationTest extends Specification {
 
     void setup() {
         NativeServicesTestFixture.initialize()
-        fileWatcherService = new DefaultFileWatcherService(new DefaultExecutorFactory())
+        fileWatcherService = new DefaultFileWatcherFactory(new DefaultExecutorFactory())
         fileWatchInputs = FileWatchInputs.newBuilder()
         fileWatchInputs.add(new DirectoryFileTree(testDir.getTestDirectory()))
     }

@@ -16,7 +16,7 @@
 
 package org.gradle.launcher.continuous
 
-import org.gradle.internal.filewatch.FileWatcherService
+import org.gradle.internal.filewatch.FileWatcher
 import org.gradle.util.UsesNativeServices
 import spock.lang.Specification
 
@@ -26,7 +26,7 @@ class FileWatchStrategyTest extends Specification {
 
     def "registers with file watcher"() {
         given:
-        def fileWatcherFactory = Mock(FileWatcherService)
+        def fileWatcherFactory = Mock(FileWatcher)
         when:
         def fileWatchStrategy = new FileWatchStrategy(listener, fileWatcherFactory)
         then:
