@@ -16,9 +16,27 @@
 
 package org.gradle.internal.filewatch2;
 
-public enum EventType {
-    CREATE,
-    MODIFY,
-    DELETE,
-    OVERFLOW
+import org.gradle.api.Nullable;
+
+import java.io.File;
+
+public class DefaultFileWatcherEvent implements FileWatcherEvent {
+    private final EventType eventType;
+    private final File file;
+
+    public DefaultFileWatcherEvent(EventType eventType, File file) {
+        this.eventType = eventType;
+        this.file = file;
+    }
+
+    @Override
+    public EventType getEventType() {
+        return eventType;
+    }
+
+    @Nullable
+    @Override
+    public File getFile() {
+        return file;
+    }
 }

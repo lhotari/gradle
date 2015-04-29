@@ -1,0 +1,109 @@
+/*
+ * Copyright 2015 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.gradle.internal.filewatch2.jdk7;
+
+import org.gradle.internal.concurrent.Stoppable;
+import org.gradle.internal.filewatch2.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.WatchService;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class WatchServiceFileWatcher implements FileWatcher, Runnable, Stoppable {
+    private static final int POLL_TIMEOUT_MILLIS = 250;
+    private static final int STOP_TIMEOUT_SECONDS = 10;
+    private final FileWatchListener listener;
+    private final AtomicBoolean runningFlag = new AtomicBoolean(false);
+    private final CountDownLatch stopLatch = new CountDownLatch(1);
+    private final WatchService watchService;
+    private final WatchServicePoller poller;
+    private final WatchServiceRegistrar registrar;
+
+    WatchServiceFileWatcher(Iterable<File> roots, FileWatchListener listener) throws IOException {
+        this.listener = listener;
+        this.watchService = FileSystems.getDefault().newWatchService();
+        registrar = new WatchServiceRegistrar(watchService);
+        for (File root : roots) {
+            registrar.registerWatch(root.toPath());
+        }
+        poller = new WatchServicePoller(watchService);
+    }
+
+    public void run() {
+        runningFlag.compareAndSet(false, true);
+        try {
+            try {
+                pumpEvents();
+            } catch (InterruptedException e) {
+                // ignore exception in shutdown
+            }
+        } finally {
+            try {
+                watchService.close();
+            } catch (IOException e) {
+                // ignore exception in shutdown
+            } finally {
+                stopLatch.countDown();
+            }
+        }
+    }
+
+    private void pumpEvents() throws InterruptedException {
+        while (isRunning()) {
+            List<FileWatcherEvent> events = poller.pollEvents(POLL_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            if (events != null) {
+                deliverEvents(events);
+            }
+        }
+    }
+
+    private void deliverEvents(List<FileWatcherEvent> events) {
+        for(FileWatcherEvent event : events) {
+            deliverEvent(event);
+        }
+    }
+
+    private void deliverEvent(FileWatcherEvent event) {
+        FileWatcherEventResult result = listener.onChange(event);
+        if(result instanceof TerminateFileWatcherEventResult) {
+            stop();
+        }
+        if(result instanceof ContinueFileWatcherEventResult) {
+           // TODO: handle the results properly
+        }
+    }
+
+    private boolean isRunning() {
+        return runningFlag.get() && !Thread.currentThread().isInterrupted();
+    }
+
+    @Override
+    public synchronized void stop() {
+        if (runningFlag.compareAndSet(true, false)) {
+            try {
+                stopLatch.await(STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                // ignore exception in shutdown
+            }
+        }
+    }
+}
