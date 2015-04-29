@@ -16,7 +16,6 @@
 
 package org.gradle.internal.filewatch2.jdk7;
 
-import com.sun.nio.file.SensitivityWatchEventModifier;
 import org.gradle.api.Nullable;
 import org.gradle.api.Transformer;
 import org.gradle.internal.Cast;
@@ -32,10 +31,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 class WatchServicePoller {
-    // http://stackoverflow.com/a/18362404
-    // make watch sensitivity as 2 seconds on MacOSX, polls every 2 seconds for changes. Default is 10 seconds.
-    private static final WatchEvent.Modifier[] WATCH_MODIFIERS = new WatchEvent.Modifier[]{SensitivityWatchEventModifier.HIGH};
-    private static final WatchEvent.Kind[] WATCH_KINDS = new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY};
     private final WatchService watchService;
 
     WatchServicePoller(WatchService watchService) throws IOException {
