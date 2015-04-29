@@ -55,6 +55,35 @@ class WatchServiceFileWatcherIntegrationTest extends Specification {
         (1.._) * listener.onChange(_)
     }
 
+    def "watch service should notify of new files in subdirectories"() {
+        given:
+        def listener = Mock(FileWatchListener)
+        when:
+        fileWatcher = fileWatcherFactory.watch([testDir.getTestDirectory()], listener)
+        def subdir = testDir.createDir("subdir")
+        subdir.createFile("somefile").text = "Hello world"
+        waitForChanges()
+        then:
+        (1.._) * listener.onChange(_)
+        when:
+        subdir.file('someotherfile').text = "Hello world"
+        waitForChanges()
+        then:
+        (1.._) * listener.onChange(_)
+    }
+
+    def "watch service should register to watch subdirs at startup"() {
+        given:
+        def listener = Mock(FileWatchListener)
+        def subdir = testDir.createDir("subdir")
+        when:
+        fileWatcher = fileWatcherFactory.watch([testDir.getTestDirectory()], listener)
+        subdir.createFile("somefile").text = "Hello world"
+        waitForChanges()
+        then:
+        (1.._) * listener.onChange(_)
+    }
+
     private void waitForChanges() {
         sleep(waitForEventsMillis)
     }

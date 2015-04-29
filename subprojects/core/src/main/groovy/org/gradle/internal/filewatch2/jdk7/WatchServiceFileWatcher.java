@@ -18,6 +18,8 @@ package org.gradle.internal.filewatch2.jdk7;
 
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.filewatch2.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WatchServiceFileWatcher implements FileWatcher, Runnable, Stoppable {
+    private final Logger LOGGER = LoggerFactory.getLogger(WatchServiceFileWatcher.class);
     private static final int POLL_TIMEOUT_MILLIS = 250;
     private static final int STOP_TIMEOUT_SECONDS = 10;
     private final FileWatchListener listener;
@@ -43,7 +46,7 @@ public class WatchServiceFileWatcher implements FileWatcher, Runnable, Stoppable
         this.watchService = FileSystems.getDefault().newWatchService();
         registrar = new WatchServiceRegistrar(watchService);
         for (File root : roots) {
-            registrar.registerWatch(root.toPath());
+            registrar.register(root.toPath());
         }
         poller = new WatchServicePoller(watchService);
     }
@@ -83,12 +86,23 @@ public class WatchServiceFileWatcher implements FileWatcher, Runnable, Stoppable
     }
 
     private void deliverEvent(FileWatcherEvent event) {
+        handleNewDirectory(event);
         FileWatcherEventResult result = listener.onChange(event);
         if(result instanceof TerminateFileWatcherEventResult) {
             stop();
         }
         if(result instanceof ContinueFileWatcherEventResult) {
            // TODO: handle the results properly
+        }
+    }
+
+    private void handleNewDirectory(FileWatcherEvent event) {
+        if(event.getEventType() == EventType.CREATE && event.getFile().isDirectory()) {
+            try {
+                registrar.register(event.getFile().toPath());
+            } catch (IOException e) {
+                LOGGER.warn("Problem adding watch to " + event.getFile(), e);
+            }
         }
     }
 

@@ -17,9 +17,13 @@
 package org.gradle.internal.filewatch2.jdk7;
 
 import com.sun.nio.file.SensitivityWatchEventModifier;
+import org.gradle.api.file.DirectoryTree;
+import org.gradle.api.file.FileTreeElement;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Set;
 
 class WatchServiceRegistrar {
     // http://stackoverflow.com/a/18362404
@@ -32,7 +36,18 @@ class WatchServiceRegistrar {
         this.watchService = watchService;
     }
 
-    WatchKey registerWatch(Path path) throws IOException {
+    public void register(Path path) throws IOException {
+        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                throws IOException {
+                registerWatch(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private WatchKey registerWatch(Path path) throws IOException {
         WatchKey watchKey = path.register(watchService, WATCH_KINDS, WATCH_MODIFIERS);
         return watchKey;
     }
