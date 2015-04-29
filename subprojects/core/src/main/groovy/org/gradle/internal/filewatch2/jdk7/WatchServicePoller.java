@@ -79,7 +79,7 @@ class WatchServicePoller {
         } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY){
             return EventType.MODIFY;
         } else if (kind == StandardWatchEventKinds.OVERFLOW){
-            return EventType.MODIFY;
+            return EventType.OVERFLOW;
         } else {
             throw new IllegalStateException("Unknown watch kind " + kind);
         }
