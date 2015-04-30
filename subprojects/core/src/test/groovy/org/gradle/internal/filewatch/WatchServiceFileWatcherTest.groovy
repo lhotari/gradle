@@ -26,7 +26,7 @@ import spock.lang.IgnoreIf
 import spock.lang.Specification
 
 @IgnoreIf({ !JavaVersion.current().java7Compatible })
-class WatchServiceFileWatcherIntegrationTest extends Specification {
+class WatchServiceFileWatcherTest extends Specification {
     @Rule
     public final TestNameTestDirectoryProvider testDir = new TestNameTestDirectoryProvider();
     FileWatcherFactory fileWatcherFactory
