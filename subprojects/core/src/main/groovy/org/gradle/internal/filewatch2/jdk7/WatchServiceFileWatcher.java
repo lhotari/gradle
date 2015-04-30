@@ -60,13 +60,18 @@ public class WatchServiceFileWatcher implements FileWatcher, Runnable, Stoppable
                 // ignore exception in shutdown
             }
         } finally {
-            try {
-                watchService.close();
-            } catch (IOException e) {
-                // ignore exception in shutdown
-            } finally {
-                stopLatch.countDown();
-            }
+            stopRunning();
+        }
+    }
+
+    private synchronized void stopRunning() {
+        runningFlag.compareAndSet(true, false);
+        try {
+            watchService.close();
+        } catch (IOException e) {
+            // ignore exception in shutdown
+        } finally {
+            stopLatch.countDown();
         }
     }
 
@@ -89,10 +94,11 @@ public class WatchServiceFileWatcher implements FileWatcher, Runnable, Stoppable
         handleNewDirectory(event);
         FileWatcherEventResult result = listener.onChange(event);
         if(result instanceof TerminateFileWatcherEventResult) {
-            stop();
-        }
-        if(result instanceof ContinueFileWatcherEventResult) {
-           // TODO: handle the results properly
+            stopRunning();
+            Runnable terminateAction = ((TerminateFileWatcherEventResult) result).getOnTerminateAction();
+            if(terminateAction != null) {
+                terminateAction.run();
+            }
         }
     }
 

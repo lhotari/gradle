@@ -40,5 +40,4 @@ public interface FileCollectionInternal extends FileCollection, MinimalFileSet {
      * @return the unique outermost file system roots that encompass this file collection's contents
      */
     Iterable<? extends File> getFileSystemRoots();
-
 }
