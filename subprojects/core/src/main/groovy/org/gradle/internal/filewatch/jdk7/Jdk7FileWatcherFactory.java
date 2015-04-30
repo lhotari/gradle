@@ -33,7 +33,7 @@ public class Jdk7FileWatcherFactory implements FileWatcherFactory {
     }
 
     @Override
-    public FileWatcher watch(Iterable<File> roots, FileWatchListener listener) {
+    public FileWatcher watch(Iterable<? extends File> roots, FileWatchListener listener) {
         WatchServiceFileWatcher fileWatcher = null;
         try {
             fileWatcher = new WatchServiceFileWatcher(roots, listener);

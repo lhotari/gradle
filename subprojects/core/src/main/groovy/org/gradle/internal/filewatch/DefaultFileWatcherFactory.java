@@ -64,7 +64,7 @@ public class DefaultFileWatcherFactory implements FileWatcherFactory, Stoppable 
     }
 
     @Override
-    public FileWatcher watch(Iterable<File> roots, FileWatchListener listener) {
+    public FileWatcher watch(Iterable<? extends File> roots, FileWatchListener listener) {
         return fileWatcherFactory.watch(roots, listener);
     }
 }

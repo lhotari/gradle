@@ -19,5 +19,5 @@ package org.gradle.internal.filewatch;
 import java.io.File;
 
 public interface FileWatcherFactory {
-  FileWatcher watch(Iterable<File> roots, FileWatchListener listener);
+  FileWatcher watch(Iterable<? extends File> roots, FileWatchListener listener);
 }

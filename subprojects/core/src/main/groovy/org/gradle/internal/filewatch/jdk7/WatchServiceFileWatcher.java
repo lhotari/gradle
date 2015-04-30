@@ -41,7 +41,7 @@ public class WatchServiceFileWatcher implements FileWatcher, Runnable, Stoppable
     private final WatchServicePoller poller;
     private final WatchServiceRegistrar registrar;
 
-    WatchServiceFileWatcher(Iterable<File> roots, FileWatchListener listener) throws IOException {
+    WatchServiceFileWatcher(Iterable<? extends File> roots, FileWatchListener listener) throws IOException {
         this.listener = listener;
         this.watchService = FileSystems.getDefault().newWatchService();
         registrar = new WatchServiceRegistrar(watchService);
