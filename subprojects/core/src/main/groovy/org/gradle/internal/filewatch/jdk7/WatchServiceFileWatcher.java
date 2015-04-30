@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.filewatch2.jdk7;
+package org.gradle.internal.filewatch.jdk7;
 
 import org.gradle.internal.concurrent.Stoppable;
-import org.gradle.internal.filewatch2.*;
+import org.gradle.internal.filewatch.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

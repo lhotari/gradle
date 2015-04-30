@@ -16,36 +16,6 @@
 
 package org.gradle.internal.filewatch;
 
-import java.io.File;
-
-public class FileChangeDetails {
-    public enum ChangeType {
-        MODIFY,
-        DELETE,
-        CREATE
-    }
-
-    private final ChangeType changeType;
-    private final File file;
-
-    public FileChangeDetails(ChangeType changeType, File file) {
-        this.changeType = changeType;
-        this.file = file;
-    }
-
-    public ChangeType getChangeType() {
-        return changeType;
-    }
-
-    public File getFile() {
-        return file;
-    }
-
-    @Override
-    public String toString() {
-        return "FileChangeDetails{"
-            + "changeType=" + changeType
-            + ", file=" + file
-            + '}';
-    }
+public interface FileWatchListener {
+  FileWatcherEventResult onChange(FileWatcherEvent event);
 }

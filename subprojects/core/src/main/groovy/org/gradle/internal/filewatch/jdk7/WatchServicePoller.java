@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.filewatch2.jdk7;
+package org.gradle.internal.filewatch.jdk7;
 
 import org.gradle.api.Nullable;
 import org.gradle.api.Transformer;
 import org.gradle.internal.Cast;
-import org.gradle.internal.filewatch2.DefaultFileWatcherEvent;
-import org.gradle.internal.filewatch2.EventType;
-import org.gradle.internal.filewatch2.FileWatcherEvent;
+import org.gradle.internal.filewatch.DefaultFileWatcherEvent;
+import org.gradle.internal.filewatch.EventType;
+import org.gradle.internal.filewatch.FileWatcherEvent;
 import org.gradle.util.CollectionUtils;
 
 import java.io.File;

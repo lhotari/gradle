@@ -16,8 +16,8 @@
 
 package org.gradle.internal.filewatch;
 
-import java.io.IOException;
+import java.io.File;
 
 public interface FileWatcherFactory {
-    FileWatcher createFileWatcher(FileWatcherListener listener) throws IOException;
+  FileWatcher watch(Iterable<File> roots, FileWatchListener listener);
 }

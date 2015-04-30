@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.filewatch2.jdk7;
+package org.gradle.internal.filewatch.jdk7;
 
 import com.sun.nio.file.SensitivityWatchEventModifier;
-import org.gradle.api.file.DirectoryTree;
-import org.gradle.api.file.FileTreeElement;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Set;
 
 class WatchServiceRegistrar {
     // http://stackoverflow.com/a/18362404

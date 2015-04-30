@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.filewatch2
+package org.gradle.internal.filewatch
 
 import org.gradle.api.JavaVersion
 import org.gradle.internal.concurrent.DefaultExecutorFactory

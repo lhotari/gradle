@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.filewatch.jdk7;
+package org.gradle.internal.filewatch;
 
-interface WatchListener {
-    void onOverflow();
-    void onChange(ChangeDetails changeDetails);
+import org.gradle.api.Nullable;
+
+import java.io.File;
+
+public interface FileWatcherEvent {
+    EventType getEventType(); // some kind of enum, e.g. new? changed? deleted? unknown? (i.e. overflow in WatchService terms)
+    @Nullable File getFile(); // null when type == unknown
 }

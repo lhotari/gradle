@@ -24,7 +24,7 @@ import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.reflect.DirectInstantiator;
 
-import java.io.IOException;
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 
 public class DefaultFileWatcherFactory implements FileWatcherFactory, Stoppable {
@@ -33,23 +33,6 @@ public class DefaultFileWatcherFactory implements FileWatcherFactory, Stoppable 
     private final ClassLoader classLoader;
     private final FileWatcherFactory fileWatcherFactory;
     private final static Logger LOG = Logging.getLogger(DefaultFileWatcherFactory.class);
-
-    private static class NoOpFileWatcherFactory implements FileWatcherFactory {
-        @Override
-        public FileWatcher createFileWatcher(FileWatcherListener listener) throws IOException {
-            return new FileWatcher() {
-                @Override
-                public void watch(FileWatchInputs inputs) throws IOException {
-
-                }
-
-                @Override
-                public void stop() {
-
-                }
-            };
-        }
-    }
 
     public DefaultFileWatcherFactory(ExecutorFactory executorFactory) {
         this(JavaVersion.current(), DefaultFileWatcherFactory.class.getClassLoader(), executorFactory);
@@ -69,12 +52,10 @@ public class DefaultFileWatcherFactory implements FileWatcherFactory, Stoppable 
                 clazz = classLoader.loadClass("org.gradle.internal.filewatch.jdk7.Jdk7FileWatcherFactory");
                 return Cast.uncheckedCast(DirectInstantiator.instantiate(clazz, executor));
             } catch (ClassNotFoundException e) {
-                LOG.error("Could not load JDK7 class with a JDK7+ JVM, falling back to no-op implementation.");
+                LOG.error("Could not load JDK7 class with a JDK7+ JVM", e);
             }
         }
-        LOG.debug("Using no-op file watcher service.");
-        // TODO: Maybe we'll eventually support Java 6
-        return new NoOpFileWatcherFactory();
+        throw new UnsupportedOperationException("FileWatcher requires JDK7+.");
     }
 
     @Override
@@ -83,7 +64,7 @@ public class DefaultFileWatcherFactory implements FileWatcherFactory, Stoppable 
     }
 
     @Override
-    public FileWatcher createFileWatcher(FileWatcherListener listener) throws IOException {
-        return fileWatcherFactory.createFileWatcher(listener);
+    public FileWatcher watch(Iterable<File> roots, FileWatchListener listener) {
+        return fileWatcherFactory.watch(roots, listener);
     }
 }

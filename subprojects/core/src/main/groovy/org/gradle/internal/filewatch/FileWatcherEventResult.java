@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.filewatch2;
+package org.gradle.internal.filewatch;
 
-public enum EventType {
-    CREATE,
-    MODIFY,
-    DELETE,
-    OVERFLOW
-}
+public interface FileWatcherEventResult {}

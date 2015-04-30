@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package org.gradle.internal.filewatch2;
+package org.gradle.internal.filewatch;
 
-public interface FileWatchListener {
-  FileWatcherEventResult onChange(FileWatcherEvent event);
+public interface TerminateFileWatcherEventResult extends FileWatcherEventResult {
+  Runnable getOnTerminateAction(); // the continuation of what should happen when the file watcher is shut down
 }
