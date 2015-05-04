@@ -198,6 +198,7 @@ integTestTasks.all { Test task ->
 task integTest(type: Test) {
     def defaultExecuter = project.hasProperty("defaultIntegTestExecuter") ? project.defaultIntegTestExecuter : "embedded"
     systemProperties['org.gradle.integtest.executer'] = defaultExecuter
+    testLogging.showStandardStreams = true
 }
 check.dependsOn(integTest)
 

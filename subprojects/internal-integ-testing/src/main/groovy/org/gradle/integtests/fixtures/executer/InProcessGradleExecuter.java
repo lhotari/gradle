@@ -151,7 +151,10 @@ class InProcessGradleExecuter extends AbstractGradleExecuter {
                 builder.classpath(classpath);
                 builder.setMain(Main.class.getName());
                 builder.args(getAllArgs());
+                builder.args("--debug");
                 builder.setStandardInput(getStdin());
+                //uncomment for debugging
+                builder.jvmArgs("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
                 return builder;
             }
         }).start();
