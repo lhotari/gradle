@@ -18,11 +18,11 @@ package org.gradle.internal;
 
 import com.google.common.collect.Lists;
 import org.gradle.api.GradleException;
+import org.gradle.api.Transformer;
+import org.gradle.util.CollectionUtils;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class FileUtils {
     public static final int WINDOWS_PATH_LIMIT = 260;
@@ -62,15 +62,21 @@ public class FileUtils {
     public static Collection<? extends File> findRoots(Iterable<? extends File> files) {
         List<File> roots = Lists.newLinkedList();
 
+        Set<File> directories = CollectionUtils.collect(files, new LinkedHashSet<File>(), new Transformer<File, File>() {
+                @Override
+                public File transform(File file) {
+                    return file.isDirectory() ? file.getAbsoluteFile() : file.getAbsoluteFile().getParentFile();
+                }
+            });
+
         files:
-        for (File file : files) {
-            File absoluteFile = file.getAbsoluteFile();
-            String path = absoluteFile.getPath();
+        for (File dir : directories) {
+            String path = dir.getPath() + File.separator;
             Iterator<File> rootsIterator = roots.iterator();
 
             while (rootsIterator.hasNext()) {
                 File root = rootsIterator.next();
-                String rootPath = root.getPath();
+                String rootPath = root.getPath() + File.separator;
                 if (path.startsWith(rootPath)) { // is lower than root
                     continue files;
                 }
@@ -79,7 +85,8 @@ public class FileUtils {
                     rootsIterator.remove();
                 }
             }
-            roots.add(absoluteFile);
+
+            roots.add(dir);
         }
 
         return roots;
