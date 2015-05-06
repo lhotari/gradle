@@ -23,12 +23,17 @@ import org.gradle.api.Task;
 import org.gradle.api.execution.TaskExecutionAdapter;
 import org.gradle.api.internal.file.FileCollectionInternal;
 import org.gradle.api.internal.file.FileSystemSubset;
+import org.gradle.api.internal.file.FilteringWatchPointsBuilder;
+import org.gradle.api.internal.file.WatchPointsBuilder;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.specs.Spec;
 import org.gradle.internal.Cast;
 import org.gradle.internal.filewatch.FileWatcherFactory;
 import org.gradle.internal.filewatch.StopThenFireFileWatcherListener;
+
+import java.io.File;
 
 public class TaskInputsWatcher extends BuildAdapter {
     private final static Logger LOGGER = Logging.getLogger(TaskInputsWatcher.class);
@@ -49,9 +54,33 @@ public class TaskInputsWatcher extends BuildAdapter {
             @Override
             public void beforeExecute(Task task) {
                 FileCollectionInternal inputFiles = Cast.cast(FileCollectionInternal.class, task.getInputs().getFiles());
-                inputFiles.registerWatchPoints(fileSystemSubsetBuilder);
+                inputFiles.registerWatchPoints(filterBuildDirectory(fileSystemSubsetBuilder, task.getProject().getBuildDir()));
             }
         });
+    }
+
+    private WatchPointsBuilder filterBuildDirectory(WatchPointsBuilder builder, final File buildDir) {
+        final File buildDirRoot = buildDir.getAbsoluteFile();
+        return new FilteringWatchPointsBuilder(builder, new Spec<File>() {
+            @Override
+            public boolean isSatisfiedBy(File file) {
+                return !isRootParentOfFile(buildDirRoot, file);
+            }
+        });
+    }
+
+    private static boolean isRootParentOfFile(File root, File file) {
+        if (!root.exists()) {
+            return false;
+        }
+        File current = file.getAbsoluteFile().getParentFile();
+        while (current != null) {
+            if (current.equals(root)) {
+                return true;
+            }
+            current = current.getParentFile();
+        }
+        return false;
     }
 
     @Override
@@ -76,4 +105,5 @@ public class TaskInputsWatcher extends BuildAdapter {
             })
         );
     }
+
 }
