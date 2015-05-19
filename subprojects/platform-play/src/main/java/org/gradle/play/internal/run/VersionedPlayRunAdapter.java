@@ -22,6 +22,9 @@ import java.io.File;
 import java.io.IOException;
 
 public interface VersionedPlayRunAdapter {
+    void reloadWithClasspath(Iterable<File> classpath);
+    void reloadWithError(String title, String description);
+
     Object getBuildLink(ClassLoader classLoader, final File projectPath, Iterable<File> classpath) throws ClassNotFoundException;
 
     Object getBuildDocHandler(ClassLoader docsClassLoader, Iterable<File> classpath) throws NoSuchMethodException, ClassNotFoundException, IOException, IllegalAccessException;
