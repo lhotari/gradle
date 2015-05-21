@@ -68,6 +68,7 @@ public class DefaultCommandLineConverterTest extends Specification {
     private int expectedParallelExecutorCount;
     private int expectedMaxWorkersCount = Runtime.getRuntime().availableProcessors();
     private boolean expectedConfigureOnDemand;
+    private boolean expectedContinuousModeEnabled;
 
     @Test
     public void withoutAnyOptions() {
@@ -109,6 +110,7 @@ public class DefaultCommandLineConverterTest extends Specification {
         assertEquals(expectedParallelExecutorCount, startParameter.getParallelThreadCount());
         assertEquals(expectedConfigureOnDemand, startParameter.isConfigureOnDemand());
         assertEquals(expectedMaxWorkersCount, startParameter.getMaxWorkerCount());
+        assertEquals(expectedContinuousModeEnabled, startParameter.isContinuousModeEnabled())
     }
 
     @Test
@@ -411,6 +413,18 @@ public class DefaultCommandLineConverterTest extends Specification {
     public void withConfigureOnDemand() {
         expectedConfigureOnDemand = true;
         checkConversion("--configure-on-demand");
+    }
+
+    @Test
+    public void withContinuousModeEnabled() {
+        expectedContinuousModeEnabled = true;
+        checkConversion("--continuous");
+    }
+
+    @Test
+    public void withContinuousModeEnabledShortFlag() {
+        expectedContinuousModeEnabled = true;
+        checkConversion("-t");
     }
 
     final static int NUM_OF_PROCS = Runtime.getRuntime().availableProcessors()
