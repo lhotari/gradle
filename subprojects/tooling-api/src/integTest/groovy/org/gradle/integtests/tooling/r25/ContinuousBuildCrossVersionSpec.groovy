@@ -22,21 +22,15 @@ import org.gradle.integtests.tooling.fixture.ToolingApiSpecification
 import org.gradle.integtests.tooling.fixture.ToolingApiVersion
 import org.gradle.integtests.tooling.fixture.ToolingApiVersions
 import org.gradle.test.fixtures.file.TestFile
-import org.gradle.tooling.BuildLauncher
-import org.gradle.tooling.GradleConnector
-import org.gradle.tooling.ProjectConnection
+import org.gradle.tooling.*
 import org.gradle.tooling.events.FinishEvent
 import org.gradle.tooling.events.OperationType
 import org.gradle.tooling.events.ProgressListener
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
-import spock.lang.AutoCleanup
 import spock.lang.Timeout
 import spock.util.concurrent.PollingConditions
 
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 
 @Timeout(60)
@@ -45,12 +39,11 @@ import java.util.concurrent.atomic.AtomicInteger
 @TargetGradleVersion(GradleVersions.SUPPORTS_CONTINUOUS)
 class ContinuousBuildCrossVersionSpec extends ToolingApiSpecification {
 
-    @AutoCleanup("shutdown")
-    ExecutorService executorService = Executors.newCachedThreadPool()
     ByteArrayOutputStream stderr
     ByteArrayOutputStream stdout
     Runnable cancelTask
-    Future<?> buildExecutionFuture
+    boolean buildRunning
+    GradleConnectionException lastBuildException
     ExecutionResult result
     ExecutionFailure failure
     ProgressListener progressListener
@@ -78,15 +71,26 @@ class ContinuousBuildCrossVersionSpec extends ToolingApiSpecification {
             }
             launcher.setStandardOutput(stdout)
             launcher.setStandardError(stderr)
-            launcher.run()
+            buildRunning = true
+            lastBuildException = null
+            launcher.run(new ResultHandler<Void>() {
+                @Override
+                void onComplete(Void result) {
+                    buildRunning = false
+                }
+
+                @Override
+                void onFailure(GradleConnectionException failure) {
+                    buildRunning = false
+                    lastBuildException = failure
+                }
+            })
         }
     }
 
     void runBuild(String... tasks) {
         cancelTask = cancellationTokenSource.&cancel
-        buildExecutionFuture = executorService.submit {
-            runContinuousBuild(tasks)
-        }
+        runContinuousBuild(tasks)
     }
 
     ExecutionResult succeeds(String... tasks) {
@@ -110,11 +114,8 @@ class ContinuousBuildCrossVersionSpec extends ToolingApiSpecification {
     private void executeBuild(String... tasks) {
         if (tasks) {
             runBuild(tasks)
-        } else if (buildExecutionFuture.isDone()) {
-            throw new UnexpectedBuildFailure("Tooling API build connection has exited")
-        }
-        if (buildExecutionFuture == null) {
-            throw new UnexpectedBuildFailure("Tooling API build connection never started")
+        } else if (!buildRunning) {
+            throw new UnexpectedBuildFailure("Tooling API build connection has exited or hasn't been started")
         }
         waitForBuild()
     }
