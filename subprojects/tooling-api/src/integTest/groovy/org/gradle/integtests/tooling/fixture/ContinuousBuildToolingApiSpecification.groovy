@@ -74,7 +74,12 @@ abstract class ContinuousBuildToolingApiSpecification extends ToolingApiSpecific
     void runBuild(String... tasks) {
         cancelTask = cancellationTokenSource.&cancel
         buildExecutionFuture = executorService.submit {
-            runContinuousBuild(tasks)
+            try {
+                runContinuousBuild(tasks)
+            } catch (Throwable t) {
+                t.printStackTrace(System.err)
+                throw t
+            }
         }
     }
 
