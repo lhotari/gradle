@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,13 +17,9 @@
 package org.gradle.integtests.tooling.r25
 
 import org.gradle.integtests.tooling.fixture.ContinuousBuildToolingApiSpecification
-import org.gradle.integtests.tooling.fixture.ToolingApiVersion
-import org.gradle.integtests.tooling.fixture.ToolingApiVersions
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.events.FinishEvent
-import org.gradle.tooling.events.OperationType
-import org.gradle.tooling.events.ProgressListener
 import org.gradle.tooling.model.GradleProject
 import org.gradle.tooling.model.build.BuildEnvironment
 import spock.lang.Timeout
@@ -31,14 +27,17 @@ import spock.lang.Timeout
 import java.util.concurrent.atomic.AtomicInteger
 
 @Timeout(60)
-@ToolingApiVersion(ToolingApiVersions.SUPPORTS_RICH_PROGRESS_EVENTS)
 class ContinuousBuildCrossVersionSpec extends ContinuousBuildToolingApiSpecification {
+    enum ProgressListenerType {
+        OLD,
+        NEW
+    }
 
-    ProgressListener progressListener
+    def progressListener
 
     void customizeLauncher(BuildLauncher launcher) {
         if (progressListener) {
-            launcher.addProgressListener(progressListener, [OperationType.GENERIC, OperationType.TASK] as Set)
+            launcher.addProgressListener(progressListener)
         }
     }
 
@@ -108,7 +107,7 @@ class ContinuousBuildCrossVersionSpec extends ContinuousBuildToolingApiSpecifica
         executedAndNotSkipped ":compileJava"
     }
 
-    def "client can receive appropriate logging and progress events for subsequent builds"() {
+    def "client can receive appropriate logging and progress events for subsequent builds"(ProgressListenerType progressListenerTypeToUse) {
         given:
         def javaSrcDir = setupJavaProject()
         def javaSrcFile = javaSrcDir.file("Thing.java")
@@ -116,12 +115,7 @@ class ContinuousBuildCrossVersionSpec extends ContinuousBuildToolingApiSpecifica
         AtomicInteger buildCounter = new AtomicInteger(0)
         AtomicInteger eventCounter = new AtomicInteger(0)
         int lastEventCounter
-        progressListener = {
-            eventCounter.incrementAndGet()
-            if (it instanceof FinishEvent && it.descriptor.name == 'Running build') {
-                buildCounter.incrementAndGet()
-            }
-        }
+        progressListener = progressListenerTypeToUse == ProgressListenerType.OLD ? createOldListener(buildCounter, eventCounter) : createNewListener(buildCounter, eventCounter)
 
         when:
         succeeds('build')
@@ -147,6 +141,36 @@ class ContinuousBuildCrossVersionSpec extends ContinuousBuildToolingApiSpecifica
         succeeds()
         eventCounter.get() > lastEventCounter
         buildCounter.get() == 3
+
+        where:
+        progressListenerTypeToUse << (isClassAvailable("org.gradle.tooling.events.ProgressListener") ? ProgressListenerType.values() : [ProgressListenerType.OLD])
+    }
+
+    private boolean isClassAvailable(String className) {
+        try {
+            this.getClass().getClassLoader().loadClass(className);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    def createNewListener(buildCounter, eventCounter) {
+        return {
+            eventCounter.incrementAndGet()
+            if (it instanceof FinishEvent && it.descriptor.name == 'Running build') {
+                buildCounter.incrementAndGet()
+            }
+        } as org.gradle.tooling.events.ProgressListener
+    }
+
+    def createOldListener(buildCounter, eventCounter) {
+        return {
+            eventCounter.incrementAndGet()
+            if (it.description == 'Build') {
+                buildCounter.incrementAndGet()
+            }
+        } as org.gradle.tooling.ProgressListener
     }
 
     def "client can request continuous mode when building a model, but request is effectively ignored"() {
