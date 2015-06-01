@@ -32,6 +32,7 @@ import java.util.concurrent.Future
 
 @Requires(TestPrecondition.JDK7_OR_LATER)
 @TargetGradleVersion(GradleVersions.SUPPORTS_CONTINUOUS)
+@ToolingApiVersion(ToolingApiVersions.SUPPORTS_CANCELLATION)
 abstract class ContinuousBuildToolingApiSpecification extends ToolingApiSpecification {
     @AutoCleanup("shutdown")
     ExecutorService executorService = Executors.newCachedThreadPool()
