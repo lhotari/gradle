@@ -71,7 +71,7 @@ public class PlayWorkerServer implements Action<WorkerProcessContext>, PlayRunWo
 
             Object buildDocHandler = spec.getBuildDocHandler(docsClassLoader, runSpec.getClasspath());
             ScalaMethod runMethod = spec.getNettyServerDevHttpMethod(classLoader, docsClassLoader);
-            Object buildLink = spec.getBuildLink(classLoader, runSpec.getProjectPath(), runSpec.getClasspath());
+            Object buildLink = spec.getBuildLink(classLoader, runSpec.getProjectPath(), runSpec.getApplicationJar(), runSpec.getAssetsJar());
             runMethod.invoke(buildLink, buildDocHandler, runSpec.getHttpPort());
         } catch (Exception e) {
             throw UncheckedException.throwAsUncheckedException(e);
@@ -83,7 +83,7 @@ public class PlayWorkerServer implements Action<WorkerProcessContext>, PlayRunWo
     }
 
     @Override
-    public void rebuildSuccess(Iterable<File> classpath) {
-        spec.reloadWithClasspath(classpath);
+    public void rebuildSuccess() {
+        spec.forceReloadNextTime();
     }
 }

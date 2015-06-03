@@ -84,9 +84,7 @@ public class PlayRun extends ConventionTask {
                 .start("Start Play server", "Starting Play");
 
         int httpPort = getHttpPort();
-        FileCollection applicationJars = new SimpleFileCollection(applicationJar, assetsJar);
-        applicationJars = applicationJars.plus(runtimeClasspath);
-        PlayRunSpec spec = new DefaultPlayRunSpec(applicationJars, getProject().getProjectDir(), getForkOptions(), httpPort);
+        PlayRunSpec spec = new DefaultPlayRunSpec(runtimeClasspath, applicationJar, assetsJar, getProject().getProjectDir(), getForkOptions(), httpPort);
 
         try {
             deploymentHandle.start(spec);
