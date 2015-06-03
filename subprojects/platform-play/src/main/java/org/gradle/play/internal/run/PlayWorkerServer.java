@@ -66,18 +66,27 @@ public class PlayWorkerServer implements Action<WorkerProcessContext>, PlayRunWo
     }
 
     private void run() {
+        Thread thread = Thread.currentThread();
+        final ClassLoader previousContextClassLoader = thread.getContextClassLoader();
+        final ClassLoader classLoader = new URLClassLoader(new DefaultClassPath(runSpec.getClasspath()).getAsURLArray()) {
+            @Override
+            public Class<?> loadClass(String name) throws ClassNotFoundException {
+                return loadClass(name, true);
+            }
+        };
+        thread.setContextClassLoader(classLoader);
         try {
-            ClassLoader classLoader = getClass().getClassLoader();
-            ClassLoader docsClassLoader = getClass().getClassLoader();
+            ClassLoader docsClassLoader = classLoader;
 
             Object buildDocHandler = spec.getBuildDocHandler(docsClassLoader, runSpec.getClasspath());
             ScalaMethod runMethod = spec.getNettyServerDevHttpMethod(classLoader, docsClassLoader);
 
-            ClassLoader parentClassLoader = new URLClassLoader(new DefaultClassPath(runSpec.getClasspath()).getAsURLArray(), classLoader);
-            Object buildLink = spec.getBuildLink(parentClassLoader, runSpec.getProjectPath(), runSpec.getApplicationJar(), runSpec.getAssetsJar());
+            Object buildLink = spec.getBuildLink(classLoader, runSpec.getProjectPath(), runSpec.getApplicationJar(), runSpec.getAssetsJar());
             runMethod.invoke(buildLink, buildDocHandler, runSpec.getHttpPort());
         } catch (Exception e) {
             throw UncheckedException.throwAsUncheckedException(e);
+        } finally {
+            thread.setContextClassLoader(previousContextClassLoader);
         }
     }
 
