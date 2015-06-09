@@ -117,14 +117,31 @@ message = "Hello coffeescript"
 
     def "can modify coffeescript file"() {
         when:
+        file('conf/application.conf').with {
+            text = text.replaceAll(~/(?m)^logger/, '#$0')
+        }
+        buildFile << """
+model {
+    components {
+        play {
+            platform play: '2.4.0', scala: '2.11'
+        }
+    }
+}
+"""
+        println file(".").getAbsolutePath()
         succeeds("runPlayBinary")
 
         then:
+        println "CHECK RUNNING"
         appIsRunningAndDeployed()
+        println "OK"
         !runningApp.playUrl('assets/javascripts/test.js').text.contains('Hello coffeescript')
         !runningApp.playUrl('assets/javascripts/test.min.js').text.contains('Hello coffeescript')
+        println "CHECKS OK"
 
         when:
+        println "MODIFYING"
         file("app/assets/javascripts/test.coffee") << '''
 message = "Hello coffeescript"
 '''

@@ -119,7 +119,7 @@ abstract class AbstractContinuousIntegrationTest extends AbstractIntegrationSpec
         errorOutputBuildMarker = 0
 
         executer.withStdIn(System.in)
-        gradle = executer.withTasks(tasks).withForceInteractive(true).withArgument("--continuous").start()
+        gradle = executer.withTasks(tasks).withForceInteractive(true).withArgument("--continuous").withArgument("--stacktrace").start()
     }
 
     private void waitForBuild() {
