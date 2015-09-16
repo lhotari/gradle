@@ -17,6 +17,7 @@
 package org.gradle.api.internal.file.collections;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.file.*;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.internal.file.FileSystemSubset;
@@ -25,8 +26,11 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Cast;
+import org.gradle.internal.UncheckedException;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 import org.gradle.internal.nativeintegration.services.FileSystems;
+import org.gradle.internal.reflect.DirectInstantiator;
 import org.gradle.util.GFileUtils;
 import org.gradle.util.GUtil;
 
@@ -54,6 +58,7 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
     private PatternSet patternSet;
     private boolean postfix;
     private final FileSystem fileSystem = FileSystems.getDefault();
+    static final DirectoryWalkerFactory DIRECTORY_WALKER_FACTORY = new DirectoryWalkerFactory();
 
     public DirectoryFileTree(File dir) {
         this(dir, new PatternSet());
@@ -135,43 +140,10 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
     }
 
     private void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<FileTreeElement> spec, AtomicBoolean stopFlag) {
-        File[] children = file.listFiles();
-        if (children == null) {
-            if (file.isDirectory() && !file.canRead()) {
-                throw new GradleException(String.format("Could not list contents of directory '%s' as it is not readable.", file));
-            }
-            // else, might be a link which points to nothing, or has been removed while we're visiting, or ...
-            throw new GradleException(String.format("Could not list contents of '%s'.", file));
-        }
-        List<FileVisitDetails> dirs = new ArrayList<FileVisitDetails>();
-        for (int i = 0; !stopFlag.get() && i < children.length; i++) {
-            File child = children[i];
-            boolean isFile = child.isFile();
-            RelativePath childPath = path.append(isFile, child.getName());
-            FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem);
-            if (isAllowed(details, spec)) {
-                if (isFile) {
-                    visitor.visitFile(details);
-                } else {
-                    dirs.add(details);
-                }
-            }
-        }
-
-        // now handle dirs
-        for (int i = 0; !stopFlag.get() && i < dirs.size(); i++) {
-            FileVisitDetails dir = dirs.get(i);
-            if (postfix) {
-                walkDir(dir.getFile(), dir.getRelativePath(), visitor, spec, stopFlag);
-                visitor.visitDir(dir);
-            } else {
-                visitor.visitDir(dir);
-                walkDir(dir.getFile(), dir.getRelativePath(), visitor, spec, stopFlag);
-            }
-        }
+        DIRECTORY_WALKER_FACTORY.getInstance().walkDir(file, path, visitor, spec, stopFlag, fileSystem, postfix);
     }
 
-    boolean isAllowed(FileTreeElement element, Spec<FileTreeElement> spec) {
+    static boolean isAllowed(FileTreeElement element, Spec<FileTreeElement> spec) {
         return spec.isSatisfiedBy(element);
     }
 
@@ -188,4 +160,87 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
     public PatternSet getPatternSet() {
         return patternSet;
     }
+
+    public interface DirectoryWalker {
+        void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<FileTreeElement> spec, AtomicBoolean stopFlag, FileSystem fileSystem, boolean postfix);
+    }
+
+    static class DirectoryWalkerFactory {
+        private final JavaVersion javaVersion;
+        private final ClassLoader classLoader;
+        private DirectoryWalker instance;
+
+        DirectoryWalkerFactory(JavaVersion javaVersion, ClassLoader classLoader) {
+            this.javaVersion = javaVersion;
+            this.classLoader = classLoader;
+            this.instance = createInstance();
+        }
+
+        DirectoryWalkerFactory() {
+            this(JavaVersion.current(), DirectoryWalkerFactory.class.getClassLoader());
+        }
+
+        DirectoryWalker getInstance() {
+            return instance;
+        }
+
+        void setInstance(DirectoryWalker directoryWalker) {
+            this.instance = directoryWalker;
+        }
+
+        private DirectoryWalker createInstance() {
+            if (javaVersion.isJava7Compatible()) {
+                try {
+                    Class clazz = classLoader.loadClass("org.gradle.api.internal.file.collections.jdk7.Jdk7DirectoryWalker");
+                    return Cast.uncheckedCast(DirectInstantiator.instantiate(clazz));
+                } catch (ClassNotFoundException e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
+                }
+            } else {
+                return new DefaultDirectoryWalker();
+            }
+        }
+    }
+
+    static class DefaultDirectoryWalker implements DirectoryWalker {
+
+        @Override
+        public void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<FileTreeElement> spec, AtomicBoolean stopFlag, FileSystem fileSystem, boolean postfix) {
+            File[] children = file.listFiles();
+            if (children == null) {
+                if (file.isDirectory() && !file.canRead()) {
+                    throw new GradleException(String.format("Could not list contents of directory '%s' as it is not readable.", file));
+                }
+                // else, might be a link which points to nothing, or has been removed while we're visiting, or ...
+                throw new GradleException(String.format("Could not list contents of '%s'.", file));
+            }
+            List<FileVisitDetails> dirs = new ArrayList<FileVisitDetails>();
+            for (int i = 0; !stopFlag.get() && i < children.length; i++) {
+                File child = children[i];
+                boolean isFile = child.isFile();
+                RelativePath childPath = path.append(isFile, child.getName());
+                FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, fileSystem);
+                if (isAllowed(details, spec)) {
+                    if (isFile) {
+                        visitor.visitFile(details);
+                    } else {
+                        dirs.add(details);
+                    }
+                }
+            }
+
+            // now handle dirs
+            for (int i = 0; !stopFlag.get() && i < dirs.size(); i++) {
+                FileVisitDetails dir = dirs.get(i);
+                if (postfix) {
+                    walkDir(dir.getFile(), dir.getRelativePath(), visitor, spec, stopFlag, fileSystem, postfix);
+                    visitor.visitDir(dir);
+                } else {
+                    visitor.visitDir(dir);
+                    walkDir(dir.getFile(), dir.getRelativePath(), visitor, spec, stopFlag, fileSystem, postfix);
+                }
+            }
+        }
+    }
+
 }

@@ -58,6 +58,7 @@ public class DirectoryFileTreeTest {
     public void setUp() {
         NativeServicesTestFixture.initialize();
         visitor = context.mock(FileVisitor.class);
+        DirectoryFileTree.DIRECTORY_WALKER_FACTORY.setInstance(new DirectoryFileTree.DefaultDirectoryWalker());
     }
 
     @Test
