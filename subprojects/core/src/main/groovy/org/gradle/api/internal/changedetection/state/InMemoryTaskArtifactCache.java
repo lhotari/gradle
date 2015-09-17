@@ -43,7 +43,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
             DEFAULT_CAP_SIZES.put("fileSnapshots", 10000);
             DEFAULT_CAP_SIZES.put("taskArtifacts", 2000);
             DEFAULT_CAP_SIZES.put("outputFileStates", 3000);
-            DEFAULT_CAP_SIZES.put("fileHashes", 140000);
+            DEFAULT_CAP_SIZES.put("fileHashes", 500000);
             DEFAULT_CAP_SIZES.put("compilationState", 1000);
         }
 
