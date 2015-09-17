@@ -92,7 +92,7 @@ public class CurrentProcessTest extends Specification {
         CurrentProcess currentProcess = new CurrentProcess(currentJvm, currentJvmOptions)
 
         then:
-        currentProcess.configureForBuild(buildParameters(["-Xmx1024m"]))
+        currentProcess.configureForBuild(buildParameters(["-Xmx1536m"]))
     }
 
     private DaemonParameters buildParameters(Iterable<String> jvmArgs) {

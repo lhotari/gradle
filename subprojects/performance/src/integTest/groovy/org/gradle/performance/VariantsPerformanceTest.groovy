@@ -26,7 +26,7 @@ class VariantsPerformanceTest extends AbstractCrossBuildPerformanceTest {
 
     @Override
     protected void defaultSpec(BuildExperimentSpec.Builder builder) {
-        builder.invocation.gradleOpts("-Xmx1024m", "-XX:MaxPermSize=256m")
+        builder.invocation.gradleOpts("-Xmx1536m", "-XX:MaxPermSize=256m")
         super.defaultSpec(builder)
     }
 

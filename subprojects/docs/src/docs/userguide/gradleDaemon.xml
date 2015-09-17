@@ -122,7 +122,7 @@
                 Some aspects of the requested build environment may not be able to be met by an already running Java process.
                 If the Daemon is running with a Java 7 runtime, but the requested environment calls for Java 8 then the Daemon is not compatible and another must be started.
                 Moreover, certain properties of a Java runtime cannot be changed once the JVM has started.
-                It is not possible to change the memory allocation (e.g. <literal>-Xmx1024m</literal>), default text encoding, default locale, etc of a running JVM.
+                It is not possible to change the memory allocation (e.g. <literal>-Xmx1536m</literal>), default text encoding, default locale, etc of a running JVM.
             </para>
             <para>
                 The “requested build environment” is typically constructed implicitly from aspects of the build client’s (e.g. Gradle command line client, IDE etc.) environment and explicitly via command line switches and settings.

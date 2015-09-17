@@ -50,10 +50,10 @@ class LayoutToPropertiesConverterTest extends Specification {
 
     def "configures from gradle home dir"() {
         when:
-        temp.file("gradleHome/gradle.properties") << "$JVM_ARGS_PROPERTY=-Xmx1024m -Dprop=value"
+        temp.file("gradleHome/gradle.properties") << "$JVM_ARGS_PROPERTY=-Xmx1536m -Dprop=value"
 
         then:
-        converter.convert(layout, props).get(JVM_ARGS_PROPERTY) == '-Xmx1024m -Dprop=value'
+        converter.convert(layout, props).get(JVM_ARGS_PROPERTY) == '-Xmx1536m -Dprop=value'
     }
 
     def "configures from project dir"() {
@@ -77,16 +77,16 @@ class LayoutToPropertiesConverterTest extends Specification {
 
     def "gradle home properties take precedence over project dir properties"() {
         when:
-        temp.file("gradleHome/gradle.properties") << "$JVM_ARGS_PROPERTY=-Xmx1024m"
+        temp.file("gradleHome/gradle.properties") << "$JVM_ARGS_PROPERTY=-Xmx1536m"
         temp.file("projectDir/gradle.properties") << "$JVM_ARGS_PROPERTY=-Xmx512m"
 
         then:
-        converter.convert(layout, props).get(JVM_ARGS_PROPERTY) == '-Xmx1024m'
+        converter.convert(layout, props).get(JVM_ARGS_PROPERTY) == '-Xmx1536m'
     }
 
     def "system property takes precedence over gradle home"() {
         when:
-        temp.file("gradleHome/gradle.properties") << "$JVM_ARGS_PROPERTY=-Xmx1024m"
+        temp.file("gradleHome/gradle.properties") << "$JVM_ARGS_PROPERTY=-Xmx1536m"
         System.setProperty(JVM_ARGS_PROPERTY, '-Xmx2048m')
 
         then:

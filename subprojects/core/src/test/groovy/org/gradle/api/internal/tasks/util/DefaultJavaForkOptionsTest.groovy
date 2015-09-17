@@ -144,7 +144,7 @@ public class DefaultJavaForkOptionsTest {
     @Test
     public void maxHeapSizeIsUpdatedWhenSetUsingJvmArgs() {
         options.maxHeapSize = '1g'
-        options.jvmArgs('-Xmx1024m')
+        options.jvmArgs('-Xmx1536m')
 
         assertThat(options.maxHeapSize, equalTo('1024m'))
 
