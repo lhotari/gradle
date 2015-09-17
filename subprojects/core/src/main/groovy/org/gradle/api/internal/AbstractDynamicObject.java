@@ -69,6 +69,17 @@ public abstract class AbstractDynamicObject implements DynamicObject {
     }
 }
 
+class MissingPropertyException extends groovy.lang.MissingPropertyException {
+    public MissingPropertyException(String message, String property, Class type) {
+        super(message, property, type);
+    }
+
+    @Override
+    public Throwable fillInStackTrace() {
+        return this;
+    }
+}
+
 class MissingMethodException extends groovy.lang.MissingMethodException {
     private final DynamicObject target;
     private final String displayName;
