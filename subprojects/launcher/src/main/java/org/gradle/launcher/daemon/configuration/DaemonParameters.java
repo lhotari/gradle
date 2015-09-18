@@ -31,8 +31,8 @@ import java.util.*;
 public class DaemonParameters {
     static final int DEFAULT_IDLE_TIMEOUT = 3 * 60 * 60 * 1000;
 
-    public static final List<String> DEFAULT_JVM_ARGS = ImmutableList.of("-Xmx1024m", "-XX:MaxPermSize=256m", "-XX:+HeapDumpOnOutOfMemoryError");
-    public static final List<String> DEFAULT_JVM_9_ARGS = ImmutableList.of("-Xmx1024m", "-XX:+HeapDumpOnOutOfMemoryError");
+    public static final List<String> DEFAULT_JVM_ARGS = ImmutableList.of("-Xmx1536m", "-XX:MaxPermSize=256m", "-XX:+HeapDumpOnOutOfMemoryError");
+    public static final List<String> DEFAULT_JVM_9_ARGS = ImmutableList.of("-Xmx1536m", "-XX:+HeapDumpOnOutOfMemoryError");
     public static final String INTERACTIVE_TOGGLE = "org.gradle.interactive";
 
     private final String uid;

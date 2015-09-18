@@ -76,7 +76,7 @@ class SingleUseDaemonIntegrationTest extends AbstractIntegrationSpec {
 
         file('build.gradle') << """
 println 'javaHome=' + org.gradle.internal.jvm.Jvm.current().javaHome.absolutePath
-assert java.lang.management.ManagementFactory.runtimeMXBean.inputArguments.contains('-Xmx1024m')
+assert java.lang.management.ManagementFactory.runtimeMXBean.inputArguments.contains('-Xmx1536m')
 assert java.lang.management.ManagementFactory.runtimeMXBean.inputArguments.contains('-XX:+HeapDumpOnOutOfMemoryError')
 """
 

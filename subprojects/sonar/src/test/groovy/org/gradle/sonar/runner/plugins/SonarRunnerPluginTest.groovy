@@ -403,7 +403,7 @@ class SonarRunnerPluginTest extends Specification {
 
         parentProject.sonarRunner {
             forkOptions {
-                maxHeapSize = '1024m'
+                maxHeapSize = '1536m'
                 jvmArgs '-XX:MaxPermSize=128m'
             }
         }
@@ -412,7 +412,7 @@ class SonarRunnerPluginTest extends Specification {
         JavaForkOptions forkOptions = parentSonarRunnerTask().forkOptions
 
         then:
-        forkOptions.allJvmArgs.contains('-Xmx1024m')
+        forkOptions.allJvmArgs.contains('-Xmx1536m')
         forkOptions.allJvmArgs.contains('-XX:MaxPermSize=128m')
     }
 

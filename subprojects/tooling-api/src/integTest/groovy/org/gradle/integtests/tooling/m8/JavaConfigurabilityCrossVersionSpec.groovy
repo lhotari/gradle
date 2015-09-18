@@ -56,7 +56,7 @@ class JavaConfigurabilityCrossVersionSpec extends ToolingApiSpecification {
 
         then:
         env.java.javaHome
-        env.java.jvmArguments.contains("-Xmx1024m")
+        env.java.jvmArguments.contains("-Xmx1536m") || env.java.jvmArguments.contains("-Xmx1024m")
         env.java.jvmArguments.contains("-XX:+HeapDumpOnOutOfMemoryError")
     }
 

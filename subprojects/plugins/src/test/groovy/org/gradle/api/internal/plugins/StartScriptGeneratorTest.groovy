@@ -29,7 +29,7 @@ class StartScriptGeneratorTest extends Specification {
     private static final String OPTS_ENV_VAR = 'GRADLE_OPTS'
     private static final String EXIT_ENV_VAR = 'GRADLE_EXIT_CONSOLE'
     private static final String MAIN_CLASSNAME = 'org.gradle.launcher.GradleMain'
-    private static final Iterable<String> DEFAULT_JVM_OPTS = ['-Xmx1024m']
+    private static final Iterable<String> DEFAULT_JVM_OPTS = ['-Xmx1536m']
     private static final Iterable<String> CLASSPATH = ['libs/gradle.jar']
     private static final String SCRIPT_REL_PATH = 'bin/gradle'
     private static final String APP_NAME_SYS_PROP = 'org.gradle.appname'
