@@ -25,11 +25,9 @@ import org.gradle.cache.internal.FileLockManager;
 import org.gradle.internal.Factory;
 import org.gradle.internal.serialize.Serializer;
 
-import java.io.Closeable;
-
 import static org.gradle.cache.internal.filelock.LockOptionsBuilder.mode;
 
-public class DefaultTaskArtifactStateCacheAccess implements TaskArtifactStateCacheAccess, Closeable {
+public class DefaultTaskArtifactStateCacheAccess implements TaskArtifactStateCacheAccess {
     private final CacheDecorator inMemoryDecorator;
     private final PersistentCache cache;
 
@@ -40,10 +38,6 @@ public class DefaultTaskArtifactStateCacheAccess implements TaskArtifactStateCac
                 .withDisplayName("task history cache")
                 .withLockOptions(mode(FileLockManager.LockMode.None)) // Lock on demand
                 .open();
-    }
-
-    public void close() {
-        cache.close();
     }
 
     public <K, V> PersistentIndexedCache<K, V> createCache(final String cacheName, final Class<K> keyType, final Serializer<V> valueSerializer) {

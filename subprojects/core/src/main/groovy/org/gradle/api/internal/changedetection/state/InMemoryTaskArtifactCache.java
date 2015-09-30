@@ -20,22 +20,108 @@ import com.google.common.cache.*;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.cache.CacheAccess;
 import org.gradle.cache.internal.CacheDecorator;
 import org.gradle.cache.internal.FileLock;
 import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache;
 import org.gradle.internal.Cast;
 import org.gradle.internal.UncheckedException;
+import org.gradle.internal.concurrent.CompositeStoppable;
+import org.gradle.internal.concurrent.ExecutorFactory;
+import org.gradle.internal.concurrent.Stoppable;
+import org.gradle.internal.concurrent.StoppableExecutor;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
-public class InMemoryTaskArtifactCache implements CacheDecorator {
+public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
     private final static Logger LOG = Logging.getLogger(InMemoryTaskArtifactCache.class);
     private final static Object NULL = new Object();
     private static final Map<String, Integer> CACHE_CAPS = new CacheCapSizer().calculateCaps();
+    private final StoppableExecutor cacheUpdateExecutor;
+    private final Cache<CacheAccess, CacheUpdateBatcher> cacheUpdateBatchers;
+
+    public InMemoryTaskArtifactCache(ExecutorFactory executorFactory) {
+        this.cacheUpdateExecutor = executorFactory.create("Cache update executor");
+        this.cacheUpdateBatchers = CacheBuilder.newBuilder().build();
+    }
+
+    @Override
+    public void stop() {
+        CompositeStoppable.stoppable(cacheUpdateBatchers.asMap().values()).stop();
+        cacheUpdateExecutor.stop();
+    }
+
+    private static class CacheUpdateBatcher implements Runnable, Stoppable {
+        private final BlockingDeque<Runnable> cacheUpdatesQueue;
+        private final CacheAccess cacheAccess;
+        private final long batchWindow;
+        private boolean closed;
+        private final CountDownLatch doneSignal = new CountDownLatch(1);
+
+        CacheUpdateBatcher(CacheAccess cacheAccess, long batchWindow) {
+            this.cacheAccess = cacheAccess;
+            this.batchWindow = batchWindow;
+            cacheUpdatesQueue = new LinkedBlockingDeque<Runnable>();
+        }
+
+        public void add(Runnable task) {
+            cacheUpdatesQueue.add(task);
+        }
+
+        @Override
+        public void run() {
+            while (!Thread.currentThread().isInterrupted() && !closed) {
+                try {
+                    final Runnable updateOperation = cacheUpdatesQueue.take();
+                    if (!closed && batchWindow > 0) {
+                        Thread.sleep(batchWindow);
+                    }
+                    if (!closed) {
+                        flushOperations(updateOperation);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            doneSignal.countDown();
+        }
+
+        private void flushOperations(final Runnable updateOperation) {
+            cacheAccess.useCache("Running batched updates", new Runnable() {
+                @Override
+                public void run() {
+                    if (updateOperation != null) {
+                        updateOperation.run();
+                    }
+                    Runnable otherOperation;
+                    while ((otherOperation = cacheUpdatesQueue.poll()) != null) {
+                        otherOperation.run();
+                    }
+                }
+            });
+        }
+
+        public void stop() {
+            if (!closed) {
+                closed = true;
+                add(new Runnable() {
+                    @Override
+                    public void run() {
+                        // empty body
+                    }
+                });
+                try {
+                    doneSignal.await();
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+                flushOperations(null);
+            }
+        }
+    }
 
     static class CacheCapSizer {
         private static final Map<String, Integer> DEFAULT_CAP_SIZES = new HashMap<String, Integer>();
@@ -93,12 +179,26 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
 
     private final Map<String, FileLock.State> states = new HashMap<String, FileLock.State>();
 
-    public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original) {
+    public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original, final CacheAccess cacheAccess) {
         final Cache<Object, Object> data = loadData(cacheId, cacheName);
+        final CacheUpdateBatcher cacheUpdateBatcher;
+        try {
+            cacheUpdateBatcher = cacheUpdateBatchers.get(cacheAccess, new Callable<CacheUpdateBatcher>() {
+                @Override
+                public CacheUpdateBatcher call() throws Exception {
+                    CacheUpdateBatcher cacheUpdateBatcher = new CacheUpdateBatcher(cacheAccess, 1000L);
+                    cacheUpdateExecutor.execute(cacheUpdateBatcher);
+                    return cacheUpdateBatcher;
+                }
+            });
+        } catch (ExecutionException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
+        }
 
         return new MultiProcessSafePersistentIndexedCache<K, V>() {
             public void close() {
-                original.close();
+                cacheUpdateBatcher.stop();
+                //original.close();
             }
 
             public V get(final K key) {
@@ -111,6 +211,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
                             Object newValue = original.get(key);
                             return (newValue == null) ? NULL : newValue;
                         }
+
                     });
                 } catch (ExecutionException e) {
                     throw UncheckedException.throwAsUncheckedException(e);
@@ -118,14 +219,24 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
                 return Cast.uncheckedCast((value == NULL) ? null : value);
             }
 
-            public void put(K key, V value) {
-                original.put(key, value);
+            public void put(final K key, final V value) {
                 data.put(key, value);
+                cacheUpdateBatcher.add(new Runnable() {
+                    @Override
+                    public void run() {
+                        original.put(key, value);
+                    }
+                });
             }
 
-            public void remove(K key) {
+            public void remove(final K key) {
                 data.put(key, NULL);
-                original.remove(key);
+                cacheUpdateBatcher.add(new Runnable() {
+                    @Override
+                    public void run() {
+                        original.remove(key);
+                    }
+                });
             }
 
             public void onStartWork(String operationDisplayName, FileLock.State currentCacheState) {
