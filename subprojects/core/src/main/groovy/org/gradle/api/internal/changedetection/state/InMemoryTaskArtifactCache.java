@@ -33,10 +33,7 @@ import org.gradle.internal.concurrent.StoppableExecutor;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.*;
 
 public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
     private final static Logger LOG = Logging.getLogger(InMemoryTaskArtifactCache.class);
@@ -60,6 +57,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
         private final CacheAccess cacheAccess;
         private final long batchWindow;
         private boolean closed;
+        private final CountDownLatch doneSignal = new CountDownLatch(1);
 
         CacheUpdateBatcher(CacheAccess cacheAccess, long batchWindow) {
             this.cacheAccess = cacheAccess;
@@ -84,6 +82,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
                     Thread.currentThread().interrupt();
                 }
             }
+            doneSignal.countDown();
         }
 
         private void flushOperations(final Runnable updateOperation) {
@@ -103,7 +102,17 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
 
         public void close() {
             closed = true;
-            add(null);
+            add(new Runnable() {
+                @Override
+                public void run() {
+                    // empty body
+                }
+            });
+            try {
+                doneSignal.await();
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
     }
 
@@ -204,13 +213,13 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
             }
 
             public void put(final K key, final V value) {
+                data.put(key, value);
                 cacheUpdateBatcher.add(new Runnable() {
                     @Override
                     public void run() {
                         original.put(key, value);
                     }
                 });
-                data.put(key, value);
             }
 
             public void remove(final K key) {
