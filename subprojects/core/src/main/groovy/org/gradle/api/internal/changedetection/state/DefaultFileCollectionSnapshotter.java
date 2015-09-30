@@ -145,7 +145,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         private SnapshotChangeIterator iterateEntryChangesSince(FileCollectionSnapshot oldSnapshot) {
-            return new SnapshotChangeIterator(this, oldSnapshot);
+            return new SnapshotChangeIterator(oldSnapshot, this);
         }
 
         public Diff changesSince(final FileCollectionSnapshot oldSnapshot) {
