@@ -64,6 +64,16 @@ public class CachingFileSnapshotter implements FileSnapshotter {
         public byte[] getHash() {
             return hash;
         }
+
+        @Override
+        public long length() {
+            return length;
+        }
+
+        @Override
+        public long lastModified() {
+            return timestamp;
+        }
     }
 
     private static class FileInfoSerializer implements Serializer<FileInfo> {

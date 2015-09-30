@@ -66,7 +66,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         return new OutputFilesSnapshot(SortedMapChangeIterator.<Long>createSortedMap(), snapshotter.emptySnapshot());
     }
 
-    public OutputFilesSnapshot snapshot(final FileCollection files) {
+    public OutputFilesSnapshot snapshot(final FileCollection files, final FileSnapshotter fileSnapshotter) {
         final SortedMap<String, Long> snapshotDirIds = SortedMapChangeIterator.createSortedMap();
         final Set<File> theFiles = files.getFiles();
         cacheAccess.useCache("create dir snapshots", new Runnable() {
@@ -88,7 +88,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
 
             }
         });
-        return new OutputFilesSnapshot(snapshotDirIds, snapshotter.snapshot(files));
+        return new OutputFilesSnapshot(snapshotDirIds, snapshotter.snapshot(files, fileSnapshotter));
     }
 
     static class OutputFilesSnapshot implements FileCollectionSnapshot {

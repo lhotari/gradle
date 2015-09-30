@@ -20,6 +20,8 @@ import org.gradle.api.UncheckedIOException;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.changedetection.state.*;
 
+import java.io.File;
+
 /**
  * Represents the complete changes in a tasks state
  */
@@ -35,7 +37,7 @@ public class TaskUpToDateState {
     private SummaryTaskStateChanges allTaskChanges;
     private SummaryTaskStateChanges rebuildChanges;
 
-    public TaskUpToDateState(TaskInternal task, TaskHistoryRepository.History history, FileCollectionSnapshotter outputFilesSnapshotter, FileCollectionSnapshotter inputFilesSnapshotter) {
+    public TaskUpToDateState(TaskInternal task, TaskHistoryRepository.History history, FileCollectionSnapshotter outputFilesSnapshotter, FileCollectionSnapshotter inputFilesSnapshotter, FileSnapshotter fileSnapshotter) {
         TaskExecution thisExecution = history.getCurrentExecution();
         TaskExecution lastExecution = history.getPreviousExecution();
 
@@ -45,14 +47,16 @@ public class TaskUpToDateState {
 
         // Capture outputs state
         try {
-            outputFilesState = caching(OutputFilesStateChangeRule.create(task, lastExecution, thisExecution, outputFilesSnapshotter));
+            FileSnapshotter outputFileSnapshotter = lastExecution != null ? new PreviousSnapshotLookupFileSnapshotter(fileSnapshotter, lastExecution.getOutputFilesSnapshot().getSnapshot()) : fileSnapshotter;
+            outputFilesState = caching(OutputFilesStateChangeRule.create(task, lastExecution, thisExecution, outputFilesSnapshotter, outputFileSnapshotter));
         } catch (UncheckedIOException e) {
             throw new UncheckedIOException(String.format("Failed to capture snapshot of output files for task '%s' during up-to-date check.  See stacktrace for details.", task.getName()), e);
         }
 
         // Capture inputs state
         try {
-            FileCollectionSnapshot inputFilesSnapshot = inputFilesSnapshotter.snapshot(task.getInputs().getFiles());
+            FileSnapshotter inputFileSnapshotter = lastExecution != null ? new PreviousSnapshotLookupFileSnapshotter(fileSnapshotter, lastExecution.getInputFilesSnapshot().getSnapshot()) : fileSnapshotter;
+            FileCollectionSnapshot inputFilesSnapshot = inputFilesSnapshotter.snapshot(task.getInputs().getFiles(), inputFileSnapshotter);
             this.inputFilesSnapshot = inputFilesSnapshot.getSnapshot();
             inputFilesState = caching(InputFilesStateChangeRule.create(lastExecution, thisExecution, inputFilesSnapshot));
         } catch (UncheckedIOException e) {
@@ -82,4 +86,28 @@ public class TaskUpToDateState {
     public FilesSnapshotSet getInputFilesSnapshot() {
         return inputFilesSnapshot;
     }
+
+    static class PreviousSnapshotLookupFileSnapshotter implements FileSnapshotter {
+        private final FileSnapshotter delegate;
+        private final FilesSnapshotSet filesSnapshotSet;
+
+        PreviousSnapshotLookupFileSnapshotter(FileSnapshotter delegate, FilesSnapshotSet filesSnapshotSet) {
+            this.delegate = delegate;
+            this.filesSnapshotSet = filesSnapshotSet;
+        }
+
+        @Override
+        public FileSnapshot snapshot(File file) {
+            FileSnapshot snapshot = filesSnapshotSet.findSnapshot(file);
+            long length = file.length();
+            long lastModified = file.lastModified();
+            if (snapshot != null && length == snapshot.length() && lastModified == snapshot.length()) {
+                return snapshot;
+            } else {
+                snapshot = delegate.snapshot(file);
+            }
+            return snapshot;
+        }
+    }
+
 }

@@ -27,7 +27,7 @@ class DefaultFileSnapshotterSerializerTest extends SerializerSpec {
         DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl out = serialize(new DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl([
                 "1": new DefaultFileCollectionSnapshotter.DirSnapshot(),
                 "2": new DefaultFileCollectionSnapshotter.MissingFileSnapshot(),
-                "3": new DefaultFileCollectionSnapshotter.FileHashSnapshot("foo".bytes)]), serializer)
+                "3": new DefaultFileCollectionSnapshotter.FileHashSnapshot("foo".bytes, length, lastModified)]), serializer)
 
         then:
         out.snapshotMap.size() == 3

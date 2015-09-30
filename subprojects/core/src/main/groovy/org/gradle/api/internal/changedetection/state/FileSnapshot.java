@@ -18,4 +18,6 @@ package org.gradle.api.internal.changedetection.state;
 
 public interface FileSnapshot {
     byte[] getHash();
+    long length();
+    long lastModified();
 }
