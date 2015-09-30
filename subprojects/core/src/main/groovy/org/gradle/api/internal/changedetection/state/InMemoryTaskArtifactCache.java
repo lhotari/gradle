@@ -20,6 +20,7 @@ import com.google.common.cache.*;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.cache.CacheAccess;
 import org.gradle.cache.internal.CacheDecorator;
 import org.gradle.cache.internal.FileLock;
 import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache;
@@ -93,7 +94,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
 
     private final Map<String, FileLock.State> states = new HashMap<String, FileLock.State>();
 
-    public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original) {
+    public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original, final CacheAccess cacheAccess) {
         final Cache<Object, Object> data = loadData(cacheId, cacheName);
 
         return new MultiProcessSafePersistentIndexedCache<K, V>() {
@@ -111,6 +112,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
                             Object newValue = original.get(key);
                             return (newValue == null) ? NULL : newValue;
                         }
+
                     });
                 } catch (ExecutionException e) {
                     throw UncheckedException.throwAsUncheckedException(e);

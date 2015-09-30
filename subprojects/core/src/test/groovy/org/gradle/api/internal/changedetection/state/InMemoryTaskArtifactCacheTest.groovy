@@ -16,16 +16,18 @@
 
 package org.gradle.api.internal.changedetection.state
 
+import org.gradle.cache.CacheAccess
 import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache
 import spock.lang.Specification
 
 class InMemoryTaskArtifactCacheTest extends Specification {
     def cacheFactory = new InMemoryTaskArtifactCache()
     def target = Mock(MultiProcessSafePersistentIndexedCache)
+    def cacheAccess = Mock(CacheAccess)
 
     def "caches result from backing cache"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
@@ -49,7 +51,7 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
     def "caches null result from backing cache"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
@@ -73,7 +75,7 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
     def "caches result of putting item"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
@@ -104,7 +106,7 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
     def "caches result of removing item"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
