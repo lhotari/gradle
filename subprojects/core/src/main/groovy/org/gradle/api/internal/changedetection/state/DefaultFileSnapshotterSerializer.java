@@ -20,12 +20,12 @@ import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
 import org.gradle.internal.serialize.Serializer;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedMap;
 
 class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl> {
     public DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl read(Decoder decoder) throws Exception {
-        Map<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot> snapshots = new HashMap<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot>();
+        SortedMap<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot> snapshots = SortedMapChangeIterator.createSortedMap();
         DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl snapshot = new DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl(snapshots);
         int snapshotsCount = decoder.readSmallInt();
         for (int i = 0; i < snapshotsCount; i++) {
@@ -48,10 +48,10 @@ class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollecti
     }
 
     public void write(Encoder encoder, DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl value) throws Exception {
-        encoder.writeSmallInt(value.snapshots.size());
-        for (String key : value.snapshots.keySet()) {
-            encoder.writeString(key);
-            DefaultFileCollectionSnapshotter.IncrementalFileSnapshot incrementalFileSnapshot = value.snapshots.get(key);
+        encoder.writeSmallInt(value.snapshotMap.size());
+        for (Map.Entry<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot> entry : value.snapshotMap.entrySet()) {
+            encoder.writeString(entry.getKey());
+            DefaultFileCollectionSnapshotter.IncrementalFileSnapshot incrementalFileSnapshot = entry.getValue();
             if (incrementalFileSnapshot instanceof DefaultFileCollectionSnapshotter.DirSnapshot) {
                 encoder.writeByte((byte) 1);
             } else if (incrementalFileSnapshot instanceof DefaultFileCollectionSnapshotter.MissingFileSnapshot) {

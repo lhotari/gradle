@@ -23,11 +23,13 @@ import org.gradle.internal.serialize.DefaultSerializerRegistry;
 import org.gradle.internal.serialize.LongSerializer;
 import org.gradle.internal.serialize.SerializerRegistry;
 import org.gradle.util.ChangeListener;
-import org.gradle.util.DiffUtil;
 import org.gradle.util.NoOpChangeListener;
 
 import java.io.File;
-import java.util.*;
+import java.util.Set;
+import java.util.SortedMap;
+
+import static org.gradle.api.internal.changedetection.state.DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl.handleChanges;
 
 /**
  * Takes a snapshot of the output files of a task. 2 parts to the algorithm:
@@ -61,11 +63,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     public FileCollectionSnapshot emptySnapshot() {
-        return new OutputFilesSnapshot(new HashMap<String, Long>(), snapshotter.emptySnapshot());
+        return new OutputFilesSnapshot(SortedMapChangeIterator.<Long>createSortedMap(), snapshotter.emptySnapshot());
     }
 
     public OutputFilesSnapshot snapshot(final FileCollection files) {
-        final Map<String, Long> snapshotDirIds = new HashMap<String, Long>();
+        final SortedMap<String, Long> snapshotDirIds = SortedMapChangeIterator.createSortedMap();
         final Set<File> theFiles = files.getFiles();
         cacheAccess.useCache("create dir snapshots", new Runnable() {
             public void run() {
@@ -90,10 +92,10 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     static class OutputFilesSnapshot implements FileCollectionSnapshot {
-        final Map<String, Long> rootFileIds;
+        final SortedMap<String, Long> rootFileIds;
         final FileCollectionSnapshot filesSnapshot;
 
-        public OutputFilesSnapshot(Map<String, Long> rootFileIds, FileCollectionSnapshot filesSnapshot) {
+        public OutputFilesSnapshot(SortedMap<String, Long> rootFileIds, FileCollectionSnapshot filesSnapshot) {
             this.rootFileIds = rootFileIds;
             this.filesSnapshot = filesSnapshot;
         }
@@ -135,44 +137,22 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         private ChangeIterator<String> iterateRootFileIdChanges(final OutputFilesSnapshot other) {
-            // Inlining DiffUtil.diff makes the inefficiencies here a bit more explicit
-            Map<String, Long> added = new HashMap<String, Long>(rootFileIds);
-            added.keySet().removeAll(other.rootFileIds.keySet());
-            final Iterator<String> addedIterator = added.keySet().iterator();
-
-            Map<String, Long> removed = new HashMap<String, Long>(other.rootFileIds);
-            removed.keySet().removeAll(rootFileIds.keySet());
-            final Iterator<String> removedIterator = removed.keySet().iterator();
-
-            Set<String> changed = new HashSet<String>();
-            for (Map.Entry<String, Long> current : rootFileIds.entrySet()) {
-                 // Only care about rootIds that used to exist, and have changed or been removed
-                Long otherValue = other.rootFileIds.get(current.getKey());
-                if (otherValue != null && !otherValue.equals(current.getValue())) {
-                    changed.add(current.getKey());
-                }
-            }
-            final Iterator<String> changedIterator = changed.iterator();
-
-            return new ChangeIterator<String>() {
-                public boolean next(ChangeListener<String> listener) {
-                    if (addedIterator.hasNext()) {
-                        listener.added(addedIterator.next());
-                        return true;
-                    }
-                    if (removedIterator.hasNext()) {
-                        listener.removed(removedIterator.next());
-                        return true;
-                    }
-                    if (changedIterator.hasNext()) {
-                        listener.changed(changedIterator.next());
-                        return true;
-                    }
-
-                    return false;
-                }
-            };
+            return createChangeIterator(other.rootFileIds, rootFileIds).adaptToFilenameChangeIterator();
         }
+
+    }
+
+    private static SortedMapChangeIterator<Long> createChangeIterator(final SortedMap<String, Long> otherRootFileIds, SortedMap<String, Long> rootFileIds) {
+        return new SortedMapChangeIterator<Long>(otherRootFileIds, rootFileIds) {
+            @Override
+            protected boolean compareValues(Long a, Long b) {
+                if (a == null) {
+                    // Only care about rootIds that used to exist, and have changed or been removed
+                    return true;
+                }
+                return super.compareValues(a, b);
+            }
+        };
     }
 
     /**
@@ -202,11 +182,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     private static class OutputFilesDiff implements FileCollectionSnapshot.Diff {
-        private final Map<String, Long> newFileIds;
-        private final Map<String, Long> oldFileIds;
+        private final SortedMap<String, Long> newFileIds;
+        private final SortedMap<String, Long> oldFileIds;
         private final FileCollectionSnapshot.Diff filesDiff;
 
-        public OutputFilesDiff(Map<String, Long> newFileIds, Map<String, Long> oldFileIds,
+        public OutputFilesDiff(SortedMap<String, Long> newFileIds, SortedMap<String, Long> oldFileIds,
                                FileCollectionSnapshot.Diff filesDiff) {
             this.newFileIds = newFileIds;
             this.oldFileIds = oldFileIds;
@@ -216,9 +196,10 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         public FileCollectionSnapshot applyTo(FileCollectionSnapshot snapshot,
                                               ChangeListener<FileCollectionSnapshot.Merge> listener) {
             OutputFilesSnapshot other = (OutputFilesSnapshot) snapshot;
-            Map<String, Long> dirIds = new HashMap<String, Long>(other.rootFileIds);
-            DiffUtil.diff(newFileIds, oldFileIds, new MapMergeChangeListener<String, Long>(
-                    new NoOpChangeListener<FileCollectionSnapshot.Merge>(), dirIds));
+            SortedMap<String, Long> dirIds = SortedMapChangeIterator.createSortedMap(other.rootFileIds);
+
+            handleChanges(createChangeIterator(oldFileIds, newFileIds), new MapMergeChangeListener<String, Long>(
+                new NoOpChangeListener<FileCollectionSnapshot.Merge>(), dirIds));
             return new OutputFilesSnapshot(newFileIds, filesDiff.applyTo(other.filesSnapshot, listener));
         }
 

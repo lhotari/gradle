@@ -30,9 +30,9 @@ class DefaultFileSnapshotterSerializerTest extends SerializerSpec {
                 "3": new DefaultFileCollectionSnapshotter.FileHashSnapshot("foo".bytes)]), serializer)
 
         then:
-        out.snapshots.size() == 3
-        out.snapshots['1'] instanceof DefaultFileCollectionSnapshotter.DirSnapshot
-        out.snapshots['2'] instanceof DefaultFileCollectionSnapshotter.MissingFileSnapshot
-        ((DefaultFileCollectionSnapshotter.FileHashSnapshot) out.snapshots['3']).hash == "foo".bytes
+        out.snapshotMap.size() == 3
+        out.snapshotMap['1'] instanceof DefaultFileCollectionSnapshotter.DirSnapshot
+        out.snapshotMap['2'] instanceof DefaultFileCollectionSnapshotter.MissingFileSnapshot
+        ((DefaultFileCollectionSnapshotter.FileHashSnapshot) out.snapshotMap['3']).hash == "foo".bytes
     }
 }
