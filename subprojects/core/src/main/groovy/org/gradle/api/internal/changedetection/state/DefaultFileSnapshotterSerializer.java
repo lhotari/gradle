@@ -20,6 +20,7 @@ import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
 import org.gradle.internal.serialize.Serializer;
 
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -49,9 +50,9 @@ class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollecti
 
     public void write(Encoder encoder, DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl value) throws Exception {
         encoder.writeSmallInt(value.snapshotMap.size());
-        for (String key : value.snapshotMap.keySet()) {
-            encoder.writeString(key);
-            DefaultFileCollectionSnapshotter.IncrementalFileSnapshot incrementalFileSnapshot = value.snapshotMap.get(key);
+        for (Map.Entry<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot> entry : value.snapshotMap.entrySet()) {
+            encoder.writeString(entry.getKey());
+            DefaultFileCollectionSnapshotter.IncrementalFileSnapshot incrementalFileSnapshot = entry.getValue();
             if (incrementalFileSnapshot instanceof DefaultFileCollectionSnapshotter.DirSnapshot) {
                 encoder.writeByte((byte) 1);
             } else if (incrementalFileSnapshot instanceof DefaultFileCollectionSnapshotter.MissingFileSnapshot) {
