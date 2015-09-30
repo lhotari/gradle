@@ -180,7 +180,7 @@ public class GlobalScopeServices {
             fileLockContentionHandler);
     }
 
-    InMemoryTaskArtifactCache createInMemoryTaskArtifactCache(ExecutorFactory executorFactory) {
+    InMemoryTaskArtifactCache createInMemoryTaskArtifactCache(ExecutorFactory executorFactory, CacheFactory cacheFactory) {
         return new InMemoryTaskArtifactCache(executorFactory);
     }
 

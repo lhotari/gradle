@@ -149,10 +149,12 @@ public class DefaultCacheAccess implements CacheCoordinator {
     }
 
     public void close() {
+/*
         // make sure all caches are closed
         for (MultiProcessSafePersistentIndexedCache cache : caches) {
             cache.close();
         }
+*/
 
         lock.lock();
         try {

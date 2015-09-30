@@ -26,6 +26,7 @@ import org.gradle.cache.internal.FileLock;
 import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache;
 import org.gradle.internal.Cast;
 import org.gradle.internal.UncheckedException;
+import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.concurrent.StoppableExecutor;
@@ -49,10 +50,11 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
 
     @Override
     public void stop() {
+        CompositeStoppable.stoppable(cacheUpdateBatchers.asMap().values()).stop();
         cacheUpdateExecutor.stop();
     }
 
-    private static class CacheUpdateBatcher implements Runnable {
+    private static class CacheUpdateBatcher implements Runnable, Stoppable {
         private final BlockingDeque<Runnable> cacheUpdatesQueue;
         private final CacheAccess cacheAccess;
         private final long batchWindow;
@@ -77,7 +79,9 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
                     if (!closed && batchWindow > 0) {
                         Thread.sleep(batchWindow);
                     }
-                    flushOperations(updateOperation);
+                    if (!closed) {
+                        flushOperations(updateOperation);
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -100,18 +104,21 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
             });
         }
 
-        public void close() {
-            closed = true;
-            add(new Runnable() {
-                @Override
-                public void run() {
-                    // empty body
+        public void stop() {
+            if (!closed) {
+                closed = true;
+                add(new Runnable() {
+                    @Override
+                    public void run() {
+                        // empty body
+                    }
+                });
+                try {
+                    doneSignal.await();
+                } catch (InterruptedException e) {
+                    // ignore
                 }
-            });
-            try {
-                doneSignal.await();
-            } catch (InterruptedException e) {
-                // ignore
+                flushOperations(null);
             }
         }
     }
@@ -190,8 +197,8 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
 
         return new MultiProcessSafePersistentIndexedCache<K, V>() {
             public void close() {
-                cacheUpdateBatcher.close();
-                original.close();
+                cacheUpdateBatcher.stop();
+                //original.close();
             }
 
             public V get(final K key) {
