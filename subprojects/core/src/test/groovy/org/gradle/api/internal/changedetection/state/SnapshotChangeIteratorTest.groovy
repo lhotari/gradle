@@ -93,7 +93,7 @@ class SnapshotChangeIteratorTest extends Specification {
         SortedMap<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot> snapshots = new TreeMap<>()
         entries.each {
             String fileNumber = String.format("%02d", it)
-            snapshots.put("file$fileNumber".toString(), new DefaultFileCollectionSnapshotter.FileHashSnapshot("hash$fileNumber${changedEntriesSet.contains(it) ? ' changed' : ''}".bytes))
+            snapshots.put("file$fileNumber".toString(), new DefaultFileCollectionSnapshotter.FileHashSnapshot("hash$fileNumber${changedEntriesSet.contains(it) ? ' changed' : ''}".bytes, length, lastModified))
         }
         new DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl(snapshots)
     }

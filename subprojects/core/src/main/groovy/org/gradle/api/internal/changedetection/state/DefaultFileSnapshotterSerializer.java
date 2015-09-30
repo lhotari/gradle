@@ -40,7 +40,7 @@ class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollecti
                 byte hashSize = decoder.readByte();
                 byte[] hash = new byte[hashSize];
                 decoder.readBytes(hash);
-                snapshots.put(key, new DefaultFileCollectionSnapshotter.FileHashSnapshot(hash));
+                snapshots.put(key, new DefaultFileCollectionSnapshotter.FileHashSnapshot(hash, length, lastModified));
             } else {
                 throw new RuntimeException("Unable to read serialized file collection snapshot. Unrecognized value found in the data stream.");
             }

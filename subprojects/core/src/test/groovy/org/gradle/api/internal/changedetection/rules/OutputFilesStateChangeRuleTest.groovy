@@ -43,7 +43,7 @@ public class OutputFilesStateChangeRuleTest extends Specification {
         def previousExecution = Stub(TaskExecution) {
             getOutputFilesSnapshot() >> previousOutputSnapshot
         }
-        return OutputFilesStateChangeRule.create(task, previousExecution, Mock(TaskExecution), snapshotter)
+        return OutputFilesStateChangeRule.create(task, previousExecution, Mock(TaskExecution), snapshotter, fileSnapshotter)
     }
 
     def "emits change for no previous output snapshot"() {

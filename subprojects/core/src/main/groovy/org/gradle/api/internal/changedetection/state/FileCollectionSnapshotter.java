@@ -37,5 +37,5 @@ public interface FileCollectionSnapshotter {
      * @param files The files to snapshot
      * @return The snapshot.
      */
-    FileCollectionSnapshot snapshot(FileCollection files);
+    FileCollectionSnapshot snapshot(FileCollection files, FileSnapshotter snapshotter);
 }
