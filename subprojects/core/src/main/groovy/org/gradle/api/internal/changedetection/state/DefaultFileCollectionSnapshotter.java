@@ -157,14 +157,14 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
                 public FileCollectionSnapshot applyTo(FileCollectionSnapshot snapshot, final ChangeListener<Merge> listener) {
                     FileCollectionSnapshotImpl target = (FileCollectionSnapshotImpl) snapshot;
                     final SortedMap<String, IncrementalFileSnapshot> newSnapshots = new TreeMap<String, IncrementalFileSnapshot>(target.snapshotMap);
-                    diff(iterateEntryChangesSince(oldSnapshot), new MapMergeChangeListener<String, IncrementalFileSnapshot>(listener, newSnapshots));
+                    handleChanges(iterateEntryChangesSince(oldSnapshot), new MapMergeChangeListener<String, IncrementalFileSnapshot>(listener, newSnapshots));
                     return new FileCollectionSnapshotImpl(newSnapshots);
                 }
             };
         }
 
-        private void diff(ChangeIterator<Map.Entry<String, IncrementalFileSnapshot>> changeIterator,
-                          ChangeListener<Map.Entry<String, IncrementalFileSnapshot>> listener) {
+        static <T> void handleChanges(ChangeIterator<Map.Entry<String, T>> changeIterator,
+                                      ChangeListener<Map.Entry<String, T>> listener) {
             while (changeIterator.next(listener)) {
                 ;
             }

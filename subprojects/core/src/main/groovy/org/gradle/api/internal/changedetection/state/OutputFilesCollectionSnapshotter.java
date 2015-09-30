@@ -23,11 +23,14 @@ import org.gradle.internal.serialize.DefaultSerializerRegistry;
 import org.gradle.internal.serialize.LongSerializer;
 import org.gradle.internal.serialize.SerializerRegistry;
 import org.gradle.util.ChangeListener;
-import org.gradle.util.DiffUtil;
 import org.gradle.util.NoOpChangeListener;
 
 import java.io.File;
-import java.util.*;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import static org.gradle.api.internal.changedetection.state.DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl.handleChanges;
 
 /**
  * Takes a snapshot of the output files of a task. 2 parts to the algorithm:
@@ -135,17 +138,22 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         private ChangeIterator<String> iterateRootFileIdChanges(final OutputFilesSnapshot other) {
-            return new SortedMapChangeIterator<Long>(other.rootFileIds, this.rootFileIds) {
-                @Override
-                protected boolean compareValues(Long a, Long b) {
-                    if (a == null) {
-                        // Only care about rootIds that used to exist, and have changed or been removed
-                        return true;
-                    }
-                    return super.compareValues(a, b);
-                }
-            }.adaptToFilenameChangeIterator();
+            return createChangeIterator(other.rootFileIds, rootFileIds).adaptToFilenameChangeIterator();
         }
+
+    }
+
+    private static SortedMapChangeIterator<Long> createChangeIterator(final SortedMap<String, Long> otherRootFileIds, SortedMap<String, Long> rootFileIds) {
+        return new SortedMapChangeIterator<Long>(otherRootFileIds, rootFileIds) {
+            @Override
+            protected boolean compareValues(Long a, Long b) {
+                if (a == null) {
+                    // Only care about rootIds that used to exist, and have changed or been removed
+                    return true;
+                }
+                return super.compareValues(a, b);
+            }
+        };
     }
 
     /**
@@ -189,9 +197,10 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         public FileCollectionSnapshot applyTo(FileCollectionSnapshot snapshot,
                                               ChangeListener<FileCollectionSnapshot.Merge> listener) {
             OutputFilesSnapshot other = (OutputFilesSnapshot) snapshot;
-            Map<String, Long> dirIds = new HashMap<String, Long>(other.rootFileIds);
-            DiffUtil.diff(newFileIds, oldFileIds, new MapMergeChangeListener<String, Long>(
-                    new NoOpChangeListener<FileCollectionSnapshot.Merge>(), dirIds));
+            SortedMap<String, Long> dirIds = new TreeMap<String, Long>(other.rootFileIds);
+
+            handleChanges(createChangeIterator(oldFileIds, newFileIds), new MapMergeChangeListener<String, Long>(
+                new NoOpChangeListener<FileCollectionSnapshot.Merge>(), dirIds));
             return new OutputFilesSnapshot(newFileIds, filesDiff.applyTo(other.filesSnapshot, listener));
         }
 
