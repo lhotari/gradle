@@ -59,6 +59,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
         private final BlockingDeque<Runnable> cacheUpdatesQueue;
         private final CacheAccess cacheAccess;
         private final long batchWindow;
+        private boolean closed;
 
         CacheUpdateBatcher(CacheAccess cacheAccess, long batchWindow) {
             this.cacheAccess = cacheAccess;
@@ -72,21 +73,16 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
 
         @Override
         public void run() {
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!Thread.currentThread().isInterrupted() && !closed) {
                 try {
                     final Runnable updateOperation = cacheUpdatesQueue.take();
-                    if (batchWindow > 0) {
+                    if (!closed && batchWindow > 0) {
                         Thread.sleep(batchWindow);
                     }
                     flushOperations(updateOperation);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-            }
-            try {
-                flushOperations(null);
-            } catch (Exception e) {
-                // ignore
             }
         }
 
@@ -103,6 +99,11 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
                     }
                 }
             });
+        }
+
+        public void close() {
+            closed = true;
+            add(null);
         }
     }
 
@@ -180,6 +181,7 @@ public class InMemoryTaskArtifactCache implements CacheDecorator, Stoppable {
 
         return new MultiProcessSafePersistentIndexedCache<K, V>() {
             public void close() {
+                cacheUpdateBatcher.close();
                 original.close();
             }
 
