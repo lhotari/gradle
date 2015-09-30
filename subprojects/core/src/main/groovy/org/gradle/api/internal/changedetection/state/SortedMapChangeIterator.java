@@ -77,7 +77,7 @@ class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterato
                     currentThisUsed = true;
                 }
             } else {
-                int compareResult = currentThis.getKey().compareTo(currentOther.getKey());
+                int compareResult = compareKeys(currentThis.getKey(), currentOther.getKey());
                 if (compareResult > 0) {
                     listener.added(currentOther);
                     listenerCalled = true;
@@ -100,6 +100,10 @@ class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterato
             }
         }
         return false;
+    }
+
+    protected int compareKeys(String a, String b) {
+        return (a == b || (a.hashCode() == b.hashCode() && a.length() == b.length())) ? 0 : a.compareTo(b);
     }
 
     protected boolean compareValues(T a, T b) {
