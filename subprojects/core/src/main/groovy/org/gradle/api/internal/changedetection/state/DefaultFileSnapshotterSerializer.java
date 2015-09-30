@@ -40,6 +40,8 @@ class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollecti
                 byte hashSize = decoder.readByte();
                 byte[] hash = new byte[hashSize];
                 decoder.readBytes(hash);
+                long length = decoder.readLong();
+                long lastModified = decoder.readLong();
                 snapshots.put(key, new DefaultFileCollectionSnapshotter.FileHashSnapshot(hash, length, lastModified));
             } else {
                 throw new RuntimeException("Unable to read serialized file collection snapshot. Unrecognized value found in the data stream.");
@@ -59,9 +61,12 @@ class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollecti
                 encoder.writeByte((byte) 2);
             } else if (incrementalFileSnapshot instanceof DefaultFileCollectionSnapshotter.FileHashSnapshot) {
                 encoder.writeByte((byte) 3);
-                byte[] hash = ((DefaultFileCollectionSnapshotter.FileHashSnapshot) incrementalFileSnapshot).hash;
+                DefaultFileCollectionSnapshotter.FileHashSnapshot fileHashSnapshot = ((DefaultFileCollectionSnapshotter.FileHashSnapshot) incrementalFileSnapshot);
+                byte[] hash = fileHashSnapshot.hash;
                 encoder.writeByte((byte) hash.length);
                 encoder.writeBytes(hash);
+                encoder.writeLong(fileHashSnapshot.length);
+                encoder.writeLong(fileHashSnapshot.lastModified);
             }
         }
     }
