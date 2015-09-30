@@ -108,15 +108,15 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     static class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
-        final SortedMap<String, IncrementalFileSnapshot> snapshots;
+        final SortedMap<String, IncrementalFileSnapshot> snapshotMap;
 
-        public FileCollectionSnapshotImpl(SortedMap<String, IncrementalFileSnapshot> snapshots) {
-            this.snapshots = snapshots;
+        public FileCollectionSnapshotImpl(SortedMap<String, IncrementalFileSnapshot> snapshotMap) {
+            this.snapshotMap = snapshotMap;
         }
 
         public FileCollection getFiles() {
             List<File> files = new ArrayList<File>();
-            for (Map.Entry<String, IncrementalFileSnapshot> entry : snapshots.entrySet()) {
+            for (Map.Entry<String, IncrementalFileSnapshot> entry : snapshotMap.entrySet()) {
                 if (entry.getValue() instanceof FileHashSnapshot) {
                     files.add(new File(entry.getKey()));
                 }
@@ -124,10 +124,14 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             return new SimpleFileCollection(files);
         }
 
+        public SortedMap<String, IncrementalFileSnapshot> getSnapshotMap() {
+            return snapshotMap;
+        }
+
         public FilesSnapshotSet getSnapshot() {
             return new FilesSnapshotSet() {
                 public FileSnapshot findSnapshot(File file) {
-                    IncrementalFileSnapshot s = snapshots.get(file.getAbsolutePath());
+                    IncrementalFileSnapshot s = snapshotMap.get(file.getAbsolutePath());
                     if (s instanceof FileSnapshot) {
                         return (FileSnapshot) s;
                     }
@@ -137,11 +141,14 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         public ChangeIterator<String> iterateChangesSince(FileCollectionSnapshot oldSnapshot) {
+            return iterateEntryChangesSince(oldSnapshot).adaptToFilenameChangeIterator();
+        }
+
+        private SnapshotChangeIterator iterateEntryChangesSince(FileCollectionSnapshot oldSnapshot) {
             return new SnapshotChangeIterator(this, oldSnapshot);
         }
 
         public Diff changesSince(final FileCollectionSnapshot oldSnapshot) {
-            final FileCollectionSnapshotImpl other = (FileCollectionSnapshotImpl) oldSnapshot;
             return new Diff() {
                 public FileCollectionSnapshot applyTo(FileCollectionSnapshot snapshot) {
                     return applyTo(snapshot, new NoOpChangeListener<Merge>());
@@ -149,66 +156,21 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
                 public FileCollectionSnapshot applyTo(FileCollectionSnapshot snapshot, final ChangeListener<Merge> listener) {
                     FileCollectionSnapshotImpl target = (FileCollectionSnapshotImpl) snapshot;
-                    final SortedMap<String, IncrementalFileSnapshot> newSnapshots = new TreeMap<String, IncrementalFileSnapshot>(target.snapshots);
-                    diff(snapshots, other.snapshots, new MapMergeChangeListener<String, IncrementalFileSnapshot>(listener, newSnapshots));
+                    final SortedMap<String, IncrementalFileSnapshot> newSnapshots = new TreeMap<String, IncrementalFileSnapshot>(target.snapshotMap);
+                    diff(iterateEntryChangesSince(oldSnapshot), new MapMergeChangeListener<String, IncrementalFileSnapshot>(listener, newSnapshots));
                     return new FileCollectionSnapshotImpl(newSnapshots);
                 }
             };
         }
 
-        private void diff(SortedMap<String, IncrementalFileSnapshot> snapshots, SortedMap<String, IncrementalFileSnapshot> oldSnapshots,
+        private void diff(ChangeIterator<Map.Entry<String, IncrementalFileSnapshot>> changeIterator,
                           ChangeListener<Map.Entry<String, IncrementalFileSnapshot>> listener) {
-            Map<String, IncrementalFileSnapshot> otherSnapshots = new HashMap<String, IncrementalFileSnapshot>(oldSnapshots);
-            for (Map.Entry<String, IncrementalFileSnapshot> entry : snapshots.entrySet()) {
-                IncrementalFileSnapshot otherFile = otherSnapshots.remove(entry.getKey());
-                if (otherFile == null) {
-                    listener.added(entry);
-                } else if (!entry.getValue().isUpToDate(otherFile)) {
-                    listener.changed(entry);
-                }
-            }
-            for (Map.Entry<String, IncrementalFileSnapshot> entry : otherSnapshots.entrySet()) {
-                listener.removed(entry);
+            while (changeIterator.next(listener)) {
+                ;
             }
         }
     }
 
-    private static class SnapshotChangeIterator implements FileCollectionSnapshot.ChangeIterator<String> {
-        private final Iterator<Map.Entry<String, IncrementalFileSnapshot>> thisIterator;
-        private final Iterator<Map.Entry<String, IncrementalFileSnapshot>> otherIterator;
-        private Iterator<String> removedFiles;
-
-        public SnapshotChangeIterator(FileCollectionSnapshot snapshot, FileCollectionSnapshot oldSnapshot) {
-            this.thisIterator = ((FileCollectionSnapshotImpl) snapshot).snapshots.entrySet().iterator();
-            this.otherIterator = ((FileCollectionSnapshotImpl) oldSnapshot).snapshots.entrySet().iterator();
-        }
-
-        public boolean next(ChangeListener<String> listener) {
-            while (thisIterator.hasNext()) {
-                Map.Entry<String, IncrementalFileSnapshot> entry = thisIterator.next();
-                Map.Entry<String, IncrementalFileSnapshot> otherEntry = otherIterator.hasNext() ? otherIterator.next() : null;
-
-                if (otherEntry == null || !otherEntry.getKey().equals(entry.getKey())) {
-                    listener.added(entry.getKey());
-                    return true;
-                } else if (!entry.getValue().isUpToDate(otherEntry.getValue())) {
-                    listener.changed(entry.getKey());
-                    return true;
-                }
-            }
-
-            // Create a single iterator to use for all of the removed files
-            if (removedFiles == null) {
-                //removedFiles = otherSnapshots.keySet().iterator();
-            }
-
-            if (removedFiles.hasNext()) {
-                listener.removed(removedFiles.next());
-                return true;
-            }
-
-            return false;
-        }
-    }
 
 }
+

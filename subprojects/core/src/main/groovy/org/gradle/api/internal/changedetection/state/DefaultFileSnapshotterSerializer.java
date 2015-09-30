@@ -48,10 +48,10 @@ class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollecti
     }
 
     public void write(Encoder encoder, DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl value) throws Exception {
-        encoder.writeSmallInt(value.snapshots.size());
-        for (String key : value.snapshots.keySet()) {
+        encoder.writeSmallInt(value.snapshotMap.size());
+        for (String key : value.snapshotMap.keySet()) {
             encoder.writeString(key);
-            DefaultFileCollectionSnapshotter.IncrementalFileSnapshot incrementalFileSnapshot = value.snapshots.get(key);
+            DefaultFileCollectionSnapshotter.IncrementalFileSnapshot incrementalFileSnapshot = value.snapshotMap.get(key);
             if (incrementalFileSnapshot instanceof DefaultFileCollectionSnapshotter.DirSnapshot) {
                 encoder.writeByte((byte) 1);
             } else if (incrementalFileSnapshot instanceof DefaultFileCollectionSnapshotter.MissingFileSnapshot) {
