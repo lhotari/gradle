@@ -20,8 +20,8 @@ import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
 import org.gradle.internal.serialize.Serializer;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 class OutputFilesSnapshotSerializer implements Serializer<OutputFilesCollectionSnapshotter.OutputFilesSnapshot> {
     private final Serializer<FileCollectionSnapshot> serializer;
@@ -31,7 +31,7 @@ class OutputFilesSnapshotSerializer implements Serializer<OutputFilesCollectionS
     }
 
     public OutputFilesCollectionSnapshotter.OutputFilesSnapshot read(Decoder decoder) throws Exception {
-        Map<String, Long> rootFileIds = new HashMap<String, Long>();
+        SortedMap<String, Long> rootFileIds = new TreeMap<String, Long>();
         int rootFileIdsCount = decoder.readSmallInt();
         for (int i = 0; i < rootFileIdsCount; i++) {
             String key = decoder.readString();

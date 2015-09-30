@@ -61,11 +61,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     public FileCollectionSnapshot emptySnapshot() {
-        return new OutputFilesSnapshot(new HashMap<String, Long>(), snapshotter.emptySnapshot());
+        return new OutputFilesSnapshot(new TreeMap<String, Long>(), snapshotter.emptySnapshot());
     }
 
     public OutputFilesSnapshot snapshot(final FileCollection files) {
-        final Map<String, Long> snapshotDirIds = new HashMap<String, Long>();
+        final SortedMap<String, Long> snapshotDirIds = new TreeMap<String, Long>();
         final Set<File> theFiles = files.getFiles();
         cacheAccess.useCache("create dir snapshots", new Runnable() {
             public void run() {
@@ -90,10 +90,10 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     static class OutputFilesSnapshot implements FileCollectionSnapshot {
-        final Map<String, Long> rootFileIds;
+        final SortedMap<String, Long> rootFileIds;
         final FileCollectionSnapshot filesSnapshot;
 
-        public OutputFilesSnapshot(Map<String, Long> rootFileIds, FileCollectionSnapshot filesSnapshot) {
+        public OutputFilesSnapshot(SortedMap<String, Long> rootFileIds, FileCollectionSnapshot filesSnapshot) {
             this.rootFileIds = rootFileIds;
             this.filesSnapshot = filesSnapshot;
         }
@@ -202,11 +202,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     private static class OutputFilesDiff implements FileCollectionSnapshot.Diff {
-        private final Map<String, Long> newFileIds;
-        private final Map<String, Long> oldFileIds;
+        private final SortedMap<String, Long> newFileIds;
+        private final SortedMap<String, Long> oldFileIds;
         private final FileCollectionSnapshot.Diff filesDiff;
 
-        public OutputFilesDiff(Map<String, Long> newFileIds, Map<String, Long> oldFileIds,
+        public OutputFilesDiff(SortedMap<String, Long> newFileIds, SortedMap<String, Long> oldFileIds,
                                FileCollectionSnapshot.Diff filesDiff) {
             this.newFileIds = newFileIds;
             this.oldFileIds = oldFileIds;
