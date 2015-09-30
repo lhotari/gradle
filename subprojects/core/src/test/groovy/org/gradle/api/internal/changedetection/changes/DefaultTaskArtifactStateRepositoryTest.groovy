@@ -41,7 +41,7 @@ import static org.gradle.util.WrapUtil.toMap
 import static org.gradle.util.WrapUtil.toSet
 
 public class DefaultTaskArtifactStateRepositoryTest extends Specification {
-    
+
     @Rule
     public TestNameTestDirectoryProvider tmpDir = new TestNameTestDirectoryProvider()
     final project = TestUtil.createRootProject()
@@ -70,13 +70,14 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
     def setup() {
         CacheRepository cacheRepository = new DefaultCacheRepository(mapping, new InMemoryCacheFactory())
         TaskArtifactStateCacheAccess cacheAccess = new DefaultTaskArtifactStateCacheAccess(gradle, cacheRepository, new NoOpDecorator())
-        FileCollectionSnapshotter inputFilesSnapshotter = new DefaultFileCollectionSnapshotter(new CachingFileSnapshotter(new DefaultHasher(), cacheAccess), cacheAccess)
+        FileSnapshotter fileSnapshotter = new CachingFileSnapshotter(new DefaultHasher(), cacheAccess)
+        FileCollectionSnapshotter inputFilesSnapshotter = new DefaultFileCollectionSnapshotter(cacheAccess)
         FileCollectionSnapshotter outputFilesSnapshotter = new OutputFilesCollectionSnapshotter(inputFilesSnapshotter, new RandomLongIdGenerator(), cacheAccess)
         SerializerRegistry<FileCollectionSnapshot> serializerRegistry = new DefaultSerializerRegistry<FileCollectionSnapshot>();
         inputFilesSnapshotter.registerSerializers(serializerRegistry);
         outputFilesSnapshotter.registerSerializers(serializerRegistry);
         TaskHistoryRepository taskHistoryRepository = new CacheBackedTaskHistoryRepository(cacheAccess, new CacheBackedFileSnapshotRepository(cacheAccess, serializerRegistry.build(), new RandomLongIdGenerator()))
-        repository = new DefaultTaskArtifactStateRepository(taskHistoryRepository, DirectInstantiator.INSTANCE, outputFilesSnapshotter, inputFilesSnapshotter)
+        repository = new DefaultTaskArtifactStateRepository(taskHistoryRepository, DirectInstantiator.INSTANCE, outputFilesSnapshotter, inputFilesSnapshotter, fileSnapshotter)
     }
 
     def artifactsAreNotUpToDateWhenCacheIsEmpty() {
@@ -133,7 +134,7 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
     def artifactsAreNotUpToDateWhenAnyOutputFileHasChangedHash() {
         given:
         execute(task)
-        
+
         when:
         outputFile.write("new content")
 
@@ -144,7 +145,7 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
     def artifactsAreNotUpToDateWhenAnyFileInOutputDirHasChangedHash() {
         given:
         execute(task)
-        
+
         when:
         outputDirFile.write("new content")
 
@@ -329,14 +330,14 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
 
         TaskInternal task1 = builder.withOutputFiles(outputDir).createsFiles(outputDirFile).task()
         TaskInternal task2 = builder.withPath("other").withOutputFiles(outputDir).createsFiles(outputDirFile2).task()
-        
+
         when:
         TaskArtifactState state = repository.getStateFor(task1)
         state.afterTask()
-        
+
         then:
         !state.upToDate
-        
+
         when:
         outputDir.deleteDir()
 
@@ -346,11 +347,11 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
 
         then:
         !state.isUpToDate([])
-        
+
         when:
         task2.execute()
         state.afterTask()
-        
+
         then:
         // Task should be out-of-date
         outOfDate task1
@@ -390,7 +391,7 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
     def hasEmptyTaskHistoryWhenTaskHasNeverBeenExecuted() {
         when:
         TaskArtifactState state = repository.getStateFor(task)
-        
+
         then:
         state.getExecutionHistory().getOutputFiles().getFiles().isEmpty()
     }
@@ -401,7 +402,7 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
 
         when:
         TaskArtifactState state = repository.getStateFor(task)
-        
+
         then:
         state.getExecutionHistory().getOutputFiles().getFiles() == [outputFile, outputDirFile, outputDirFile2] as Set
     }
