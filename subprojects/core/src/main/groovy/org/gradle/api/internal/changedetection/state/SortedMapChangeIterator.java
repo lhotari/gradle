@@ -103,7 +103,7 @@ class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterato
     }
 
     protected boolean compareValues(T a, T b) {
-        return a.equals(b);
+        return a == b || a != null && b != null && a.equals(b);
     }
 
     private static class ChangeIteratorAdapter<T> implements ChangeListener<Map.Entry<String, T>> {

@@ -135,43 +135,16 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         private ChangeIterator<String> iterateRootFileIdChanges(final OutputFilesSnapshot other) {
-            // Inlining DiffUtil.diff makes the inefficiencies here a bit more explicit
-            Map<String, Long> added = new HashMap<String, Long>(rootFileIds);
-            added.keySet().removeAll(other.rootFileIds.keySet());
-            final Iterator<String> addedIterator = added.keySet().iterator();
-
-            Map<String, Long> removed = new HashMap<String, Long>(other.rootFileIds);
-            removed.keySet().removeAll(rootFileIds.keySet());
-            final Iterator<String> removedIterator = removed.keySet().iterator();
-
-            Set<String> changed = new HashSet<String>();
-            for (Map.Entry<String, Long> current : rootFileIds.entrySet()) {
-                 // Only care about rootIds that used to exist, and have changed or been removed
-                Long otherValue = other.rootFileIds.get(current.getKey());
-                if (otherValue != null && !otherValue.equals(current.getValue())) {
-                    changed.add(current.getKey());
+            return new SortedMapChangeIterator<Long>(other.rootFileIds, this.rootFileIds) {
+                @Override
+                protected boolean compareValues(Long a, Long b) {
+                    if (a == null) {
+                        // Only care about rootIds that used to exist, and have changed or been removed
+                        return true;
+                    }
+                    return super.compareValues(a, b);
                 }
-            }
-            final Iterator<String> changedIterator = changed.iterator();
-
-            return new ChangeIterator<String>() {
-                public boolean next(ChangeListener<String> listener) {
-                    if (addedIterator.hasNext()) {
-                        listener.added(addedIterator.next());
-                        return true;
-                    }
-                    if (removedIterator.hasNext()) {
-                        listener.removed(removedIterator.next());
-                        return true;
-                    }
-                    if (changedIterator.hasNext()) {
-                        listener.changed(changedIterator.next());
-                        return true;
-                    }
-
-                    return false;
-                }
-            };
+            }.adaptToFilenameChangeIterator();
         }
     }
 
