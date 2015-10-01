@@ -125,7 +125,7 @@ class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterato
     }
 
     protected int compareKeys(String a, String b) {
-        return (a == b || (a.hashCode() == b.hashCode() && a.length() == b.length())) ? 0 : a.compareTo(b);
+        return (a == b) ? 0 : a.compareTo(b);
     }
 
     protected boolean compareValues(T a, T b) {
