@@ -42,7 +42,7 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         final LazyTaskExecution currentExecution = new LazyTaskExecution();
         currentExecution.snapshotRepository = snapshotRepository;
         currentExecution.cacheAccess = cacheAccess;
-        currentExecution.setOutputFiles(outputFiles(task));
+        addOutputFiles(task, currentExecution);
         final LazyTaskExecution previousExecution = findPreviousExecution(currentExecution, history);
         if (previousExecution != null) {
             previousExecution.snapshotRepository = snapshotRepository;
@@ -100,12 +100,15 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         });
     }
 
-    private static Set<String> outputFiles(TaskInternal task) {
+    private static void addOutputFiles(TaskInternal task, LazyTaskExecution execution) {
+        Collection<File> outputFileFiles = new ArrayList<File>();
         Set<String> outputFiles = new HashSet<String>();
         for (File file : task.getOutputs().getFiles()) {
             outputFiles.add(file.getAbsolutePath());
+            outputFileFiles.add(file);
         }
-        return outputFiles;
+        execution.setOutputFiles(outputFiles);
+        execution.originalOutputFiles = outputFileFiles;
     }
 
     private LazyTaskExecution findPreviousExecution(TaskExecution currentExecution, TaskHistory history) {
@@ -190,6 +193,7 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         private transient FileCollectionSnapshot inputFilesSnapshot;
         private transient FileCollectionSnapshot outputFilesSnapshot;
         private transient TaskArtifactStateCacheAccess cacheAccess;
+        private transient Collection<File> originalOutputFiles;
 
         @Override
         public FileCollectionSnapshot getInputFilesSnapshot() {
@@ -207,6 +211,19 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         public void setInputFilesSnapshot(FileCollectionSnapshot inputFilesSnapshot) {
             this.inputFilesSnapshot = inputFilesSnapshot;
             this.inputFilesSnapshotId = null;
+        }
+
+        @Override
+        public Iterable<File> getOutputFileFiles() {
+            if (originalOutputFiles == null) {
+                synchronized (this) {
+                    originalOutputFiles = new ArrayList<File>(getOutputFiles().size());
+                    for (String file : getOutputFiles()) {
+                        originalOutputFiles.add(new File(file));
+                    }
+                }
+            }
+            return originalOutputFiles;
         }
 
         @Override

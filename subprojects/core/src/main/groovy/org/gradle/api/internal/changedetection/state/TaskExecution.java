@@ -15,6 +15,8 @@
  */
 package org.gradle.api.internal.changedetection.state;
 
+import java.io.File;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,6 +35,8 @@ public abstract class TaskExecution {
     public void setOutputFiles(Set<String> outputFiles) {
         this.outputFiles = outputFiles;
     }
+
+    public abstract Iterable<File> getOutputFileFiles();
 
     public String getTaskClass() {
         return taskClass;

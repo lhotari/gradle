@@ -32,7 +32,7 @@ import java.util.Iterator;
 class OutputFilesStateChangeRule {
 
     public static TaskStateChanges create(final TaskInternal task, final TaskExecution previousExecution, final TaskExecution currentExecution, final FileCollectionSnapshotter outputFilesSnapshotter, final FileSnapshotter fileSnapshotter) {
-        final FileCollectionSnapshot outputFilesBefore = outputFilesSnapshotter.snapshot(task.getOutputs().getFiles(), fileSnapshotter);
+        final FileCollectionSnapshot outputFilesBefore = outputFilesSnapshotter.snapshot(currentExecution.getOutputFileFiles(), fileSnapshotter);
 
         return new TaskStateChanges() {
 
