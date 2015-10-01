@@ -35,11 +35,11 @@ class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterato
     }
 
     static <T> SortedMap<String, T> createSortedMap() {
-        return new TreeMap<String, T>(StringHashCodeComparator.INSTANCE);
+        return new TreeMap<String, T>(StringComparator.INSTANCE);
     }
 
     static <T> SortedMap<String, T> createSortedMap(SortedMap<String, T> copyOf) {
-        if (copyOf.comparator() instanceof StringHashCodeComparator) {
+        if (copyOf.comparator() instanceof StringComparator) {
             return new TreeMap<String, T>(copyOf);
         } else {
             SortedMap<String, T> copy = createSortedMap();
@@ -48,16 +48,12 @@ class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterato
         }
     }
 
-    static class StringHashCodeComparator implements Comparator<String>, Serializable {
-        private static final StringHashCodeComparator INSTANCE = new StringHashCodeComparator();
+    static class StringComparator implements Comparator<String>, Serializable {
+        private static final StringComparator INSTANCE = new StringComparator();
 
         @Override
         public int compare(String o1, String o2) {
-            int retval = o1.hashCode() - o2.hashCode();
-            if (retval == 0) {
-                retval = o1.length() - o2.length();
-            }
-            return retval;
+            return o1.compareTo(o2);
         }
     }
 
