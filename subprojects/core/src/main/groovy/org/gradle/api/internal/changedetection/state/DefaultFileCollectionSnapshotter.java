@@ -16,7 +16,10 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import org.gradle.api.file.EmptyFileVisitor;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileTree;
+import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.internal.serialize.SerializerRegistry;
 import org.gradle.util.ChangeListener;
@@ -27,11 +30,9 @@ import java.math.BigInteger;
 import java.util.*;
 
 public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshotter {
-    private final FileSnapshotter snapshotter;
     private TaskArtifactStateCacheAccess cacheAccess;
 
-    public DefaultFileCollectionSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess) {
-        this.snapshotter = snapshotter;
+    public DefaultFileCollectionSnapshotter(TaskArtifactStateCacheAccess cacheAccess) {
         this.cacheAccess = cacheAccess;
     }
 
@@ -43,23 +44,26 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         return new FileCollectionSnapshotImpl(new HashMap<String, IncrementalFileSnapshot>());
     }
 
-    public FileCollectionSnapshot snapshot(FileCollection input) {
-        final Set<File> files = input.getAsFileTree().getFiles();
-        if (files.isEmpty()) {
-            return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
-        }
-        final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>(files.size());
+    public FileCollectionSnapshot snapshot(FileCollection input, final FileSnapshotter snapshotter) {
+        final FileTree fileTree = input.getAsFileTree();
+        final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
-                for (File file : files) {
-                    if (file.isFile()) {
-                        snapshots.put(file.getAbsolutePath(), new FileHashSnapshot(snapshotter.snapshot(file).getHash()));
-                    } else if (file.isDirectory()) {
-                        snapshots.put(file.getAbsolutePath(), new DirSnapshot());
-                    } else {
-                        snapshots.put(file.getAbsolutePath(), new MissingFileSnapshot());
+                fileTree.visit(new EmptyFileVisitor() {
+                    @Override
+                    public void visitFile(FileVisitDetails fileDetails) {
+                        File file = fileDetails.getFile();
+                        String absolutePath = file.getAbsolutePath();
+                        if (file.isFile()) {
+                            FileSnapshot fileSnapshot = snapshotter.snapshot(file);
+                            snapshots.put(absolutePath, new FileHashSnapshot(fileSnapshot.getHash(), fileSnapshot.length(), fileSnapshot.lastModified()));
+                        } else if (file.isDirectory()) {
+                            snapshots.put(absolutePath, new DirSnapshot());
+                        } else {
+                            snapshots.put(absolutePath, new MissingFileSnapshot());
+                        }
                     }
-                }
+                });
             }
         });
         return new FileCollectionSnapshotImpl(snapshots);
@@ -71,9 +75,13 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
     static class FileHashSnapshot implements IncrementalFileSnapshot, FileSnapshot {
         final byte[] hash;
+        final long length;
+        final long lastModified;
 
-        public FileHashSnapshot(byte[] hash) {
+        public FileHashSnapshot(byte[] hash, long length, long lastModified) {
             this.hash = hash;
+            this.length = length;
+            this.lastModified = lastModified;
         }
 
         public boolean isUpToDate(IncrementalFileSnapshot snapshot) {
@@ -92,6 +100,16 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
         public byte[] getHash() {
             return hash;
+        }
+
+        @Override
+        public long length() {
+            return length;
+        }
+
+        @Override
+        public long lastModified() {
+            return lastModified;
         }
     }
 
