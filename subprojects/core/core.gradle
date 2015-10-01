@@ -41,6 +41,8 @@ dependencies {
     compile libraries.jul_to_slf4j
     compile module('com.googlecode.jarjar:jarjar:1.3')
     compile libraries.inject
+    
+    compile 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'
 
     compile project(":cli")
     compile project(":native")

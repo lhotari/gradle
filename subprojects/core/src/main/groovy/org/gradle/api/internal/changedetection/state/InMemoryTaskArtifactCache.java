@@ -16,7 +16,8 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import com.google.common.cache.*;
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+import com.googlecode.concurrentlinkedhashmap.EvictionListener;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -27,6 +28,7 @@ import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 public class InMemoryTaskArtifactCache implements CacheDecorator {
     private final static Logger LOG = Logging.getLogger(InMemoryTaskArtifactCache.class);
@@ -83,14 +85,14 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
 
 
     private final Object lock = new Object();
-    private final Cache<String, Cache<Object, Object>> cache = CacheBuilder.newBuilder()
-            .maximumSize(CACHE_CAPS.size() * 2) //X2 to factor in a child build (for example buildSrc)
-            .build();
+    private final ConcurrentMap<String, ConcurrentMap<Object, Object>> caches = new ConcurrentLinkedHashMap.Builder<String, ConcurrentMap<Object, Object>>()
+        .maximumWeightedCapacity(CACHE_CAPS.size() * 2) //X2 to factor in a child build (for example buildSrc)
+        .build();
 
     private final Map<String, FileLock.State> states = new HashMap<String, FileLock.State>();
 
     public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original) {
-        final Cache<Object, Object> data = loadData(cacheId, cacheName);
+        final ConcurrentMap<Object, Object> data = loadData(cacheId, cacheName);
 
         return new MultiProcessSafePersistentIndexedCache<K, V>() {
             public void close() {
@@ -99,10 +101,10 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
 
             public V get(K key) {
                 assert key instanceof String || key instanceof Long || key instanceof File : "Unsupported key type: " + key;
-                Object value = data.getIfPresent(key);
+                Object value = data.get(key);
                 if (value == NULL) {
                     return null;
-                }
+                } else
                 if (value != null) {
                     return (V) value;
                 }
@@ -129,8 +131,8 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
                 }
 
                 if (outOfDate) {
-                    LOG.info("Invalidating in-memory cache of {}", cacheId);
-                    data.invalidateAll();
+                    LOG.info("Invalidating in-memory ConcurrentMap of {}", cacheId);
+                    data.clear();
                 }
             }
 
@@ -142,31 +144,34 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
         };
     }
 
-    private Cache<Object, Object> loadData(String cacheId, String cacheName) {
-        Cache<Object, Object> theData;
+    private ConcurrentMap<Object, Object> loadData(String cacheId, String cacheName) {
+        ConcurrentMap<Object, Object> theData;
         synchronized (lock) {
-            theData = this.cache.getIfPresent(cacheId);
+            theData = this.caches.get(cacheId);
             if (theData != null) {
-                LOG.info("In-memory cache of {}: Size{{}}, {}", cacheId, theData.size() , theData.stats());
+                LOG.info("In-memory ConcurrentMap of {}: Size{{}}", cacheId, theData.size());
             } else {
                 Integer maxSize = CACHE_CAPS.get(cacheName);
-                assert maxSize != null : "Unknown cache.";
-                LOG.info("Creating In-memory cache of {}: MaxSize{{}}", cacheId, maxSize);
+                assert maxSize != null : "Unknown ConcurrentMap.";
+                LOG.info("Creating In-memory ConcurrentMap of {}: MaxSize{{}}", cacheId, maxSize);
                 LoggingEvictionListener evictionListener = new LoggingEvictionListener(cacheId, maxSize);
-                theData = CacheBuilder.newBuilder().maximumSize(maxSize).initialCapacity(maxSize).recordStats().removalListener(evictionListener).build();
+                theData = new ConcurrentLinkedHashMap.Builder<Object, Object>().maximumWeightedCapacity(maxSize).initialCapacity(maxSize).listener(evictionListener).build();
                 evictionListener.setCache(theData);
-                this.cache.put(cacheId, theData);
+                ConcurrentMap<Object, Object> previousEntry = this.caches.putIfAbsent(cacheId, theData);
+                if (previousEntry != null) {
+                    theData = previousEntry;
+                }
             }
         }
         return theData;
     }
 
-    private static class LoggingEvictionListener implements RemovalListener<Object, Object> {
+    private static class LoggingEvictionListener implements EvictionListener<Object, Object> {
         private static Logger logger = Logging.getLogger(LoggingEvictionListener.class);
-        private static final String EVICTION_MITIGATION_MESSAGE = "\nPerformance may suffer from in-memory cache misses. Increase max heap size of Gradle build process to reduce cache misses.";
+        private static final String EVICTION_MITIGATION_MESSAGE = "\nPerformance may suffer from in-memory ConcurrentMap misses. Increase max heap size of Gradle build process to reduce ConcurrentMap misses.";
         volatile int evictionCounter;
         private final String cacheId;
-        private Cache<Object, Object> cache;
+        private ConcurrentMap<Object, Object> ConcurrentMap;
         private final int maxSize;
         private final int logInterval;
 
@@ -176,18 +181,16 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
             this.logInterval = maxSize / 10;
         }
 
-        public void setCache(Cache<Object, Object> cache) {
-            this.cache = cache;
+        public void setCache(ConcurrentMap<Object, Object> ConcurrentMap) {
+            this.ConcurrentMap = ConcurrentMap;
         }
 
         @Override
-        public void onRemoval(RemovalNotification<Object, Object> notification) {
-            if (notification.getCause() == RemovalCause.SIZE) {
-                if (evictionCounter % logInterval == 0) {
-                    logger.log(LogLevel.INFO, "Cache entries evicted. In-memory cache of {}: Size{{}} MaxSize{{}}, {} {}", cacheId, cache.size(), maxSize, cache.stats(), EVICTION_MITIGATION_MESSAGE);
-                }
-                evictionCounter++;
+        public void onEviction(Object key, Object value) {
+            if (evictionCounter % logInterval == 0) {
+                logger.log(LogLevel.INFO, "ConcurrentMap entries evicted. In-memory ConcurrentMap of {}: Size{{}} MaxSize{{}}, {}", cacheId, ConcurrentMap.size(), maxSize, EVICTION_MITIGATION_MESSAGE);
             }
+            evictionCounter++;
         }
     }
 }
