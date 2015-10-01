@@ -18,9 +18,8 @@ package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.util.ChangeListener;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
+import java.io.Serializable;
+import java.util.*;
 
 class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterator<Map.Entry<String, T>> {
     private final Iterator<Map.Entry<String, T>> thisIterator;
@@ -33,6 +32,33 @@ class SortedMapChangeIterator<T> implements FileCollectionSnapshot.ChangeIterato
     public SortedMapChangeIterator(SortedMap<String, T> snapshot, SortedMap<String, T> oldSnapshot) {
         this.thisIterator = snapshot.entrySet().iterator();
         this.otherIterator = oldSnapshot.entrySet().iterator();
+    }
+
+    static <T> SortedMap<String, T> createSortedMap() {
+        return new TreeMap<String, T>(StringHashCodeComparator.INSTANCE);
+    }
+
+    static <T> SortedMap<String, T> createSortedMap(SortedMap<String, T> copyOf) {
+        if (copyOf.comparator() instanceof StringHashCodeComparator) {
+            return new TreeMap<String, T>(copyOf);
+        } else {
+            SortedMap<String, T> copy = createSortedMap();
+            copy.putAll(copyOf);
+            return copy;
+        }
+    }
+
+    static class StringHashCodeComparator implements Comparator<String>, Serializable {
+        private static final StringHashCodeComparator INSTANCE = new StringHashCodeComparator();
+
+        @Override
+        public int compare(String o1, String o2) {
+            int retval = o1.hashCode() - o2.hashCode();
+            if (retval == 0) {
+                retval = o1.length() - o2.length();
+            }
+            return retval;
+        }
     }
 
     private boolean pickNext() {

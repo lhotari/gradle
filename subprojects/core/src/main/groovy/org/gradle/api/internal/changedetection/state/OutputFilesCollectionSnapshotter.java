@@ -28,7 +28,6 @@ import org.gradle.util.NoOpChangeListener;
 import java.io.File;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import static org.gradle.api.internal.changedetection.state.DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl.handleChanges;
 
@@ -64,11 +63,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     public FileCollectionSnapshot emptySnapshot() {
-        return new OutputFilesSnapshot(new TreeMap<String, Long>(), snapshotter.emptySnapshot());
+        return new OutputFilesSnapshot(SortedMapChangeIterator.<Long>createSortedMap(), snapshotter.emptySnapshot());
     }
 
     public OutputFilesSnapshot snapshot(final FileCollection files, final FileSnapshotter fileSnapshotter) {
-        final SortedMap<String, Long> snapshotDirIds = new TreeMap<String, Long>();
+        final SortedMap<String, Long> snapshotDirIds = SortedMapChangeIterator.createSortedMap();
         final Set<File> theFiles = files.getFiles();
         cacheAccess.useCache("create dir snapshots", new Runnable() {
             public void run() {
@@ -197,7 +196,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         public FileCollectionSnapshot applyTo(FileCollectionSnapshot snapshot,
                                               ChangeListener<FileCollectionSnapshot.Merge> listener) {
             OutputFilesSnapshot other = (OutputFilesSnapshot) snapshot;
-            SortedMap<String, Long> dirIds = new TreeMap<String, Long>(other.rootFileIds);
+            SortedMap<String, Long> dirIds = SortedMapChangeIterator.createSortedMap(other.rootFileIds);
 
             handleChanges(createChangeIterator(oldFileIds, newFileIds), new MapMergeChangeListener<String, Long>(
                 new NoOpChangeListener<FileCollectionSnapshot.Merge>(), dirIds));

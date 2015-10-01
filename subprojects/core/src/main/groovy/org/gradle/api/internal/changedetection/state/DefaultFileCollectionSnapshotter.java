@@ -41,12 +41,12 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     public FileCollectionSnapshot emptySnapshot() {
-        return new FileCollectionSnapshotImpl(new TreeMap<String, IncrementalFileSnapshot>());
+        return new FileCollectionSnapshotImpl(SortedMapChangeIterator.<IncrementalFileSnapshot>createSortedMap());
     }
 
     public FileCollectionSnapshot snapshot(FileCollection input, final FileSnapshotter snapshotter) {
         final FileTree fileTree = input.getAsFileTree();
-        final SortedMap<String, IncrementalFileSnapshot> snapshots = new TreeMap<String, IncrementalFileSnapshot>();
+        final SortedMap<String, IncrementalFileSnapshot> snapshots = SortedMapChangeIterator.createSortedMap();
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
                 fileTree.visit(new EmptyFileVisitor() {
@@ -174,7 +174,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
                 public FileCollectionSnapshot applyTo(FileCollectionSnapshot snapshot, final ChangeListener<Merge> listener) {
                     FileCollectionSnapshotImpl target = (FileCollectionSnapshotImpl) snapshot;
-                    final SortedMap<String, IncrementalFileSnapshot> newSnapshots = new TreeMap<String, IncrementalFileSnapshot>(target.snapshotMap);
+                    final SortedMap<String, IncrementalFileSnapshot> newSnapshots = SortedMapChangeIterator.createSortedMap(target.snapshotMap);
                     handleChanges(iterateEntryChangesSince(oldSnapshot), new MapMergeChangeListener<String, IncrementalFileSnapshot>(listener, newSnapshots));
                     return new FileCollectionSnapshotImpl(newSnapshots);
                 }

@@ -22,11 +22,10 @@ import org.gradle.internal.serialize.Serializer;
 
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 class DefaultFileSnapshotterSerializer implements Serializer<DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl> {
     public DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl read(Decoder decoder) throws Exception {
-        SortedMap<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot> snapshots = new TreeMap<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot>();
+        SortedMap<String, DefaultFileCollectionSnapshotter.IncrementalFileSnapshot> snapshots = SortedMapChangeIterator.createSortedMap();
         DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl snapshot = new DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl(snapshots);
         int snapshotsCount = decoder.readSmallInt();
         for (int i = 0; i < snapshotsCount; i++) {
