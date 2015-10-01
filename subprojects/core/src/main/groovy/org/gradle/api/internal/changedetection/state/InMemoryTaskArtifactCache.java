@@ -23,14 +23,10 @@ import org.gradle.api.logging.Logging;
 import org.gradle.cache.internal.CacheDecorator;
 import org.gradle.cache.internal.FileLock;
 import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache;
-import org.gradle.internal.Cast;
-import org.gradle.internal.UncheckedException;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 public class InMemoryTaskArtifactCache implements CacheDecorator {
     private final static Logger LOG = Logging.getLogger(InMemoryTaskArtifactCache.class);
@@ -101,21 +97,18 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
                 original.close();
             }
 
-            public V get(final K key) {
+            public V get(K key) {
                 assert key instanceof String || key instanceof Long || key instanceof File : "Unsupported key type: " + key;
-                Object value = null;
-                try {
-                    value = data.get(key, new Callable<Object>() {
-                        @Override
-                        public Object call() throws Exception {
-                            Object newValue = original.get(key);
-                            return (newValue == null) ? NULL : newValue;
-                        }
-                    });
-                } catch (ExecutionException e) {
-                    throw UncheckedException.throwAsUncheckedException(e);
+                Object value = data.getIfPresent(key);
+                if (value == NULL) {
+                    return null;
                 }
-                return Cast.uncheckedCast((value == NULL) ? null : value);
+                if (value != null) {
+                    return (V) value;
+                }
+                V out = original.get(key);
+                data.put(key, out == null ? NULL : out);
+                return out;
             }
 
             public void put(K key, V value) {
