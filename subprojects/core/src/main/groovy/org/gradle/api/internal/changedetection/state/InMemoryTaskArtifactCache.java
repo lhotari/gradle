@@ -149,21 +149,23 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
         };
     }
 
-    private Cache<Object, Object> loadData(String cacheId, String cacheName) {
+    private Cache<Object, Object> loadData(final String cacheId, final String cacheName) {
         Cache<Object, Object> theData;
-        synchronized (lock) {
-            theData = this.cache.getIfPresent(cacheId);
-            if (theData != null) {
-                LOG.info("In-memory cache of {}: Size{{}}, {}", cacheId, theData.size() , theData.stats());
-            } else {
-                Integer maxSize = CACHE_CAPS.get(cacheName);
-                assert maxSize != null : "Unknown cache.";
-                LOG.info("Creating In-memory cache of {}: MaxSize{{}}", cacheId, maxSize);
-                LoggingEvictionListener evictionListener = new LoggingEvictionListener(cacheId, maxSize);
-                theData = CacheBuilder.newBuilder().maximumSize(maxSize).initialCapacity(maxSize).recordStats().removalListener(evictionListener).build();
-                evictionListener.setCache(theData);
-                this.cache.put(cacheId, theData);
-            }
+        try {
+            theData = this.cache.get(cacheId, new Callable<Cache<Object, Object>>() {
+                @Override
+                public Cache<Object, Object> call() throws Exception {
+                    Integer maxSize = CACHE_CAPS.get(cacheName);
+                    assert maxSize != null : "Unknown cache.";
+                    LOG.info("Creating In-memory cache of {}: MaxSize{{}}", cacheId, maxSize);
+                    LoggingEvictionListener evictionListener = new LoggingEvictionListener(cacheId, maxSize);
+                    Cache<Object, Object> newCache = CacheBuilder.newBuilder().maximumSize(maxSize).initialCapacity(maxSize).recordStats().removalListener(evictionListener).build();
+                    evictionListener.setCache(newCache);
+                    return newCache;
+                }
+            });
+        } catch (ExecutionException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
         }
         return theData;
     }
