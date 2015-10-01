@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.collect.Iterables;
 import org.gradle.api.file.FileCollection;
 import org.gradle.cache.PersistentIndexedCache;
 import org.gradle.internal.id.IdGenerator;
@@ -64,9 +65,10 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         return new OutputFilesSnapshot(new HashMap<String, Long>(), snapshotter.emptySnapshot());
     }
 
-    public OutputFilesSnapshot snapshot(final FileCollection files, final FileSnapshotter fileSnapshotter) {
+    public OutputFilesSnapshot snapshot(final Iterable<File> files, final FileSnapshotter fileSnapshotter) {
         final Map<String, Long> snapshotDirIds = new HashMap<String, Long>();
-        final Set<File> theFiles = files.getFiles();
+        final Collection<File> theFiles = new LinkedList<File>();
+        Iterables.addAll(theFiles, files);
         cacheAccess.useCache("create dir snapshots", new Runnable() {
             public void run() {
                 for (File file : theFiles) {
@@ -86,7 +88,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
 
             }
         });
-        return new OutputFilesSnapshot(snapshotDirIds, snapshotter.snapshot(files, fileSnapshotter));
+        return new OutputFilesSnapshot(snapshotDirIds, snapshotter.snapshot(theFiles, fileSnapshotter));
     }
 
     static class OutputFilesSnapshot implements FileCollectionSnapshot {
@@ -218,7 +220,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
             OutputFilesSnapshot other = (OutputFilesSnapshot) snapshot;
             Map<String, Long> dirIds = new HashMap<String, Long>(other.rootFileIds);
             DiffUtil.diff(newFileIds, oldFileIds, new MapMergeChangeListener<String, Long>(
-                    new NoOpChangeListener<FileCollectionSnapshot.Merge>(), dirIds));
+                new NoOpChangeListener<FileCollectionSnapshot.Merge>(), dirIds));
             return new OutputFilesSnapshot(newFileIds, filesDiff.applyTo(other.filesSnapshot, listener));
         }
 

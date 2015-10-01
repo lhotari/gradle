@@ -15,8 +15,9 @@
  */
 package org.gradle.api.internal.changedetection.state;
 
-import org.gradle.api.file.FileCollection;
 import org.gradle.internal.serialize.SerializerRegistry;
+
+import java.io.File;
 
 public interface FileCollectionSnapshotter {
     /**
@@ -37,5 +38,5 @@ public interface FileCollectionSnapshotter {
      * @param files The files to snapshot
      * @return The snapshot.
      */
-    FileCollectionSnapshot snapshot(FileCollection files, FileSnapshotter snapshotter);
+    FileCollectionSnapshot snapshot(Iterable<File> files, FileSnapshotter snapshotter);
 }

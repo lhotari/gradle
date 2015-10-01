@@ -56,7 +56,7 @@ public class TaskUpToDateState {
         // Capture inputs state
         try {
             FileSnapshotter inputFileSnapshotter = lastExecution != null ? new PreviousSnapshotLookupFileSnapshotter(fileSnapshotter, lastExecution.getInputFilesSnapshot().getSnapshot()) : fileSnapshotter;
-            FileCollectionSnapshot inputFilesSnapshot = inputFilesSnapshotter.snapshot(task.getInputs().getFiles(), inputFileSnapshotter);
+            FileCollectionSnapshot inputFilesSnapshot = inputFilesSnapshotter.snapshot(task.getInputs().getFiles().getAsFileTree(), inputFileSnapshotter);
             this.inputFilesSnapshot = inputFilesSnapshot.getSnapshot();
             inputFilesState = caching(InputFilesStateChangeRule.create(lastExecution, thisExecution, inputFilesSnapshot));
         } catch (UncheckedIOException e) {

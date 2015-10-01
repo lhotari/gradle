@@ -16,10 +16,7 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import org.gradle.api.file.EmptyFileVisitor;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileTree;
-import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.internal.serialize.SerializerRegistry;
 import org.gradle.util.ChangeListener;
@@ -44,26 +41,21 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         return new FileCollectionSnapshotImpl(new HashMap<String, IncrementalFileSnapshot>());
     }
 
-    public FileCollectionSnapshot snapshot(FileCollection input, final FileSnapshotter snapshotter) {
-        final FileTree fileTree = input.getAsFileTree();
+    public FileCollectionSnapshot snapshot(final Iterable<File> files, final FileSnapshotter snapshotter) {
         final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
-                fileTree.visit(new EmptyFileVisitor() {
-                    @Override
-                    public void visitFile(FileVisitDetails fileDetails) {
-                        File file = fileDetails.getFile();
-                        String absolutePath = file.getAbsolutePath();
-                        if (file.isFile()) {
-                            FileSnapshot fileSnapshot = snapshotter.snapshot(file);
-                            snapshots.put(absolutePath, new FileHashSnapshot(fileSnapshot.getHash(), fileSnapshot.length(), fileSnapshot.lastModified()));
-                        } else if (file.isDirectory()) {
-                            snapshots.put(absolutePath, new DirSnapshot());
-                        } else {
-                            snapshots.put(absolutePath, new MissingFileSnapshot());
-                        }
+                for (File file : files) {
+                    String absolutePath = file.getAbsolutePath();
+                    if (file.isFile()) {
+                        FileSnapshot fileSnapshot = snapshotter.snapshot(file);
+                        snapshots.put(absolutePath, new FileHashSnapshot(fileSnapshot.getHash(), fileSnapshot.length(), fileSnapshot.lastModified()));
+                    } else if (file.isDirectory()) {
+                        snapshots.put(absolutePath, new DirSnapshot());
+                    } else {
+                        snapshots.put(absolutePath, new MissingFileSnapshot());
                     }
-                });
+                }
             }
         });
         return new FileCollectionSnapshotImpl(snapshots);
