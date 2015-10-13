@@ -243,4 +243,28 @@ class Jdk7DirectoryWalkerTest extends Specification {
         walkerInstance << [new DirectoryFileTree.DefaultDirectoryWalker(), new Jdk7DirectoryWalker()]
     }
 
+
+    def "file walker sees a snapshot of tree even if the tree is modified after walking has started"() {
+        given:
+        def rootDir = tmpDir.createDir("root")
+        def file1 = rootDir.createFile("a/b/1.txt")
+        file1 << '12345'
+        def file2 = rootDir.createFile("a/b/2.txt")
+        file2 << '12345'
+        def file3 = rootDir.createFile("a/b/3.txt")
+        file3 << '12345'
+        def walkerInstance = new Jdk7DirectoryWalker()
+        def fileTree = new DirectoryFileTree(rootDir, new PatternSet(), { walkerInstance } as Factory)
+        def visited = []
+        def visitClosure = { visited << it }
+        def fileVisitor = [visitFile: visitClosure, visitDir: visitClosure] as FileVisitor
+
+        when:
+        fileTree.visit(fileVisitor)
+        rootDir.deleteDir()
+
+        then:
+        visited.every { it.getSize() == 5 }
+    }
+
 }
