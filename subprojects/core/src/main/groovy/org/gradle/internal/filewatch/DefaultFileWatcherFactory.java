@@ -48,7 +48,7 @@ public class DefaultFileWatcherFactory implements FileWatcherFactory, Stoppable 
         if (javaVersion.isJava7Compatible()) {
             try {
                 Class clazz = classLoader.loadClass("org.gradle.internal.filewatch.jdk7.Jdk7FileWatcherFactory");
-                return Cast.uncheckedCast(DirectInstantiator.instantiate(clazz, executor));
+                return Cast.cast(FileWatcherFactory.class, DirectInstantiator.instantiate(clazz, executor));
             } catch (ClassNotFoundException e) {
                 throw UncheckedException.throwAsUncheckedException(e);
             }

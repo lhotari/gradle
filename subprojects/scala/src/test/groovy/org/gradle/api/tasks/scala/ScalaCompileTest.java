@@ -108,11 +108,11 @@ public class ScalaCompileTest extends AbstractCompileTest {
 
         context.checking(new Expectations(){{
             allowing(scalaClasspath).getFiles(); will(returnValue(new HashSet<File>()));
-            allowing(scalaClasspath).visit((FileVisitor) with(anything()));
+            allowing(scalaClasspath).visit((FileVisitor) with(Expectations.<FileVisitor>anything()));
             allowing(classpath).getFiles(); will(returnValue(new HashSet<File>()));
-            allowing(classpath).visit((FileVisitor) with(anything()));
+            allowing(classpath).visit((FileVisitor) with(Expectations.<FileVisitor>anything()));
             allowing(zincClasspath).getFiles(); will(returnValue(new HashSet<File>()));
-            allowing(zincClasspath).visit((FileVisitor) with(anything()));
+            allowing(zincClasspath).visit((FileVisitor) with(Expectations.<FileVisitor>anything()));
         }});
         compile.setClasspath(classpath);
         compile.setZincClasspath(zincClasspath);

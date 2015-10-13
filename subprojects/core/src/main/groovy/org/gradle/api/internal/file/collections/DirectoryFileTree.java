@@ -200,7 +200,7 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
             if (javaVersion.isJava7Compatible() && Charset.defaultCharset().name().equals("UTF-8")) {
                 try {
                     Class clazz = classLoader.loadClass("org.gradle.api.internal.file.collections.jdk7.Jdk7DirectoryWalker");
-                    return Cast.uncheckedCast(DirectInstantiator.instantiate(clazz));
+                    return Cast.cast(DirectoryWalker.class, DirectInstantiator.instantiate(clazz));
                 } catch (ClassNotFoundException e) {
                     throw UncheckedException.throwAsUncheckedException(e);
                 }
