@@ -16,6 +16,9 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import org.gradle.api.Transformer;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
@@ -23,8 +26,10 @@ import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.CachingFileVisitDetails;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.collections.*;
+import org.gradle.internal.Pair;
 import org.gradle.internal.serialize.SerializerRegistry;
 import org.gradle.util.ChangeListener;
+import org.gradle.util.CollectionUtils;
 import org.gradle.util.NoOpChangeListener;
 
 import java.io.File;
@@ -51,25 +56,19 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     public FileCollectionSnapshot snapshot(final FileCollection input) {
-        final List<FileVisitDetails> allFileVisitDetails = visitFiles(input);
+        final Pair<Iterable<FileVisitDetails>, Iterable<FileVisitDetails>> allFileVisitDetails = visitFiles(input);
+        final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
 
-        if (allFileVisitDetails.isEmpty()) {
-            return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
+        for (Pair<String, FileVisitDetails> pathAndDir : CollectionUtils.collect(allFileVisitDetails.left(), internedPathAndDetailsPairTransformer)) {
+            snapshots.put(pathAndDir.left(), new DirSnapshot());
         }
 
-        final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
+        final List<Pair<String, FileVisitDetails>> fileHashingWorkList = CollectionUtils.collect(allFileVisitDetails.right(), internedPathAndDetailsPairTransformer);
 
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
-                for (FileVisitDetails fileDetails : allFileVisitDetails) {
-                    final String absolutePath = stringInterner.intern(fileDetails.getFile().getAbsolutePath());
-                    if (!snapshots.containsKey(absolutePath)) {
-                        if (fileDetails.isDirectory()) {
-                            snapshots.put(absolutePath, new DirSnapshot());
-                        } else {
-                            snapshots.put(absolutePath, new FileHashSnapshot(snapshotter.snapshot(fileDetails).getHash()));
-                        }
-                    }
+                for (Pair<String, FileVisitDetails> workItem : fileHashingWorkList) {
+                    snapshots.put(workItem.left(), new FileHashSnapshot(snapshotter.snapshot(workItem.right()).getHash()));
                 }
             }
         });
@@ -77,8 +76,17 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         return new FileCollectionSnapshotImpl(snapshots);
     }
 
-    private List<FileVisitDetails> visitFiles(FileCollection input) {
-        final List<FileVisitDetails> allFileVisitDetails = new LinkedList<FileVisitDetails>();
+    final Transformer<Pair<String, FileVisitDetails>, FileVisitDetails> internedPathAndDetailsPairTransformer = new Transformer<Pair<String, FileVisitDetails>, FileVisitDetails>() {
+        @Override
+        public Pair<String, FileVisitDetails> transform(FileVisitDetails fileVisitDetails) {
+            String absolutePath = stringInterner.intern(fileVisitDetails.getFile().getAbsolutePath());
+            return Pair.of(absolutePath, fileVisitDetails);
+        }
+    };
+
+    private Pair<Iterable<FileVisitDetails>, Iterable<FileVisitDetails>> visitFiles(FileCollection input) {
+        final List<FileVisitDetails> dirVisitDetails = new LinkedList<FileVisitDetails>();
+        final List<FileVisitDetails> fileVisitDetails = new LinkedList<FileVisitDetails>();
 
         DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext();
         context.add(input);
@@ -88,23 +96,39 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             Set<File> fileTreeSourceFiles = unwrapFileTreeSourceFilesIfAvailable(fileTree);
             if (fileTreeSourceFiles != null) {
                 for (File fileTreeSourceFile : fileTreeSourceFiles) {
-                    allFileVisitDetails.add(new CachingFileVisitDetails(fileTreeSourceFile));
+                    fileVisitDetails.add(new CachingFileVisitDetails(fileTreeSourceFile));
                 }
             } else {
                 fileTree.visit(new FileVisitor() {
                     @Override
                     public void visitDir(FileVisitDetails dirDetails) {
-                        allFileVisitDetails.add(dirDetails);
+                        dirVisitDetails.add(dirDetails);
                     }
 
                     @Override
                     public void visitFile(FileVisitDetails fileDetails) {
-                        allFileVisitDetails.add(fileDetails);
+                        fileVisitDetails.add(fileDetails);
                     }
                 });
             }
         }
-        return allFileVisitDetails;
+
+        return Pair.of(Iterables.filter(dirVisitDetails, new UniqueFilePredicate()), Iterables.filter(fileVisitDetails, new UniqueFilePredicate()));
+    }
+
+    private static class UniqueFilePredicate implements Predicate<FileVisitDetails> {
+        private final Set<String> handledFiles = new HashSet<String>();
+
+        @Override
+        public boolean apply(FileVisitDetails input) {
+            final String absolutePath = input.getFile().getAbsolutePath();
+            if (!handledFiles.contains(absolutePath)) {
+                handledFiles.add(absolutePath);
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 
     private Set<File> unwrapFileTreeSourceFilesIfAvailable(Object fileTree) {
