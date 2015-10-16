@@ -74,7 +74,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
             public void run() {
                 for (File file : theFiles) {
                     Long dirId;
-                    final String absolutePath = stringInterner.intern(file.getAbsolutePath());
+                    final String absolutePath = file.getAbsolutePath();
                     if (file.exists()) {
                         dirId = dirIdentifierCache.get(absolutePath);
                         if (dirId == null) {
@@ -176,6 +176,15 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
                     return false;
                 }
             };
+        }
+
+        @Override
+        public FileCollectionSnapshot internStrings(StringInterner stringInterner) {
+            Map<String, Long> newRootIds = new HashMap<String, Long>(rootFileIds.size());
+            for (Map.Entry<String, Long> entry : rootFileIds.entrySet()) {
+                newRootIds.put(stringInterner.intern(entry.getKey()), entry.getValue());
+            }
+            return new OutputFilesSnapshot(newRootIds, filesSnapshot.internStrings(stringInterner));
         }
     }
 

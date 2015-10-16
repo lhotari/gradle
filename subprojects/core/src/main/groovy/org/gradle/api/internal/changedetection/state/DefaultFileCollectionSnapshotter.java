@@ -62,7 +62,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
                 for (FileVisitDetails fileDetails : allFileVisitDetails) {
-                    final String absolutePath = stringInterner.intern(fileDetails.getFile().getAbsolutePath());
+                    final String absolutePath = fileDetails.getFile().getAbsolutePath();
                     if (!snapshots.containsKey(absolutePath)) {
                         if (fileDetails.isDirectory()) {
                             snapshots.put(absolutePath, new DirSnapshot());
@@ -263,5 +263,13 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             }
         }
 
+        @Override
+        public FileCollectionSnapshot internStrings(StringInterner stringInterner) {
+            Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(snapshots.size());
+            for (Map.Entry<String, IncrementalFileSnapshot> entry : snapshots.entrySet()) {
+                newSnapshots.put(stringInterner.intern(entry.getKey()), entry.getValue());
+            }
+            return new FileCollectionSnapshotImpl(newSnapshots);
+        }
     }
 }

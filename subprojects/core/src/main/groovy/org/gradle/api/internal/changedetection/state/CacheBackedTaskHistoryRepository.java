@@ -63,6 +63,7 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
             }
 
             public void update() {
+                currentExecution.internStrings(stringInterner);
                 cacheAccess.useCache("Update task history", new Runnable() {
                     public void run() {
                         history.configurations.add(0, currentExecution);
@@ -107,7 +108,7 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
     private Set<String> outputFiles(TaskInternal task) {
         Set<String> outputFiles = new HashSet<String>();
         for (File file : task.getOutputs().getFiles()) {
-            outputFiles.add(stringInterner.intern(file.getAbsolutePath()));
+            outputFiles.add(file.getAbsolutePath());
         }
         return outputFiles;
     }
@@ -185,8 +186,7 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         public void beforeSerialized() {
             //cleaning up the transient fields, so that any in-memory caching is happy
             for (LazyTaskExecution c : configurations) {
-                c.cacheAccess = null;
-                c.snapshotRepository = null;
+                c.beforeSerialized();
             }
         }
     }
@@ -234,6 +234,20 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         public void setOutputFilesSnapshot(FileCollectionSnapshot outputFilesSnapshot) {
             this.outputFilesSnapshot = outputFilesSnapshot;
             outputFilesSnapshotId = null;
+        }
+
+        public void beforeSerialized() {
+            cacheAccess = null;
+            snapshotRepository = null;
+        }
+
+        public void internStrings(StringInterner stringInterner) {
+            if (inputFilesSnapshot != null) {
+                inputFilesSnapshot = inputFilesSnapshot.internStrings(stringInterner);
+            }
+            if (outputFilesSnapshot != null) {
+                outputFilesSnapshot = outputFilesSnapshot.internStrings(stringInterner);
+            }
         }
 
         static class TaskHistorySerializer implements Serializer<LazyTaskExecution> {
