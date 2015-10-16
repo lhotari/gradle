@@ -17,12 +17,13 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.util.ChangeListener;
 
 /**
  * An immutable snapshot of the contents of a collection of files.
  */
-public interface FileCollectionSnapshot {
+public interface FileCollectionSnapshot extends StringInterner.Internable<FileCollectionSnapshot> {
 
     ChangeIterator<String> iterateChangesSince(FileCollectionSnapshot oldSnapshot);
 

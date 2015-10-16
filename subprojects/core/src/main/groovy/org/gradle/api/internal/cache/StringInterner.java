@@ -33,4 +33,8 @@ public class StringInterner implements Interner<String> {
         }
         return interner.intern(sample);
     }
+
+    public interface Internable<T> {
+        T internStrings(StringInterner stringInterner);
+    }
 }
