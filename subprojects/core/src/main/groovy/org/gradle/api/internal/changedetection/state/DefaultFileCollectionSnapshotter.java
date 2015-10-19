@@ -23,6 +23,7 @@ import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.CachingFileVisitDetails;
+import org.gradle.api.internal.file.FileTreeElementComparator;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.collections.*;
 import org.gradle.internal.serialize.SerializerRegistry;
@@ -83,7 +84,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     private Integer calculatePreCheckHash(List<FileVisitDetails> allFileVisitDetails) {
-        SortedSet<FileVisitDetails> sortedFileVisitDetails = new TreeSet<FileVisitDetails>(FilePathComparator.INSTANCE);
+        SortedSet<FileVisitDetails> sortedFileVisitDetails = new TreeSet<FileVisitDetails>(FileTreeElementComparator.INSTANCE);
         sortedFileVisitDetails.addAll(allFileVisitDetails);
 
         Hasher hasher = Hashing.adler32().newHasher();
@@ -314,14 +315,5 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             }
         }
 
-    }
-
-    private static class FilePathComparator implements Comparator<FileVisitDetails> {
-        final static FilePathComparator INSTANCE = new FilePathComparator();
-
-        @Override
-        public int compare(FileVisitDetails o1, FileVisitDetails o2) {
-            return o1.getRelativePath().compareTo(o2.getRelativePath());
-        }
     }
 }
