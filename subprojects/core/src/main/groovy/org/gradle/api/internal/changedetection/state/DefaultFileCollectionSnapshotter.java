@@ -16,6 +16,8 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
@@ -30,10 +32,11 @@ import org.gradle.util.NoOpChangeListener;
 import java.io.File;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.zip.Adler32;
-import java.util.zip.Checksum;
 
 public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshotter {
+    public static final byte HASH_PATH_SEPARATOR = (byte) '/';
+    public static final byte HASH_FIELD_SEPARATOR = (byte) '\t';
+    public static final byte HASH_RECORD_SEPARATOR = (byte) '\n';
     private final FileTreeElementSnapshotter snapshotter;
     private TaskArtifactStateCacheAccess cacheAccess;
     private final StringInterner stringInterner;
@@ -78,30 +81,23 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
     private Long calculatePreCheckHash(List<FileVisitDetails> allFileVisitDetails) {
         SortedSet<FileVisitDetails> sortedFileVisitDetails = new TreeSet<FileVisitDetails>(FilePathComparator.INSTANCE);
+        sortedFileVisitDetails.addAll(allFileVisitDetails);
 
-        Adler32 checksum = new Adler32();
+        Hasher hasher = Hashing.adler32().newHasher();
         for (FileVisitDetails fileVisitDetails : sortedFileVisitDetails) {
-            checksum.update(fileVisitDetails.getPath().getBytes());
-            if (!fileVisitDetails.isDirectory()) {
-                checksum.update('\t');
-                checkLong(checksum, fileVisitDetails.getSize());
-                checksum.update('\t');
-                checkLong(checksum, fileVisitDetails.getLastModified());
+            for (String pathPart : fileVisitDetails.getRelativePath().getSegments()) {
+                hasher.putUnencodedChars(pathPart);
+                hasher.putByte(HASH_PATH_SEPARATOR);
             }
-            checksum.update('\n');
+            if (!fileVisitDetails.isDirectory()) {
+                hasher.putByte(HASH_FIELD_SEPARATOR);
+                hasher.putLong(fileVisitDetails.getSize());
+                hasher.putByte(HASH_FIELD_SEPARATOR);
+                hasher.putLong(fileVisitDetails.getLastModified());
+            }
+            hasher.putByte(HASH_RECORD_SEPARATOR);
         }
-        return checksum.getValue();
-    }
-
-    private void checkLong(Checksum checksum, long v) {
-        checksum.update((byte) (v >>> 56));
-        checksum.update((byte) (v >>> 48));
-        checksum.update((byte) (v >>> 40));
-        checksum.update((byte) (v >>> 32));
-        checksum.update((byte) (v >>> 24));
-        checksum.update((byte) (v >>> 16));
-        checksum.update((byte) (v >>> 8));
-        checksum.update((byte) (v >>> 0));
+        return hasher.hash().asLong();
     }
 
     private FileCollectionSnapshot snapshot(final List<FileVisitDetails> allFileVisitDetails) {
@@ -322,7 +318,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
         @Override
         public int compare(FileVisitDetails o1, FileVisitDetails o2) {
-            return o1.getFile().getAbsolutePath().compareTo(o2.getFile().getAbsolutePath());
+            return o1.getRelativePath().compareTo(o2.getRelativePath());
         }
     }
 }
