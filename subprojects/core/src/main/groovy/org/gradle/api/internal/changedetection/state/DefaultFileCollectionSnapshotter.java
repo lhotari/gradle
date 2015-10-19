@@ -65,10 +65,10 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         final List<FileVisitDetails> allFileVisitDetails = visitFiles(files);
 
         return new FileCollectionSnapshotter.FileCollectionPreCheck() {
-            Long hash;
+            Integer hash;
 
             @Override
-            public Long getHash() {
+            public Integer getHash() {
                 if (hash == null) {
                     hash = calculatePreCheckHash(allFileVisitDetails);
                 }
@@ -82,7 +82,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         };
     }
 
-    private Long calculatePreCheckHash(List<FileVisitDetails> allFileVisitDetails) {
+    private Integer calculatePreCheckHash(List<FileVisitDetails> allFileVisitDetails) {
         SortedSet<FileVisitDetails> sortedFileVisitDetails = new TreeSet<FileVisitDetails>(FilePathComparator.INSTANCE);
         sortedFileVisitDetails.addAll(allFileVisitDetails);
 
@@ -100,7 +100,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             }
             hasher.putByte(HASH_RECORD_SEPARATOR);
         }
-        return hasher.hash().asLong();
+        return hasher.hash().asInt();
     }
 
     private FileCollectionSnapshot snapshot(final List<FileVisitDetails> allFileVisitDetails) {

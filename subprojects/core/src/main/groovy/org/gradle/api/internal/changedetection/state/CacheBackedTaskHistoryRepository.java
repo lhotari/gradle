@@ -248,9 +248,9 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
             public LazyTaskExecution read(Decoder decoder) throws Exception {
                 LazyTaskExecution execution = new LazyTaskExecution();
                 execution.inputFilesSnapshotId = decoder.readLong();
-                execution.setInputFilesHash(decoder.readLong());
+                execution.setInputFilesHash(decoder.readInt());
                 execution.outputFilesSnapshotId = decoder.readLong();
-                execution.setOutputFilesHash(decoder.readLong());
+                execution.setOutputFilesHash(decoder.readInt());
                 execution.setTaskClass(decoder.readString());
                 int outputFiles = decoder.readInt();
                 Set<String> files = new HashSet<String>();
@@ -271,9 +271,9 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
 
             public void write(Encoder encoder, LazyTaskExecution execution) throws Exception {
                 encoder.writeLong(execution.inputFilesSnapshotId);
-                encoder.writeLong(execution.getInputFilesHash());
+                encoder.writeInt(execution.getInputFilesHash());
                 encoder.writeLong(execution.outputFilesSnapshotId);
-                encoder.writeLong(execution.getOutputFilesHash());
+                encoder.writeInt(execution.getOutputFilesHash());
                 encoder.writeString(execution.getTaskClass());
                 encoder.writeInt(execution.getOutputFiles().size());
                 for (String outputFile : execution.getOutputFiles()) {

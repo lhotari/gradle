@@ -46,7 +46,7 @@ public interface FileCollectionSnapshotter {
     FileCollectionPreCheck preCheck(FileCollection files);
 
     interface FileCollectionPreCheck {
-        Long getHash();
+        Integer getHash();
 
         List<FileVisitDetails> getFileVisitDetails();
     }
