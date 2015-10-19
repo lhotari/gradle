@@ -30,6 +30,8 @@ import org.gradle.util.NoOpChangeListener;
 import java.io.File;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshotter {
     private final FileTreeElementSnapshotter snapshotter;
@@ -50,9 +52,59 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         return new FileCollectionSnapshotImpl(new HashMap<String, IncrementalFileSnapshot>());
     }
 
-    public FileCollectionSnapshot snapshot(final FileCollection input) {
-        final List<FileVisitDetails> allFileVisitDetails = visitFiles(input);
+    @Override
+    public FileCollectionSnapshot snapshot(FileCollectionPreCheck preCheck) {
+        return snapshot(preCheck.getFileVisitDetails());
+    }
 
+    @Override
+    public FileCollectionPreCheck preCheck(final FileCollection files) {
+        final List<FileVisitDetails> allFileVisitDetails = visitFiles(files);
+
+        final Long hash = calculatePreCheckHash(allFileVisitDetails);
+
+        return new FileCollectionSnapshotter.FileCollectionPreCheck() {
+            @Override
+            public Long getHash() {
+                return hash;
+            }
+
+            @Override
+            public List<FileVisitDetails> getFileVisitDetails() {
+                return allFileVisitDetails;
+            }
+        };
+    }
+
+    private Long calculatePreCheckHash(List<FileVisitDetails> allFileVisitDetails) {
+        SortedSet<FileVisitDetails> sortedFileVisitDetails = new TreeSet<FileVisitDetails>(FilePathComparator.INSTANCE);
+
+        Adler32 checksum = new Adler32();
+        for (FileVisitDetails fileVisitDetails : sortedFileVisitDetails) {
+            checksum.update(fileVisitDetails.getPath().getBytes());
+            if (!fileVisitDetails.isDirectory()) {
+                checksum.update('\t');
+                checkLong(checksum, fileVisitDetails.getSize());
+                checksum.update('\t');
+                checkLong(checksum, fileVisitDetails.getLastModified());
+            }
+            checksum.update('\n');
+        }
+        return checksum.getValue();
+    }
+
+    private void checkLong(Checksum checksum, long v) {
+        checksum.update((byte) (v >>> 56));
+        checksum.update((byte) (v >>> 48));
+        checksum.update((byte) (v >>> 40));
+        checksum.update((byte) (v >>> 32));
+        checksum.update((byte) (v >>> 24));
+        checksum.update((byte) (v >>> 16));
+        checksum.update((byte) (v >>> 8));
+        checksum.update((byte) (v >>> 0));
+    }
+
+    private FileCollectionSnapshot snapshot(final List<FileVisitDetails> allFileVisitDetails) {
         if (allFileVisitDetails.isEmpty()) {
             return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
         }
@@ -263,5 +315,14 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             }
         }
 
+    }
+
+    private static class FilePathComparator implements Comparator<FileVisitDetails> {
+        final static FilePathComparator INSTANCE = new FilePathComparator();
+
+        @Override
+        public int compare(FileVisitDetails o1, FileVisitDetails o2) {
+            return o1.getFile().getAbsolutePath().compareTo(o2.getFile().getAbsolutePath());
+        }
     }
 }

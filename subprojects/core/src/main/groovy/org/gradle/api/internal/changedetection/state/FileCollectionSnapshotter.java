@@ -16,7 +16,10 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileVisitDetails;
 import org.gradle.internal.serialize.SerializerRegistry;
+
+import java.util.List;
 
 public interface FileCollectionSnapshotter {
     /**
@@ -37,5 +40,14 @@ public interface FileCollectionSnapshotter {
      * @param files The files to snapshot
      * @return The snapshot.
      */
-    FileCollectionSnapshot snapshot(FileCollection files);
+    FileCollectionSnapshot snapshot(FileCollectionPreCheck preCheck);
+
+
+    FileCollectionPreCheck preCheck(FileCollection files);
+
+    interface FileCollectionPreCheck {
+        Long getHash();
+
+        List<FileVisitDetails> getFileVisitDetails();
+    }
 }

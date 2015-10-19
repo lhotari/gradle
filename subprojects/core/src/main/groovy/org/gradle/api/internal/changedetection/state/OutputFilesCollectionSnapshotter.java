@@ -17,6 +17,7 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.cache.PersistentIndexedCache;
 import org.gradle.internal.id.IdGenerator;
@@ -67,30 +68,29 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         return new OutputFilesSnapshot(new HashMap<String, Long>(), snapshotter.emptySnapshot());
     }
 
-    public OutputFilesSnapshot snapshot(final FileCollection files) {
+    @Override
+    public OutputFilesSnapshot snapshot(final FileCollectionPreCheck preCheck) {
         final Map<String, Long> snapshotDirIds = new HashMap<String, Long>();
-        final Set<File> theFiles = files.getFiles();
         cacheAccess.useCache("create dir snapshots", new Runnable() {
             public void run() {
-                for (File file : theFiles) {
-                    Long dirId;
+                for (FileVisitDetails fileVisitDetails : preCheck.getFileVisitDetails()) {
+                    final File file = fileVisitDetails.getFile();
                     final String absolutePath = stringInterner.intern(file.getAbsolutePath());
-                    if (file.exists()) {
-                        dirId = dirIdentifierCache.get(absolutePath);
-                        if (dirId == null) {
-                            dirId = idGenerator.generateId();
-                            dirIdentifierCache.put(absolutePath, dirId);
-                        }
-                    } else {
-                        dirIdentifierCache.remove(absolutePath);
-                        dirId = null;
+                    Long dirId = dirIdentifierCache.get(absolutePath);
+                    if (dirId == null) {
+                        dirId = idGenerator.generateId();
+                        dirIdentifierCache.put(absolutePath, dirId);
                     }
                     snapshotDirIds.put(absolutePath, dirId);
                 }
-
             }
         });
-        return new OutputFilesSnapshot(snapshotDirIds, snapshotter.snapshot(files));
+        return new OutputFilesSnapshot(snapshotDirIds, snapshotter.snapshot(preCheck));
+    }
+
+    @Override
+    public FileCollectionPreCheck preCheck(FileCollection files) {
+        return snapshotter.preCheck(files);
     }
 
     static class OutputFilesSnapshot implements FileCollectionSnapshot {
