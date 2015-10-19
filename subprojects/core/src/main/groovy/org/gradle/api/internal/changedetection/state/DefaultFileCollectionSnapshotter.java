@@ -16,14 +16,12 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.CachingFileVisitDetails;
-import org.gradle.api.internal.file.FileTreeElementComparator;
+import org.gradle.api.internal.file.FileTreeElementHasher;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.collections.*;
 import org.gradle.internal.serialize.SerializerRegistry;
@@ -35,9 +33,7 @@ import java.math.BigInteger;
 import java.util.*;
 
 public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshotter {
-    public static final byte HASH_PATH_SEPARATOR = (byte) '/';
-    public static final byte HASH_FIELD_SEPARATOR = (byte) '\t';
-    public static final byte HASH_RECORD_SEPARATOR = (byte) '\n';
+
     private final FileTreeElementSnapshotter snapshotter;
     private TaskArtifactStateCacheAccess cacheAccess;
     private final StringInterner stringInterner;
@@ -84,24 +80,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     private Integer calculatePreCheckHash(List<FileVisitDetails> allFileVisitDetails) {
-        SortedSet<FileVisitDetails> sortedFileVisitDetails = new TreeSet<FileVisitDetails>(FileTreeElementComparator.INSTANCE);
-        sortedFileVisitDetails.addAll(allFileVisitDetails);
-
-        Hasher hasher = Hashing.adler32().newHasher();
-        for (FileVisitDetails fileVisitDetails : sortedFileVisitDetails) {
-            for (String pathPart : fileVisitDetails.getRelativePath().getSegments()) {
-                hasher.putUnencodedChars(pathPart);
-                hasher.putByte(HASH_PATH_SEPARATOR);
-            }
-            if (!fileVisitDetails.isDirectory()) {
-                hasher.putByte(HASH_FIELD_SEPARATOR);
-                hasher.putLong(fileVisitDetails.getSize());
-                hasher.putByte(HASH_FIELD_SEPARATOR);
-                hasher.putLong(fileVisitDetails.getLastModified());
-            }
-            hasher.putByte(HASH_RECORD_SEPARATOR);
-        }
-        return hasher.hash().asInt();
+        return FileTreeElementHasher.calculateHashForFileMetadata(allFileVisitDetails);
     }
 
     private FileCollectionSnapshot snapshot(final List<FileVisitDetails> allFileVisitDetails) {

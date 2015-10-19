@@ -26,7 +26,28 @@ import java.util.TreeSet;
 
 public class FileTreeElementHasher {
     private static final byte HASH_PATH_SEPARATOR = (byte) '/';
+    private static final byte HASH_FIELD_SEPARATOR = (byte) '\t';
     private static final byte HASH_RECORD_SEPARATOR = (byte) '\n';
+
+    public static final int calculateHashForFileMetadata(Collection<FileTreeElement> allFileTreeElements) {
+        SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
+
+        Hasher hasher = Hashing.adler32().newHasher();
+        for (FileTreeElement fileTreeElement : sortedFileTreeElement) {
+            for (String pathPart : fileTreeElement.getRelativePath().getSegments()) {
+                hasher.putUnencodedChars(pathPart);
+                hasher.putByte(HASH_PATH_SEPARATOR);
+            }
+            if (!fileTreeElement.isDirectory()) {
+                hasher.putByte(HASH_FIELD_SEPARATOR);
+                hasher.putLong(fileTreeElement.getSize());
+                hasher.putByte(HASH_FIELD_SEPARATOR);
+                hasher.putLong(fileTreeElement.getLastModified());
+            }
+            hasher.putByte(HASH_RECORD_SEPARATOR);
+        }
+        return hasher.hash().asInt();
+    }
 
     public static final int calculateHashForFilePaths(Collection<FileTreeElement> allFileTreeElements) {
         SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
