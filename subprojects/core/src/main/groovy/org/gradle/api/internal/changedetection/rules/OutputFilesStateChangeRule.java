@@ -30,10 +30,13 @@ import java.util.Iterator;
  */
 class OutputFilesStateChangeRule {
 
-    public static TaskStateChanges create(final TaskInternal task, final TaskExecution previousExecution, final TaskExecution currentExecution, final FileCollectionSnapshotter outputFilesSnapshotter) {
-        final FileCollectionSnapshot outputFilesBefore = outputFilesSnapshotter.snapshot(task.getOutputs().getFiles());
-
+    public static TaskStateChanges create(final TaskInternal task, final TaskExecution previousExecution, final TaskExecution currentExecution, final FileCollectionSnapshotter outputFilesSnapshotter, final FileCollectionSnapshotter.FileCollectionPreCheck outputFilesPrecheckBefore) {
         return new TaskStateChanges() {
+            FileCollectionSnapshot outputFilesBefore;
+
+            public void snapshotBeforeTask() {
+                outputFilesBefore = outputFilesSnapshotter.snapshot(outputFilesPrecheckBefore);
+            }
 
             public Iterator<TaskStateChange> iterator() {
                 if (previousExecution.getOutputFilesSnapshot() == null) {
@@ -76,7 +79,9 @@ class OutputFilesStateChangeRule {
                                 // Update any files which were change since the task was last executed
                             }
                         });
-                FileCollectionSnapshot outputFilesAfter = outputFilesSnapshotter.snapshot(task.getOutputs().getFiles());
+                FileCollectionSnapshotter.FileCollectionPreCheck outputFilesPrecheckAfter = outputFilesSnapshotter.preCheck(task.getOutputs().getFiles());
+                currentExecution.setOutputFilesHash(outputFilesPrecheckAfter.getHash());
+                FileCollectionSnapshot outputFilesAfter = outputFilesSnapshotter.snapshot(outputFilesPrecheckAfter);
                 currentExecution.setOutputFilesSnapshot(outputFilesAfter.changesSince(outputFilesBefore).applyTo(newOutputFiles));
             }
         };

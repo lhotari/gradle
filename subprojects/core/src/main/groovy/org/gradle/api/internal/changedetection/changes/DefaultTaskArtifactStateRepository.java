@@ -107,6 +107,7 @@ public class DefaultTaskArtifactStateRepository implements TaskArtifactStateRepo
         }
 
         public void beforeTask() {
+            getStates().getAllTaskChanges().snapshotBeforeTask();
         }
 
         public void afterTask() {
