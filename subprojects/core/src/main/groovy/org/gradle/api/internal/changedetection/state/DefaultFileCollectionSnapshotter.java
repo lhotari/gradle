@@ -64,11 +64,14 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     public FileCollectionPreCheck preCheck(final FileCollection files) {
         final List<FileVisitDetails> allFileVisitDetails = visitFiles(files);
 
-        final Long hash = calculatePreCheckHash(allFileVisitDetails);
-
         return new FileCollectionSnapshotter.FileCollectionPreCheck() {
+            Long hash;
+
             @Override
             public Long getHash() {
+                if (hash == null) {
+                    hash = calculatePreCheckHash(allFileVisitDetails);
+                }
                 return hash;
             }
 
