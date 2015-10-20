@@ -65,31 +65,10 @@ class OutputFilesStateChangeRule {
             }
 
             public void snapshotAfterTask() {
-                FileCollectionSnapshot lastExecutionOutputFiles;
-                if (previousExecution == null || previousExecution.getOutputFilesSnapshot() == null) {
-                    lastExecutionOutputFiles = outputFilesSnapshotter.emptySnapshot();
-                } else {
-                    lastExecutionOutputFiles = previousExecution.getOutputFilesSnapshot();
-                }
-                FileCollectionSnapshot newOutputFiles = outputFilesBefore.changesSince(lastExecutionOutputFiles).applyTo(
-                        lastExecutionOutputFiles, new ChangeListener<FileCollectionSnapshot.Merge>() {
-                            public void added(FileCollectionSnapshot.Merge element) {
-                                // Ignore added files
-                                element.ignore();
-                            }
-
-                            public void removed(FileCollectionSnapshot.Merge element) {
-                                // Discard any files removed since the task was last executed
-                            }
-
-                            public void changed(FileCollectionSnapshot.Merge element) {
-                                // Update any files which were change since the task was last executed
-                            }
-                        });
                 FileCollectionSnapshotter.FileCollectionPreCheck outputFilesPrecheckAfter = outputFilesSnapshotter.preCheck(task.getOutputs().getFiles());
                 currentExecution.setOutputFilesHash(outputFilesPrecheckAfter.getHash());
                 FileCollectionSnapshot outputFilesAfter = outputFilesSnapshotter.snapshot(outputFilesPrecheckAfter);
-                currentExecution.setOutputFilesSnapshot(outputFilesAfter.changesSince(outputFilesBefore).applyTo(newOutputFiles));
+                currentExecution.setOutputFilesSnapshot(outputFilesAfter);
             }
         };
     }
