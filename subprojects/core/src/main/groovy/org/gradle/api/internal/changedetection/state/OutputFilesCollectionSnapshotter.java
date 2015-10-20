@@ -17,7 +17,6 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.cache.PersistentIndexedCache;
 import org.gradle.internal.id.IdGenerator;
@@ -73,8 +72,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         final Map<String, Long> snapshotDirIds = new HashMap<String, Long>();
         cacheAccess.useCache("create dir snapshots", new Runnable() {
             public void run() {
-                for (FileVisitDetails fileVisitDetails : preCheck.getFileVisitDetails()) {
-                    final File file = fileVisitDetails.getFile();
+                for (File file : preCheck.getFileCollection().getFiles()) {
                     final String absolutePath = stringInterner.intern(file.getAbsolutePath());
                     Long dirId = dirIdentifierCache.get(absolutePath);
                     if (dirId == null) {

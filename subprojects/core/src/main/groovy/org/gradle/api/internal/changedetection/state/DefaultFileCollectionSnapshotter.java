@@ -65,6 +65,11 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             Integer hash;
 
             @Override
+            public FileCollection getFileCollection() {
+                return files;
+            }
+
+            @Override
             public Integer getHash() {
                 if (hash == null) {
                     hash = calculatePreCheckHash(allFileVisitDetails);
