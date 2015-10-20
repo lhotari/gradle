@@ -29,7 +29,7 @@ public class FileTreeElementHasher {
     private static final byte HASH_FIELD_SEPARATOR = (byte) '\t';
     private static final byte HASH_RECORD_SEPARATOR = (byte) '\n';
 
-    public static final int calculateHashForFileMetadata(Collection<FileTreeElement> allFileTreeElements) {
+    public static final int calculateHashForFileMetadata(Collection<? extends FileTreeElement> allFileTreeElements) {
         SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
 
         Hasher hasher = Hashing.adler32().newHasher();
@@ -49,7 +49,7 @@ public class FileTreeElementHasher {
         return hasher.hash().asInt();
     }
 
-    public static final int calculateHashForFilePaths(Collection<FileTreeElement> allFileTreeElements) {
+    public static final int calculateHashForFilePaths(Collection<? extends FileTreeElement> allFileTreeElements) {
         SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
 
         Hasher hasher = Hashing.adler32().newHasher();
@@ -63,7 +63,7 @@ public class FileTreeElementHasher {
         return hasher.hash().asInt();
     }
 
-    private static SortedSet<FileTreeElement> asSortedSet(Collection<FileTreeElement> allFileTreeElements) {
+    private static SortedSet<FileTreeElement> asSortedSet(Collection<? extends FileTreeElement> allFileTreeElements) {
         if (allFileTreeElements instanceof SortedSet) {
             return (SortedSet<FileTreeElement>) allFileTreeElements;
         }
