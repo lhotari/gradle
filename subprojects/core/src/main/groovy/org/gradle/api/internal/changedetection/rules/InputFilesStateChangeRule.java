@@ -80,11 +80,14 @@ class InputFilesStateChangeRule {
             }
 
             return new AbstractIterator<TaskStateChange>() {
-                final FileCollectionSnapshot.ChangeIterator<String> changeIterator = getInputFilesSnapshot().iterateChangesSince(previousExecution.getInputFilesSnapshot());
+                FileCollectionSnapshot.ChangeIterator<String> changeIterator;
                 final ChangeListenerAdapter listenerAdapter = new ChangeListenerAdapter();
 
                 @Override
                 protected TaskStateChange computeNext() {
+                    if (changeIterator == null) {
+                        changeIterator = getInputFilesSnapshot().iterateChangesSince(previousExecution.getInputFilesSnapshot());
+                    }
                     if (changeIterator.next(listenerAdapter)) {
                         return listenerAdapter.lastChange;
                     }
