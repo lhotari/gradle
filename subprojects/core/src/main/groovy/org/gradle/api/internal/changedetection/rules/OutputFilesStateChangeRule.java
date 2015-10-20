@@ -53,6 +53,7 @@ class OutputFilesStateChangeRule {
                 return new AbstractIterator<TaskStateChange>() {
                     FileCollectionSnapshot.ChangeIterator<String> changeIterator;
                     final ChangeListenerAdapter listenerAdapter = new ChangeListenerAdapter();
+                    int counter;
 
                     @Override
                     protected TaskStateChange computeNext() {
@@ -60,7 +61,11 @@ class OutputFilesStateChangeRule {
                             changeIterator = getOutputFilesBefore().iterateChangesSince(previousExecution.getOutputFilesSnapshot());
                         }
                         if (changeIterator.next(listenerAdapter)) {
+                            counter++;
                             return listenerAdapter.lastChange;
+                        }
+                        if (counter == 0 && previousExecution == null && previousExecution.getOutputFilesHash() != null) {
+                            previousExecution.setOutputFilesHash(outputFilesPrecheckBefore.getHash());
                         }
                         return endOfData();
                     }
