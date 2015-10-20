@@ -32,7 +32,7 @@ public class FileTreeElementHasher {
     public static final int calculateHashForFileMetadata(Collection<? extends FileTreeElement> allFileTreeElements) {
         SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
 
-        Hasher hasher = Hashing.adler32().newHasher();
+        Hasher hasher = createHasher();
         for (FileTreeElement fileTreeElement : sortedFileTreeElement) {
             for (String pathPart : fileTreeElement.getRelativePath().getSegments()) {
                 hasher.putUnencodedChars(pathPart);
@@ -49,10 +49,14 @@ public class FileTreeElementHasher {
         return hasher.hash().asInt();
     }
 
+    private static Hasher createHasher() {
+        return Hashing.murmur3_32().newHasher();
+    }
+
     public static final int calculateHashForFilePaths(Collection<? extends FileTreeElement> allFileTreeElements) {
         SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
 
-        Hasher hasher = Hashing.adler32().newHasher();
+        Hasher hasher = createHasher();
         for (FileTreeElement fileTreeElement : sortedFileTreeElement) {
             for (String pathPart : fileTreeElement.getRelativePath().getSegments()) {
                 hasher.putUnencodedChars(pathPart);
