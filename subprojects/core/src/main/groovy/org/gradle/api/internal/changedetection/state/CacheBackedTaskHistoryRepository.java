@@ -15,6 +15,8 @@
  */
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.cache.PersistentIndexedCache;
@@ -46,7 +48,7 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         final LazyTaskExecution currentExecution = new LazyTaskExecution(history);
         currentExecution.snapshotRepository = snapshotRepository;
         currentExecution.cacheAccess = cacheAccess;
-        currentExecution.setOutputFiles(outputFiles(task));
+        currentExecution.setOutputFileSignatures(outputFileSignatures(task));
         final LazyTaskExecution previousExecution = findPreviousExecution(currentExecution, history);
         if (previousExecution != null) {
             previousExecution.snapshotRepository = snapshotRepository;
@@ -116,33 +118,35 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         });
     }
 
-    private Set<String> outputFiles(TaskInternal task) {
-        Set<String> outputFiles = new HashSet<String>();
+    private Set<Integer> outputFileSignatures(TaskInternal task) {
+        Set<Integer> outputFileSignatures = new HashSet<Integer>();
+        HashFunction hashFunction = Hashing.murmur3_32();
         for (File file : task.getOutputs().getFiles()) {
-            outputFiles.add(stringInterner.intern(file.getAbsolutePath()));
+            int hash = hashFunction.hashUnencodedChars(file.getAbsolutePath()).asInt();
+            outputFileSignatures.add(hash);
         }
-        return outputFiles;
+        return outputFileSignatures;
     }
 
     private LazyTaskExecution findPreviousExecution(TaskExecution currentExecution, TaskHistory history) {
-        Set<String> outputFiles = currentExecution.getOutputFiles();
+        Set<Integer> outputFileSignatures = currentExecution.getOutputFileSignatures();
         LazyTaskExecution bestMatch = null;
         int bestMatchOverlap = 0;
         for (LazyTaskExecution configuration : history.configurations) {
-            if (outputFiles.size() == 0) {
-                if (configuration.getOutputFiles().size() == 0) {
+            if (outputFileSignatures.size() == 0) {
+                if (configuration.getOutputFileSignatures().size() == 0) {
                     bestMatch = configuration;
                     break;
                 }
             }
 
-            Set<String> intersection = new HashSet<String>(outputFiles);
-            intersection.retainAll(configuration.getOutputFiles());
+            Set<Integer> intersection = new HashSet<Integer>(outputFileSignatures);
+            intersection.retainAll(configuration.getOutputFileSignatures());
             if (intersection.size() > bestMatchOverlap) {
                 bestMatch = configuration;
                 bestMatchOverlap = intersection.size();
             }
-            if (bestMatchOverlap == outputFiles.size()) {
+            if (bestMatchOverlap == outputFileSignatures.size()) {
                 break;
             }
         }
@@ -296,12 +300,12 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
                 execution.outputFilesSnapshotId = decoder.readLong();
                 execution.setOutputFilesHash(decoder.readInt());
                 execution.setTaskClass(decoder.readString());
-                int outputFiles = decoder.readInt();
-                Set<String> files = new HashSet<String>();
-                for (int j = 0; j < outputFiles; j++) {
-                    files.add(stringInterner.intern(decoder.readString()));
+                int signatureCount = decoder.readInt();
+                Set<Integer> signatures = new HashSet<Integer>();
+                for (int j = 0; j < signatureCount; j++) {
+                    signatures.add(decoder.readInt());
                 }
-                execution.setOutputFiles(files);
+                execution.setOutputFileSignatures(signatures);
 
                 boolean inputProperties = decoder.readBoolean();
                 if (inputProperties) {
@@ -319,9 +323,9 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
                 encoder.writeLong(execution.outputFilesSnapshotId);
                 encoder.writeInt(execution.getOutputFilesHash());
                 encoder.writeString(execution.getTaskClass());
-                encoder.writeInt(execution.getOutputFiles().size());
-                for (String outputFile : execution.getOutputFiles()) {
-                    encoder.writeString(outputFile);
+                encoder.writeInt(execution.getOutputFileSignatures().size());
+                for (Integer outputFileSignature : execution.getOutputFileSignatures()) {
+                    encoder.writeInt(outputFileSignature);
                 }
                 if (execution.getInputProperties() == null || execution.getInputProperties().isEmpty()) {
                     encoder.writeBoolean(false);
