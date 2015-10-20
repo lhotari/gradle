@@ -30,8 +30,10 @@ public class FileTreeElementHasher {
     private static final byte HASH_RECORD_SEPARATOR = (byte) '\n';
 
     public static final int calculateHashForFileMetadata(Collection<? extends FileTreeElement> allFileTreeElements) {
+        SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
+
         Hasher hasher = createHasher();
-        for (FileTreeElement fileTreeElement : allFileTreeElements) {
+        for (FileTreeElement fileTreeElement : sortedFileTreeElement) {
             for (String pathPart : fileTreeElement.getRelativePath().getSegments()) {
                 hasher.putUnencodedChars(pathPart);
                 hasher.putByte(HASH_PATH_SEPARATOR);
@@ -52,8 +54,10 @@ public class FileTreeElementHasher {
     }
 
     public static final int calculateHashForFilePaths(Collection<? extends FileTreeElement> allFileTreeElements) {
+        SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
+
         Hasher hasher = createHasher();
-        for (FileTreeElement fileTreeElement : allFileTreeElements) {
+        for (FileTreeElement fileTreeElement : sortedFileTreeElement) {
             for (String pathPart : fileTreeElement.getRelativePath().getSegments()) {
                 hasher.putUnencodedChars(pathPart);
                 hasher.putByte(HASH_PATH_SEPARATOR);
@@ -63,7 +67,7 @@ public class FileTreeElementHasher {
         return hasher.hash().asInt();
     }
 
-    public static SortedSet<FileTreeElement> asSortedSet(Collection<? extends FileTreeElement> allFileTreeElements) {
+    private static SortedSet<FileTreeElement> asSortedSet(Collection<? extends FileTreeElement> allFileTreeElements) {
         if (allFileTreeElements instanceof SortedSet) {
             return (SortedSet<FileTreeElement>) allFileTreeElements;
         }
