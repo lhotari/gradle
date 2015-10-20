@@ -35,7 +35,14 @@ class OutputFilesStateChangeRule {
             FileCollectionSnapshot outputFilesBefore;
 
             public void snapshotBeforeTask() {
-                outputFilesBefore = outputFilesSnapshotter.snapshot(outputFilesPrecheckBefore);
+                getOutputFilesBefore();
+            }
+
+            private FileCollectionSnapshot getOutputFilesBefore() {
+                if (outputFilesBefore == null) {
+                    outputFilesBefore = outputFilesSnapshotter.snapshot(outputFilesPrecheckBefore);
+                }
+                return outputFilesBefore;
             }
 
             public Iterator<TaskStateChange> iterator() {
@@ -44,7 +51,7 @@ class OutputFilesStateChangeRule {
                 }
 
                 return new AbstractIterator<TaskStateChange>() {
-                    final FileCollectionSnapshot.ChangeIterator<String> changeIterator = outputFilesBefore.iterateChangesSince(previousExecution.getOutputFilesSnapshot());
+                    final FileCollectionSnapshot.ChangeIterator<String> changeIterator = getOutputFilesBefore().iterateChangesSince(previousExecution.getOutputFilesSnapshot());
                     final ChangeListenerAdapter listenerAdapter = new ChangeListenerAdapter();
 
                     @Override

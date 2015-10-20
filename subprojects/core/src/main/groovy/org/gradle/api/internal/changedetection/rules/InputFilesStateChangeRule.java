@@ -80,7 +80,7 @@ class InputFilesStateChangeRule {
             }
 
             return new AbstractIterator<TaskStateChange>() {
-                final FileCollectionSnapshot.ChangeIterator<String> changeIterator = inputFilesSnapshot.iterateChangesSince(previousExecution.getInputFilesSnapshot());
+                final FileCollectionSnapshot.ChangeIterator<String> changeIterator = getInputFilesSnapshot().iterateChangesSince(previousExecution.getInputFilesSnapshot());
                 final ChangeListenerAdapter listenerAdapter = new ChangeListenerAdapter();
 
                 @Override
@@ -95,7 +95,7 @@ class InputFilesStateChangeRule {
 
         public void snapshotAfterTask() {
             currentExecution.setInputFilesHash(inputFilesPrecheckBefore.getHash());
-            currentExecution.setInputFilesSnapshot(inputFilesSnapshot);
+            currentExecution.setInputFilesSnapshot(getInputFilesSnapshot());
         }
     }
 }
