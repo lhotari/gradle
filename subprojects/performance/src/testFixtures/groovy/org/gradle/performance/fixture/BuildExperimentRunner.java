@@ -30,6 +30,11 @@ public class BuildExperimentRunner {
     private final GradleSessionProvider executerProvider;
     private final OperationTimer timer = new OperationTimer();
 
+    public enum Phase {
+        WARMUP,
+        MEASUREMENT
+    }
+
     public BuildExperimentRunner(GradleSessionProvider executerProvider) {
         this.executerProvider = executerProvider;
         MemoryInfoCollector memoryInfoCollector = new MemoryInfoCollector();
@@ -56,7 +61,7 @@ public class BuildExperimentRunner {
             for (int i = 0; i < experiment.getWarmUpCount(); i++) {
                 System.out.println();
                 System.out.println(String.format("Warm-up #%s", i + 1));
-                runOnce(session, new MeasuredOperationList(), "warmup", i+1, experiment.getWarmUpCount());
+                runOnce(session, experiment, new MeasuredOperationList(), Phase.WARMUP, i + 1, experiment.getWarmUpCount());
             }
             waitForMillis(experiment.getSleepAfterWarmUpMillis());
             for (int i = 0; i < experiment.getInvocationCount(); i++) {
@@ -65,7 +70,7 @@ public class BuildExperimentRunner {
                 }
                 System.out.println();
                 System.out.println(String.format("Test run #%s", i + 1));
-                runOnce(session, results, "testrun", i+1, experiment.getInvocationCount());
+                runOnce(session, experiment, results, Phase.MEASUREMENT, i + 1, experiment.getInvocationCount());
             }
         } finally {
             session.cleanup();
@@ -85,8 +90,46 @@ public class BuildExperimentRunner {
         }
     }
 
-    private void runOnce(final GradleSession session, MeasuredOperationList results, String label, int loopNumber, int loopMax) {
-        final Runnable runner = session.runner(createTestLoopInfoArguments(label, loopNumber, loopMax));
+    private void runOnce(final GradleSession session, final BuildExperimentSpec experiment, MeasuredOperationList results, final Phase phase, final int loopNumber, final int loopMax) {
+        final BuildExperimentInvocationInfo invocationInfo = new BuildExperimentInvocationInfo() {
+            @Override
+            public BuildExperimentSpec getBuildExperimentSpec() {
+                return experiment;
+            }
+
+            @Override
+            public Phase getPhase() {
+                return phase;
+            }
+
+            @Override
+            public int getLoopNumber() {
+                return loopNumber;
+            }
+
+            @Override
+            public int getLoopMax() {
+                return loopMax;
+            }
+        };
+
+        final Runnable runner = session.runner(new GradleInvocationCustomizer() {
+            @Override
+            public GradleInvocationSpec customize(GradleInvocationSpec invocationSpec) {
+                GradleInvocationSpec customizedInvocation = invocationSpec.withAdditionalArgs(createTestLoopInfoArguments(phase, loopNumber, loopMax));
+                if (experiment.getListener() != null) {
+                    GradleInvocationCustomizer customizer = experiment.getListener().createInvocationCustomizer(invocationInfo);
+                    if (customizer != null) {
+                        customizedInvocation = customizer.customize(customizedInvocation);
+                    }
+                }
+                return customizedInvocation;
+            }
+        });
+
+        if (experiment.getListener() != null) {
+            experiment.getListener().beforeInvocation(invocationInfo);
+        }
 
         MeasuredOperation operation = timer.measure(new Action<MeasuredOperation>() {
             @Override
@@ -95,6 +138,10 @@ public class BuildExperimentRunner {
             }
         });
 
+        if (experiment.getListener() != null) {
+            experiment.getListener().afterInvocation(invocationInfo, operation);
+        }
+
         if (operation.getException() == null) {
             dataCollector.collect(session.getInvocation().getWorkingDirectory(), operation);
         }
@@ -102,9 +149,10 @@ public class BuildExperimentRunner {
         results.add(operation);
     }
 
-    private List<String> createTestLoopInfoArguments(String label, int loopNumber, int loopMax) {
+
+    private List<String> createTestLoopInfoArguments(Phase phase, int loopNumber, int loopMax) {
         List<String> args = new ArrayList<String>(3);
-        args.add("-PtestPhase=" + label);
+        args.add("-PtestPhase=" + phase.toString().toLowerCase());
         args.add("-PtestLoopNumber=" + loopNumber);
         args.add("-PtestLoopMax=" + loopMax);
         return args;

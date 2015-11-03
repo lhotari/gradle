@@ -16,14 +16,12 @@
 
 package org.gradle.performance.fixture;
 
-public interface GradleSession {
+import org.gradle.performance.measure.MeasuredOperation;
 
-    GradleInvocationSpec getInvocation();
+public interface BuildExperimentListener {
+    GradleInvocationCustomizer createInvocationCustomizer(BuildExperimentInvocationInfo invocationInfo);
 
-    void prepare();
+    void beforeInvocation(BuildExperimentInvocationInfo invocationInfo);
 
-    Runnable runner(GradleInvocationCustomizer invocationCustomizer);
-
-    void cleanup();
-
+    void afterInvocation(BuildExperimentInvocationInfo invocationInfo, MeasuredOperation operation);
 }
