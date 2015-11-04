@@ -16,6 +16,10 @@
 
 package org.gradle.performance
 
+import org.gradle.performance.fixture.BuildExperimentInvocationInfo
+import org.gradle.performance.fixture.BuildExperimentListener
+import org.gradle.performance.fixture.GradleInvocationCustomizer
+import org.gradle.performance.measure.MeasuredOperation
 import spock.lang.Unroll
 
 import static org.gradle.performance.measure.Duration.millis
@@ -58,5 +62,50 @@ class NativePerformanceTest extends AbstractCrossVersionPerformanceTest {
 
         then:
         result.assertCurrentVersionHasNotRegressed()
+    }
+
+    @Unroll('Project #type native build 1 change')
+    def "build with 1 change"() {
+        given:
+        runner.testId = "native build ${type} 1 change"
+        runner.testProject = "${type}NativeMonolithic"
+        runner.tasksToRun = ["assemble"]
+        runner.maxExecutionTimeRegression = maxExecutionTimeRegression
+        runner.targetVersions = ['2.8', 'last']
+        runner.buildExperimentListener = new BuildExperimentListener() {
+            @Override
+            GradleInvocationCustomizer createInvocationCustomizer(BuildExperimentInvocationInfo invocationInfo) {
+                null
+            }
+
+            @Override
+            void beforeInvocation(BuildExperimentInvocationInfo invocationInfo) {
+                if(invocationInfo.iterationNumber % 2 == 0) {
+                    // do change
+
+                } else if (invocationInfo.iterationNumber > 2) {
+                    // remove change
+
+                }
+            }
+
+            @Override
+            void afterInvocation(BuildExperimentInvocationInfo invocationInfo, MeasuredOperation operation, BuildExperimentListener.MeasurementCallback measurementCallback) {
+                if(invocationInfo.iterationNumber % 2 == 1) {
+                    measurementCallback.omitMeasurement()
+                }
+            }
+        }
+
+        when:
+        def result = runner.run()
+
+        then:
+        result.assertCurrentVersionHasNotRegressed()
+
+        where:
+        type     | maxExecutionTimeRegression
+        "small"  | millis(1000)
+        "medium" | millis(5000)
     }
 }
