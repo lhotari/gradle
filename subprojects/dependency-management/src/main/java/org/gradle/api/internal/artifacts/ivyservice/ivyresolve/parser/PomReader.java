@@ -19,7 +19,6 @@ import org.apache.ivy.core.IvyPatternHelper;
 import org.apache.ivy.core.module.descriptor.License;
 import org.apache.ivy.core.module.id.ModuleId;
 import org.apache.ivy.core.module.id.ModuleRevisionId;
-import org.apache.ivy.util.XMLHelper;
 import org.gradle.api.Transformer;
 import org.gradle.api.internal.artifacts.ivyservice.IvyUtil;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.data.MavenDependencyKey;
@@ -36,6 +35,8 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -199,8 +200,29 @@ public class PomReader implements PomParent {
             }
         };
         InputStream dtdStream = new AddDTDFilterInputStream(stream);
-        DocumentBuilder docBuilder = XMLHelper.getDocBuilder(entityResolver);
+        DocumentBuilder docBuilder = getDocBuilder(entityResolver);
         return docBuilder.parse(dtdStream, systemId);
+    }
+
+
+    private static DocumentBuilder getDocBuilder(EntityResolver entityResolver) {
+        try {
+            DocumentBuilder docBuilder = DOCUMENT_BUILDER_FACTORY.newDocumentBuilder();
+            if (entityResolver != null) {
+                docBuilder.setEntityResolver(entityResolver);
+            }
+            return docBuilder;
+        } catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = createDocumentBuilderFactory();
+
+    private static DocumentBuilderFactory createDocumentBuilderFactory() {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setValidating(false);
+        return factory;
     }
 
     public boolean hasParent() {

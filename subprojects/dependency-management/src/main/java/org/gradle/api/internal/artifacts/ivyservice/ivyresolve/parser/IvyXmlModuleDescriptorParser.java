@@ -50,10 +50,7 @@ import org.gradle.util.CollectionUtils;
 import org.gradle.util.TextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
+import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -1210,26 +1207,29 @@ public class IvyXmlModuleDescriptorParser extends AbstractModuleDescriptorParser
 
         static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
 
+        private final static SAXParserFactory SAX_PARSER_FACTORY = createSAXParserFactory(false);
+        private final static SAXParserFactory VALIDATING_SAX_PARSER_FACTORY = createSAXParserFactory(true);
+
         private static SAXParser newSAXParser(URL schema, InputStream schemaStream)
                 throws ParserConfigurationException, SAXException {
             if (schema == null) {
-                SAXParserFactory parserFactory = SAXParserFactory.newInstance();
-                parserFactory.setValidating(false);
-                parserFactory.setNamespaceAware(true);
-                SAXParser parser = parserFactory.newSAXParser();
+                SAXParser parser = SAX_PARSER_FACTORY.newSAXParser();
                 parser.getXMLReader().setFeature(XML_NAMESPACE_PREFIXES, true);
                 return parser;
             } else {
-                SAXParserFactory parserFactory = SAXParserFactory.newInstance();
-                parserFactory.setValidating(true);
-                parserFactory.setNamespaceAware(true);
-
-                SAXParser parser = parserFactory.newSAXParser();
+                SAXParser parser = VALIDATING_SAX_PARSER_FACTORY.newSAXParser();
                 parser.setProperty(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
                 parser.setProperty(JAXP_SCHEMA_SOURCE, schemaStream);
                 parser.getXMLReader().setFeature(XML_NAMESPACE_PREFIXES, true);
                 return parser;
             }
+        }
+
+        private static SAXParserFactory createSAXParserFactory(boolean validating) {
+            SAXParserFactory parserFactory = SAXParserFactory.newInstance();
+            parserFactory.setValidating(validating);
+            parserFactory.setNamespaceAware(true);
+            return parserFactory;
         }
 
         public static void parse(
