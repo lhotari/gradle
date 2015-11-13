@@ -18,7 +18,6 @@ package org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser
 import org.apache.ivy.core.module.descriptor.License
 import org.gradle.api.internal.artifacts.ivyservice.IvyUtil
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.data.MavenDependencyKey
-import org.gradle.util.Requires
 import org.xml.sax.SAXParseException
 import spock.lang.Issue
 import spock.lang.Unroll
@@ -106,7 +105,6 @@ class PomReaderTest extends AbstractPomReaderTest {
         pomReader.relocation == null
     }
 
-    @Requires(adhoc = { PomDomParser.SUPPORTS_REQUIRED_STAX_FEATURES })
     def "parse POM with m2-entities.ent entities"() {
         when:
         pomFile << """
