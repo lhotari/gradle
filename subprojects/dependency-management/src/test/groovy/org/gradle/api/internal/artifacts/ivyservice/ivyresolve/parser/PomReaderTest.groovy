@@ -18,6 +18,7 @@ package org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser
 import org.apache.ivy.core.module.descriptor.License
 import org.gradle.api.internal.artifacts.ivyservice.IvyUtil
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.data.MavenDependencyKey
+import org.gradle.util.Requires
 import org.xml.sax.SAXParseException
 import spock.lang.Issue
 import spock.lang.Unroll
@@ -104,6 +105,29 @@ class PomReaderTest extends AbstractPomReaderTest {
         pomReader.properties['project.parent.artifactId'] == 'artifact-one'
         pomReader.relocation == null
     }
+
+    @Requires(adhoc = { PomDomParser.SUPPORTS_REQUIRED_STAX_FEATURES })
+    def "parse POM with m2-entities.ent entities"() {
+        when:
+        pomFile << """
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>group-one</groupId>
+    <artifactId>artifact-one</artifactId>
+    <version>version-one</version>
+    <name>Test Artifact One</name>
+    <description>Artifact One&reg; - &copy; Acme Inc. 2015</description>
+</project>
+"""
+        pomReader = new PomReader(locallyAvailableExternalResource)
+
+        then:
+        pomReader.groupId == 'group-one'
+        pomReader.artifactId == 'artifact-one'
+        pomReader.version == 'version-one'
+        pomReader.description == 'Artifact One\u00AE - \u00A9 Acme Inc. 2015'
+    }
+
 
     def "use custom properties in POM project coordinates"() {
         when:
