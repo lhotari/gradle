@@ -196,7 +196,7 @@ public class PomReader implements PomParent {
                 if ((systemId != null) && systemId.endsWith("m2-entities.ent")) {
                     return new InputSource(org.apache.ivy.plugins.parser.m2.PomReader.class.getResourceAsStream("m2-entities.ent"));
                 }
-                return null;
+                return createEmptyInputSource();
             }
         };
         InputStream dtdStream = new AddDTDFilterInputStream(stream);
@@ -204,6 +204,14 @@ public class PomReader implements PomParent {
         return docBuilder.parse(dtdStream, systemId);
     }
 
+    private static InputSource createEmptyInputSource() {
+        return new InputSource(new InputStream() {
+            @Override
+            public int read() throws IOException {
+                return -1;
+            }
+        });
+    }
 
     private static DocumentBuilder getDocBuilder(EntityResolver entityResolver) {
         try {
@@ -222,7 +230,18 @@ public class PomReader implements PomParent {
     private static DocumentBuilderFactory createDocumentBuilderFactory() {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false);
+        disableFeature(factory, "http://xml.org/sax/features/validation");
+        disableFeature(factory, "http://apache.org/xml/features/nonvalidating/load-dtd-grammar");
+        disableFeature(factory, "http://apache.org/xml/features/nonvalidating/load-external-dtd");
         return factory;
+    }
+
+    private static void disableFeature(DocumentBuilderFactory factory, String name) {
+        try {
+            factory.setFeature(name, false);
+        } catch (ParserConfigurationException e) {
+            // ignore
+        }
     }
 
     public boolean hasParent() {

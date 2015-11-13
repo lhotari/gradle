@@ -1228,8 +1228,25 @@ public class IvyXmlModuleDescriptorParser extends AbstractModuleDescriptorParser
         private static SAXParserFactory createSAXParserFactory(boolean validating) {
             SAXParserFactory parserFactory = SAXParserFactory.newInstance();
             parserFactory.setValidating(validating);
+            if (!validating) {
+                disableFeature(parserFactory, "http://xml.org/sax/features/validation");
+                disableFeature(parserFactory, "http://apache.org/xml/features/nonvalidating/load-dtd-grammar");
+                disableFeature(parserFactory, "http://apache.org/xml/features/nonvalidating/load-external-dtd");
+            }
             parserFactory.setNamespaceAware(true);
             return parserFactory;
+        }
+
+        private static void disableFeature(SAXParserFactory factory, String name) {
+            try {
+                factory.setFeature(name, false);
+            } catch (SAXNotSupportedException e) {
+                // ignore
+            } catch (SAXNotRecognizedException e) {
+                // ignore
+            } catch (ParserConfigurationException e) {
+                // ignore
+            }
         }
 
         public static void parse(
