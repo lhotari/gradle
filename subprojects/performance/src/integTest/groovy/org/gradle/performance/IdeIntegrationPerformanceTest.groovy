@@ -33,7 +33,7 @@ class IdeIntegrationPerformanceTest extends AbstractCrossVersionPerformanceTest 
         runner.tasksToRun = ['eclipse']
         runner.maxExecutionTimeRegression = maxExecutionTimeRegression
         runner.targetVersions = ['2.2.1']
-        runner.gradleOpts = ["-Xms2g", "-Xmx2g", "-XX:+CITime"]
+        //runner.gradleOpts = ["-Xms2g", "-Xmx2g", "-XX:+CITime"]
 
         when:
         def result = runner.run()
