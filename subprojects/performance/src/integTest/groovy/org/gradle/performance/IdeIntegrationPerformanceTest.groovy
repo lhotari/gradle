@@ -17,12 +17,14 @@
 package org.gradle.performance
 
 import org.junit.experimental.categories.Category
+import spock.lang.IgnoreRest
 import spock.lang.Unroll
 
 import static org.gradle.performance.measure.Duration.millis
 
 @Category(Experiment)
 class IdeIntegrationPerformanceTest extends AbstractCrossVersionPerformanceTest {
+    @IgnoreRest
     @Unroll("Project '#testProject' eclipse")
     def "eclipse"() {
         given:
@@ -30,7 +32,8 @@ class IdeIntegrationPerformanceTest extends AbstractCrossVersionPerformanceTest 
         runner.testProject = testProject
         runner.tasksToRun = ['eclipse']
         runner.maxExecutionTimeRegression = maxExecutionTimeRegression
-        runner.targetVersions = ['1.0', '2.0', '2.2.1', '2.8', 'last']
+        runner.targetVersions = ['2.2.1']
+        runner.gradleOpts = ["-Xms2g", "-Xmx2g", "-XX:+CITime"]
 
         when:
         def result = runner.run()
@@ -40,9 +43,9 @@ class IdeIntegrationPerformanceTest extends AbstractCrossVersionPerformanceTest 
 
         where:
         testProject       | maxExecutionTimeRegression
-        "small"           | millis(800)
+        //"small"           | millis(800)
         "multi"           | millis(500)
-        "lotDependencies" | millis(500)
+        //"lotDependencies" | millis(500)
     }
 
     @Unroll("Project '#testProject' idea")
