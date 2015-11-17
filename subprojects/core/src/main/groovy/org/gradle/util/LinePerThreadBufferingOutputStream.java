@@ -16,10 +16,10 @@
 
 package org.gradle.util;
 
-import org.apache.commons.io.output.NullOutputStream;
 import org.gradle.internal.io.TextStream;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -39,7 +39,22 @@ public class LinePerThreadBufferingOutputStream extends PrintStream {
     };
 
     public LinePerThreadBufferingOutputStream(TextStream handler) {
-        super(new NullOutputStream(), true);
+        super(new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) {
+
+            }
+
+            @Override
+            public void write(byte[] b) throws IOException {
+
+            }
+        }, true);
         this.handler = handler;
     }
 
