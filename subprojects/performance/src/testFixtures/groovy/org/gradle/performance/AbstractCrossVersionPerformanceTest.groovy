@@ -32,7 +32,9 @@ import org.junit.experimental.categories.Category
 
 @Category(PerformanceTest)
 class AbstractCrossVersionPerformanceTest extends Specification {
-    @Rule TestNameTestDirectoryProvider tmpDir = new TestNameTestDirectoryProvider()
+    @Rule TestNameTestDirectoryProvider tmpDir = new TestNameTestDirectoryProvider() {
+        { suppressCleanup() }
+    }
     static def resultStore = new CrossVersionResultsStore()
     static def textReporter = new TextFileDataReporter(new File("build/performance-tests/results.txt"))
 
