@@ -35,8 +35,8 @@ import java.io.UnsupportedEncodingException;
 class ForkingGradleHandle extends OutputScrapingGradleHandle {
     final private Factory<? extends AbstractExecHandleBuilder> execHandleFactory;
 
-    final private ByteArrayOutputStream standardOutput = new ByteArrayOutputStream();
-    final private ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
+    final private ByteArrayOutputStream standardOutput = new ByteArrayOutputStream(4096);
+    final private ByteArrayOutputStream errorOutput = new ByteArrayOutputStream(4096);
     private final Action<ExecutionResult> resultAssertion;
     private final PipedOutputStream stdinPipe;
     private final boolean isDaemon;

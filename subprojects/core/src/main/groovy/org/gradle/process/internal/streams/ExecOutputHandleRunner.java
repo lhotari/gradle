@@ -34,7 +34,7 @@ public class ExecOutputHandleRunner implements Runnable {
     private final int bufferSize;
 
     public ExecOutputHandleRunner(String displayName, InputStream inputStream, OutputStream outputStream) {
-        this(displayName, inputStream, outputStream, 2048);
+        this(displayName, inputStream, outputStream, 8192);
     }
 
     ExecOutputHandleRunner(String displayName, InputStream inputStream, OutputStream outputStream, int bufferSize) {

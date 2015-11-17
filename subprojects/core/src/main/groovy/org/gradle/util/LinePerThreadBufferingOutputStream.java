@@ -16,9 +16,9 @@
 
 package org.gradle.util;
 
+import org.apache.commons.io.output.NullOutputStream;
 import org.gradle.internal.io.TextStream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.security.AccessController;
@@ -39,7 +39,7 @@ public class LinePerThreadBufferingOutputStream extends PrintStream {
     };
 
     public LinePerThreadBufferingOutputStream(TextStream handler) {
-        super(new ByteArrayOutputStream(), true);
+        super(new NullOutputStream(), true);
         this.handler = handler;
     }
 
