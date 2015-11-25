@@ -15,6 +15,7 @@
  */
 package org.gradle.build.docs.dsl.docbook
 
+import groovy.transform.CompileStatic
 import groovy.xml.dom.DOMCategory
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
@@ -25,16 +26,16 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.build.docs.BuildableDOMCategory
 import org.gradle.build.docs.DocGenerationException
 import org.gradle.build.docs.XIncludeAwareXmlProvider
+import org.gradle.build.docs.dsl.docbook.model.BlockDoc
+import org.gradle.build.docs.dsl.docbook.model.ClassDoc
+import org.gradle.build.docs.dsl.docbook.model.ClassExtensionMetaData
 import org.gradle.build.docs.dsl.links.ClassLinkMetaData
 import org.gradle.build.docs.dsl.links.LinkMetaData
-import org.gradle.build.docs.dsl.docbook.model.ClassExtensionMetaData
 import org.gradle.build.docs.dsl.source.model.ClassMetaData
 import org.gradle.build.docs.model.ClassMetaDataRepository
 import org.gradle.build.docs.model.SimpleClassMetaDataRepository
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-import org.gradle.build.docs.dsl.docbook.model.BlockDoc
-import org.gradle.build.docs.dsl.docbook.model.ClassDoc
 
 /**
  * Generates the docbook source for the DSL reference guide.
@@ -88,7 +89,7 @@ class AssembleDslDocTask extends DefaultTask {
         use(DOMCategory) {
             use(BuildableDOMCategory) {
                 Map<String, ClassExtensionMetaData> extensions = loadPluginsMetaData()
-                DslDocModel model = new DslDocModel(classDocbookDir, mainDocbookTemplate, classRepository, extensions)
+                DslDocModel model = createDslDocModel(classDocbookDir, mainDocbookTemplate, classRepository, extensions)
                 def root = mainDocbookTemplate.documentElement
                 root.section.table.each { Element table ->
                     mergeContent(table, model)
@@ -100,6 +101,11 @@ class AssembleDslDocTask extends DefaultTask {
         }
 
         linkRepository.store(linksFile)
+    }
+
+    @CompileStatic
+    private DslDocModel createDslDocModel(File classDocbookDir, Document document, ClassMetaDataRepository<ClassMetaData> classMetaData, Map<String, ClassExtensionMetaData> extensionMetaData) {
+        new DslDocModel(classDocbookDir, document, classMetaData, extensionMetaData)
     }
 
     def loadPluginsMetaData() {
