@@ -16,6 +16,7 @@
 package org.gradle.api.internal.file;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.util.internal.PatternSets;
 import org.gradle.testfixtures.internal.NativeServicesTestFixture;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
@@ -31,7 +32,7 @@ import static org.junit.Assert.fail;
 @RunWith(JMock.class)
 public class UnionFileTreeTest {
     private final JUnit4Mockery context = new JUnit4Mockery();
-    private final UnionFileTree set = new UnionFileTree("<display name>");
+    private final UnionFileTree set = new UnionFileTree("<display name>", PatternSets.getNonCachingPatternSetFactory());
 
     @Before
     public void setUp() {

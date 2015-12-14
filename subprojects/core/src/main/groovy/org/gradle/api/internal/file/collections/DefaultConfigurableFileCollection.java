@@ -22,6 +22,8 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.tasks.DefaultTaskDependency;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.internal.tasks.TaskResolver;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.util.GUtil;
 
 import java.util.Arrays;
@@ -89,6 +91,11 @@ public class DefaultConfigurableFileCollection extends CompositeFileCollection i
     public void visitContents(FileCollectionResolveContext context) {
         FileCollectionResolveContext nested = context.push(resolver);
         nested.add(files);
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return resolver.getPatternSetFactory();
     }
 
     @Override

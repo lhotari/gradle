@@ -22,6 +22,8 @@ import org.gradle.api.internal.file.AbstractFileTree;
 import org.gradle.api.internal.file.FileSystemSubset;
 import org.gradle.api.tasks.TaskDependency;
 import org.gradle.api.tasks.util.PatternFilterable;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.Collection;
@@ -33,7 +35,8 @@ import java.util.Collections;
 public class FileTreeAdapter extends AbstractFileTree implements FileCollectionContainer {
     private final MinimalFileTree tree;
 
-    public FileTreeAdapter(MinimalFileTree tree) {
+    public FileTreeAdapter(Factory<PatternSet> patternSetFactory, MinimalFileTree tree) {
+        super(patternSetFactory);
         this.tree = tree;
     }
 
@@ -100,7 +103,7 @@ public class FileTreeAdapter extends AbstractFileTree implements FileCollectionC
     public FileTree matching(PatternFilterable patterns) {
         if (tree instanceof PatternFilterableFileTree) {
             PatternFilterableFileTree filterableTree = (PatternFilterableFileTree) tree;
-            return new FileTreeAdapter(filterableTree.filter(patterns));
+            return new FileTreeAdapter(patternSetFactory, filterableTree.filter(patterns));
         }
         return super.matching(patterns);
     }

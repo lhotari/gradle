@@ -137,8 +137,8 @@ public class IvyPublishPlugin implements Plugin<Project> {
             IvyPublicationIdentity publicationIdentity = new DefaultIvyPublicationIdentity(module.getGroup(), module.getName(), module.getVersion());
             NotationParser<Object, IvyArtifact> notationParser = new IvyArtifactNotationParserFactory(instantiator, fileResolver, publicationIdentity).create();
             return instantiator.newInstance(
-                    DefaultIvyPublication.class,
-                    name, instantiator, publicationIdentity, notationParser, projectDependencyResolver
+                DefaultIvyPublication.class,
+                name, instantiator, publicationIdentity, notationParser, projectDependencyResolver, fileResolver.getPatternSetFactory()
             );
         }
     }

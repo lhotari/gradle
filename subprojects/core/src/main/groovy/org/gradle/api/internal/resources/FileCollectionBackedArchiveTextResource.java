@@ -23,6 +23,7 @@ import org.gradle.api.internal.file.TemporaryFileProvider;
 import org.gradle.api.internal.file.collections.LazilyInitializedFileCollection;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -44,9 +45,14 @@ public class FileCollectionBackedArchiveTextResource extends FileCollectionBacke
                 String fileExtension = Files.getFileExtension(archiveFile.getName());
                 FileTree archiveContents = fileExtension.equals("jar") || fileExtension.equals("zip")
                     ? fileOperations.zipTree(archiveFile) : fileOperations.tarTree(archiveFile);
-                PatternSet patternSet = new PatternSet();
+                PatternSet patternSet = fileOperations.getFileResolver().getPatternSetFactory().create();
                 patternSet.include(path);
                 return archiveContents.matching(patternSet);
+            }
+
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                return fileOperations.getFileResolver().getPatternSetFactory();
             }
 
             @Override
@@ -55,4 +61,5 @@ public class FileCollectionBackedArchiveTextResource extends FileCollectionBacke
             }
         }, charset);
     }
+
 }

@@ -133,7 +133,7 @@ public class Test extends ConventionTask implements JavaForkOptions, PatternFilt
     private List<File> testSrcDirs = new ArrayList<File>();
     private File testClassesDir;
     private File binResultsDir;
-    private PatternFilterable patternSet = new PatternSet();
+    private PatternFilterable patternSet;
     private boolean ignoreFailures;
     private FileCollection classpath;
     private TestFramework testFramework;
@@ -146,6 +146,7 @@ public class Test extends ConventionTask implements JavaForkOptions, PatternFilt
     private final DefaultTestTaskReports reports;
 
     public Test() {
+        patternSet = getPatternSetFactory().create();
         ListenerManager listenerManager = getListenerManager();
         testListenerInternalBroadcaster = listenerManager.createAnonymousBroadcaster(TestListenerInternal.class);
         testListenerBroadcaster = listenerManager.createAnonymousBroadcaster(TestListener.class);
@@ -201,6 +202,11 @@ public class Test extends ConventionTask implements JavaForkOptions, PatternFilt
 
     @Inject
     protected ListenerManager getListenerManager() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Inject
+    protected Factory<PatternSet> getPatternSetFactory() {
         throw new UnsupportedOperationException();
     }
 

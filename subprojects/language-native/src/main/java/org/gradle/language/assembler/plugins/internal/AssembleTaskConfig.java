@@ -19,6 +19,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.language.assembler.tasks.Assemble;
 import org.gradle.language.base.LanguageSourceSet;
@@ -40,10 +41,10 @@ public class AssembleTaskConfig implements SourceTransformTaskConfig {
     }
 
     public void configureTask(Task task, BinarySpec binary, LanguageSourceSet sourceSet, ServiceRegistry serviceRegistry) {
-        configureAssembleTask((Assemble) task, (NativeBinarySpecInternal) binary, (LanguageSourceSetInternal) sourceSet);
+        configureAssembleTask((Assemble) task, (NativeBinarySpecInternal) binary, (LanguageSourceSetInternal) sourceSet, serviceRegistry.getFactory(PatternSet.class));
     }
 
-    private void configureAssembleTask(Assemble task, final NativeBinarySpecInternal binary, final LanguageSourceSetInternal sourceSet) {
+    private void configureAssembleTask(Assemble task, final NativeBinarySpecInternal binary, final LanguageSourceSetInternal sourceSet, Factory<PatternSet> patternSetFactory) {
         task.setDescription(String.format("Assembles the %s of %s", sourceSet, binary));
 
         task.setToolChain(binary.getToolChain());
@@ -57,6 +58,6 @@ public class AssembleTaskConfig implements SourceTransformTaskConfig {
         Tool assemblerTool = binary.getToolByName("assembler");
         task.setAssemblerArgs(assemblerTool.getArgs());
 
-        binary.binaryInputs(task.getOutputs().getFiles().getAsFileTree().matching(new PatternSet().include("**/*.obj", "**/*.o")));
+        binary.binaryInputs(task.getOutputs().getFiles().getAsFileTree().matching(patternSetFactory.create().include("**/*.obj", "**/*.o")));
     }
 }

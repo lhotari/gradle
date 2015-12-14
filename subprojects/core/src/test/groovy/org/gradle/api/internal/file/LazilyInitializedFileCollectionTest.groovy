@@ -19,8 +19,12 @@ import org.gradle.api.Task
 import org.gradle.api.internal.file.collections.LazilyInitializedFileCollection
 import org.gradle.api.internal.file.collections.SimpleFileCollection
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext
+import org.gradle.api.tasks.util.PatternSet
+import org.gradle.internal.Factory
 import org.gradle.util.UsesNativeServices
 import spock.lang.Specification
+
+import static org.gradle.api.internal.file.TestFiles.resolver
 
 @UsesNativeServices
 class LazilyInitializedFileCollectionTest extends Specification {
@@ -31,6 +35,11 @@ class LazilyInitializedFileCollectionTest extends Specification {
         @Override
         String getDisplayName() {
             return "test collection"
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return resolver().getPatternSetFactory()
         }
 
         @Override

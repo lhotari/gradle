@@ -18,6 +18,7 @@ package org.gradle.api.internal.file.collections;
 import org.gradle.api.Action;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.internal.file.TestFiles;
+import org.gradle.api.tasks.util.internal.PatternSets;
 import org.gradle.test.fixtures.file.TestFile;
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider;
 import org.junit.Rule;
@@ -40,7 +41,7 @@ public class MapFileTreeTest {
     @Rule
     public final TestNameTestDirectoryProvider tmpDir = new TestNameTestDirectoryProvider();
     private TestFile rootDir = tmpDir.getTestDirectory();
-    private final MapFileTree tree = new MapFileTree(rootDir, TestFiles.fileSystem());
+    private final MapFileTree tree = new MapFileTree(rootDir, TestFiles.fileSystem(), PatternSets.getNonCachingPatternSetFactory());
 
     @Test
     public void isEmptyByDefault() {
@@ -91,7 +92,7 @@ public class MapFileTreeTest {
         };
         tree.add("file.txt", fileAction);
 
-        FileTreeAdapter fileTreeAdapter = new FileTreeAdapter(tree);
+        FileTreeAdapter fileTreeAdapter = new FileTreeAdapter(PatternSets.getNonCachingPatternSetFactory(), tree);
         File file = rootDir.file("file.txt");
 
         assertTrue(fileTreeAdapter.contains(file));

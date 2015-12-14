@@ -85,7 +85,7 @@ class ZipCopyActionTest extends Specification {
         expected.put("file", 1);
 
         then:
-        assertVisitsPermissions(new ZipFileTree(zipFile, null, TestFiles.fileSystem()), expected)
+        assertVisitsPermissions(new ZipFileTree(zipFile, null, TestFiles.fileSystem(), TestFiles.resolver().getPatternSetFactory()), expected)
     }
 
     void wrapsFailureToOpenOutputFile() {

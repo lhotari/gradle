@@ -19,6 +19,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.TaskInternal
 import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.internal.file.FileTreeInternal
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.util.UsesNativeServices
 import spock.lang.Specification
 
@@ -29,8 +30,9 @@ class DefaultTaskInputsTest extends Specification {
     private final File treeFile = new File('tree')
     private final tree = [getFiles: { [treeFile] as Set}] as FileTreeInternal
     private final FileResolver resolver = [
-            resolve: {new File(it)},
-            resolveFilesAsTree: {tree}
+        resolve             : { new File(it) },
+        resolveFilesAsTree  : { tree },
+        getPatternSetFactory: { TestFiles.resolver().getPatternSetFactory() }
     ] as FileResolver
 
     private TaskMutator taskStatusNagger = Stub() {

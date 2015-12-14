@@ -25,7 +25,12 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.FileSystemSubset;
-import org.gradle.api.internal.file.collections.*;
+import org.gradle.api.internal.file.collections.DirectoryFileTree;
+import org.gradle.api.internal.file.collections.FileSystemMirroringFileTree;
+import org.gradle.api.internal.file.collections.MinimalFileTree;
+import org.gradle.api.internal.file.collections.SingletonFileTree;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.nativeintegration.filesystem.Chmod;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
@@ -43,12 +48,14 @@ public class ZipFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     private final File zipFile;
     private final Chmod chmod;
     private final File tmpDir;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public ZipFileTree(File zipFile, File tmpDir, Chmod chmod) {
+    public ZipFileTree(File zipFile, File tmpDir, Chmod chmod, Factory<PatternSet> patternSetFactory) {
         this.zipFile = zipFile;
         this.chmod = chmod;
         String expandDirName = String.format("%s_%s", zipFile.getName(), HashUtil.createCompactMD5(zipFile.getAbsolutePath()));
         this.tmpDir = new File(tmpDir, expandDirName);
+        this.patternSetFactory = patternSetFactory;
     }
 
     public String getDisplayName() {
@@ -56,7 +63,7 @@ public class ZipFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     }
 
     public DirectoryFileTree getMirror() {
-        return new DirectoryFileTree(tmpDir);
+        return new DirectoryFileTree(tmpDir, patternSetFactory.create());
     }
 
     public void visit(FileVisitor visitor) {

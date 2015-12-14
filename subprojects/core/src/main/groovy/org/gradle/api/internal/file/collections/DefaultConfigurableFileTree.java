@@ -30,6 +30,7 @@ import org.gradle.api.internal.tasks.TaskResolver;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.util.ConfigureUtil;
 
 import java.io.File;
@@ -38,7 +39,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DefaultConfigurableFileTree extends CompositeFileTree implements ConfigurableFileTree {
-    private PatternSet patternSet = new PatternSet();
+    private PatternSet patternSet;
     private Object dir;
     private final FileResolver resolver;
     private final FileCopier fileCopier;
@@ -51,12 +52,18 @@ public class DefaultConfigurableFileTree extends CompositeFileTree implements Co
     public DefaultConfigurableFileTree(Map<String, ?> args, FileResolver resolver, TaskResolver taskResolver, FileCopier fileCopier) {
         this.resolver = resolver;
         this.fileCopier = fileCopier;
+        this.patternSet = resolver.getPatternSetFactory().create();
         ConfigureUtil.configureByMap(args, this);
         buildDependency = new DefaultTaskDependency(taskResolver);
     }
 
     public PatternSet getPatterns() {
         return patternSet;
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return resolver.getPatternSetFactory();
     }
 
     public DefaultConfigurableFileTree setDir(Object dir) {

@@ -22,7 +22,9 @@ import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
 import org.gradle.api.internal.file.collections.ResolvableFileCollectionResolveContext;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.tasks.util.PatternFilterable;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Cast;
+import org.gradle.internal.Factory;
 
 import java.util.Collection;
 
@@ -35,7 +37,7 @@ public abstract class CompositeFileTree extends CompositeFileCollection implemen
     }
 
     public FileTree plus(FileTree fileTree) {
-        return new UnionFileTree(this, Cast.cast(FileTreeInternal.class, fileTree));
+        return new UnionFileTree(getPatternSetFactory(), this, Cast.cast(FileTreeInternal.class, fileTree));
     }
 
     public FileTree matching(Closure filterConfigClosure) {
@@ -100,6 +102,11 @@ public abstract class CompositeFileTree extends CompositeFileCollection implemen
                     context.add(set.matching(patterns));
                 }
             }
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return CompositeFileTree.this.getPatternSetFactory();
         }
 
         @Override

@@ -81,7 +81,7 @@ public class DefaultProjectDependency extends AbstractModuleDependency implement
     }
 
     public Set<File> resolve(boolean transitive) {
-        CachingDependencyResolveContext context = new CachingDependencyResolveContext(transitive);
+        CachingDependencyResolveContext context = new CachingDependencyResolveContext(transitive, dependencyProject.getFileResolver().getPatternSetFactory());
         context.add(this);
         return context.resolve().getFiles();
     }

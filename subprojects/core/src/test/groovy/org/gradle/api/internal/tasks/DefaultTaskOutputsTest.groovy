@@ -19,6 +19,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.TaskExecutionHistory
 import org.gradle.api.internal.TaskInternal
 import org.gradle.api.internal.file.FileResolver
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.util.UsesNativeServices
 import spock.lang.Specification
 
@@ -29,7 +30,11 @@ class DefaultTaskOutputsTest extends Specification {
         mutate(_, _) >> { String method, Runnable action -> action.run() }
     }
     private final TaskInternal task = [toString: {'task'}] as TaskInternal
-    private final DefaultTaskOutputs outputs = new DefaultTaskOutputs({new File(it)} as FileResolver, task, taskStatusNagger)
+    private final FileResolver resolver = [
+        resolve             : { new File(it) },
+        getPatternSetFactory: { TestFiles.resolver().getPatternSetFactory() }
+    ] as FileResolver
+    private final DefaultTaskOutputs outputs = new DefaultTaskOutputs(resolver, task, taskStatusNagger)
 
     public void hasNoOutputsByDefault() {
         setup:

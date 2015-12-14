@@ -17,14 +17,15 @@
 package org.gradle.api.internal.file.collections;
 
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 
 public class FileBackedDirectoryFileTree extends DirectoryFileTree {
     private final File file;
 
-    public FileBackedDirectoryFileTree(File file) {
-        super(file.getParentFile(), new PatternSet().include(file.getName()));
+    public FileBackedDirectoryFileTree(File file, Factory<PatternSet> patternSetFactory) {
+        super(file.getParentFile(), patternSetFactory.create().include(file.getName()));
         this.file = file;
     }
 

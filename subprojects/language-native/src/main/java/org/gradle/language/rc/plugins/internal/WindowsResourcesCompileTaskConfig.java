@@ -20,6 +20,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.base.internal.LanguageSourceSetInternal;
@@ -45,10 +46,10 @@ public class WindowsResourcesCompileTaskConfig implements SourceTransformTaskCon
     }
 
     public void configureTask(Task task, BinarySpec binary, LanguageSourceSet sourceSet, ServiceRegistry serviceRegistry) {
-        configureResourceCompileTask((WindowsResourceCompile) task, (NativeBinarySpecInternal) binary, (WindowsResourceSet) sourceSet);
+        configureResourceCompileTask((WindowsResourceCompile) task, (NativeBinarySpecInternal) binary, (WindowsResourceSet) sourceSet, serviceRegistry.getFactory(PatternSet.class));
     }
 
-    private void configureResourceCompileTask(WindowsResourceCompile task, final NativeBinarySpecInternal binary, final WindowsResourceSet sourceSet) {
+    private void configureResourceCompileTask(WindowsResourceCompile task, final NativeBinarySpecInternal binary, final WindowsResourceSet sourceSet, final Factory<PatternSet> patternSetFactory) {
         task.setDescription(String.format("Compiles resources of the %s of %s", sourceSet, binary));
 
         task.setToolChain(binary.getToolChain());
@@ -68,7 +69,7 @@ public class WindowsResourcesCompileTaskConfig implements SourceTransformTaskCon
         task.setMacros(rcCompiler.getMacros());
         task.setCompilerArgs(rcCompiler.getArgs());
 
-        FileTree resourceOutputs = task.getOutputs().getFiles().getAsFileTree().matching(new PatternSet().include("**/*.res"));
+        FileTree resourceOutputs = task.getOutputs().getFiles().getAsFileTree().matching(patternSetFactory.create().include("**/*.res"));
         binary.binaryInputs(resourceOutputs);
         if (binary instanceof StaticLibraryBinarySpecInternal) {
             ((StaticLibraryBinarySpecInternal) binary).additionalLinkFiles(resourceOutputs);

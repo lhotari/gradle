@@ -25,6 +25,8 @@ import org.gradle.api.internal.file.FileCollectionInternal;
 import org.gradle.api.internal.file.collections.LazilyInitializedFileCollection;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 
@@ -39,10 +41,12 @@ public class PlayPluginConfigurations {
 
     private final ConfigurationContainer configurations;
     private final DependencyHandler dependencyHandler;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public PlayPluginConfigurations(ConfigurationContainer configurations, DependencyHandler dependencyHandler) {
+    public PlayPluginConfigurations(ConfigurationContainer configurations, DependencyHandler dependencyHandler, Factory<PatternSet> patternSetFactory) {
         this.configurations = configurations;
         this.dependencyHandler = dependencyHandler;
+        this.patternSetFactory = patternSetFactory;
         Configuration playPlatform = configurations.create(PLATFORM_CONFIGURATION);
 
         Configuration playCompile = configurations.create(COMPILE_CONFIGURATION);
@@ -92,11 +96,11 @@ public class PlayPluginConfigurations {
         }
 
         FileCollection getChangingArtifacts() {
-            return new FilterByProjectComponentTypeFileCollection(getConfiguration(), true);
+            return new FilterByProjectComponentTypeFileCollection(getConfiguration(), true, patternSetFactory);
         }
 
         FileCollection getNonChangingArtifacts() {
-            return new FilterByProjectComponentTypeFileCollection(getConfiguration(), false);
+            return new FilterByProjectComponentTypeFileCollection(getConfiguration(), false, patternSetFactory);
         }
 
         void addDependency(Object notation) {
@@ -111,10 +115,12 @@ public class PlayPluginConfigurations {
     private static class FilterByProjectComponentTypeFileCollection extends LazilyInitializedFileCollection {
         private final Configuration configuration;
         private final boolean matchProjectComponents;
+        private final Factory<PatternSet> patternSetFactory;
 
-        private FilterByProjectComponentTypeFileCollection(Configuration configuration, boolean matchProjectComponents) {
+        private FilterByProjectComponentTypeFileCollection(Configuration configuration, boolean matchProjectComponents, Factory<PatternSet> patternSetFactory) {
             this.configuration = configuration;
             this.matchProjectComponents = matchProjectComponents;
+            this.patternSetFactory = patternSetFactory;
         }
 
         @Override
@@ -131,6 +137,11 @@ public class PlayPluginConfigurations {
                 }
             }
             return new SimpleFileCollection(files.build());
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return patternSetFactory;
         }
 
         @Override

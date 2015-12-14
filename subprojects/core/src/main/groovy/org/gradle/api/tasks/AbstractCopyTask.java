@@ -23,6 +23,8 @@ import org.gradle.api.internal.file.FileLookup;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.copy.*;
 import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.nativeplatform.filesystem.FileSystem;
 import org.gradle.internal.reflect.Instantiator;
 
@@ -70,6 +72,11 @@ public abstract class AbstractCopyTask extends ConventionTask implements CopySpe
 
     @Inject
     protected FileLookup getFileLookup() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Inject
+    protected Factory<PatternSet> getPatternSetFactory() {
         throw new UnsupportedOperationException();
     }
 

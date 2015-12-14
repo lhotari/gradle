@@ -18,6 +18,7 @@ package org.gradle.api.internal.file.collections
 import org.gradle.api.Buildable
 import org.gradle.api.file.FileVisitDetails
 import org.gradle.api.file.FileVisitor
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.tasks.TaskDependency
 import org.gradle.api.tasks.util.PatternFilterable
 import org.gradle.util.UsesNativeServices
@@ -25,11 +26,13 @@ import spock.lang.Specification
 
 @UsesNativeServices
 class FileTreeAdapterTest extends Specification {
+    def patternSetFactory = TestFiles.resolver().getPatternSetFactory()
+
     def toStringUsesDisplayName() {
         MinimalFileTree tree = Mock()
         _ * tree.displayName >> 'display name'
 
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
 
         expect:
         adapter.toString() == 'display name'
@@ -37,7 +40,7 @@ class FileTreeAdapterTest extends Specification {
 
     def visitDelegatesToTargetTree() {
         MinimalFileTree tree = Mock()
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
         FileVisitor visitor = Mock()
 
         when:
@@ -50,7 +53,7 @@ class FileTreeAdapterTest extends Specification {
 
     def resolveAddsTargetTreeToContext() {
         MinimalFileTree tree = Mock()
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
         FileCollectionResolveContext context = Mock()
 
         when:
@@ -63,8 +66,8 @@ class FileTreeAdapterTest extends Specification {
 
     def getAsFileTreesConvertsMirroringFileTreeByVisitingAllElementsAndReturningLocalMirror() {
         FileSystemMirroringFileTree tree = Mock()
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
-        DirectoryFileTree mirror = new DirectoryFileTree(new File('a'))
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
+        DirectoryFileTree mirror = new DirectoryFileTree(new File('a'), patternSetFactory.create())
 
         when:
         def result = adapter.asFileTrees
@@ -78,7 +81,7 @@ class FileTreeAdapterTest extends Specification {
 
     def getAsFileTreesConvertsEmptyMirroringTree() {
         FileSystemMirroringFileTree tree = Mock()
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
 
         when:
         def result = adapter.asFileTrees
@@ -92,7 +95,7 @@ class FileTreeAdapterTest extends Specification {
     def getAsFileTreesConvertsLocalFileTree() {
         LocalFileTree tree = Mock()
         DirectoryFileTree contents = Mock()
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
 
         when:
         def result = adapter.asFileTrees
@@ -106,7 +109,7 @@ class FileTreeAdapterTest extends Specification {
     def getBuildDependenciesDelegatesToTargetTreeWhenItImplementsBuildable() {
         TestFileTree tree = Mock()
         TaskDependency expectedDependency = Mock()
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
 
         when:
         def dependencies = adapter.buildDependencies
@@ -120,7 +123,7 @@ class FileTreeAdapterTest extends Specification {
         PatternFilterableFileTree tree = Mock()
         MinimalFileTree filtered = Mock()
         PatternFilterable filter = Mock()
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
 
         when:
         def filteredAdapter = adapter.matching(filter)
@@ -134,7 +137,7 @@ class FileTreeAdapterTest extends Specification {
     def containsDelegatesToTargetTreeWhenItImplementsRandomAccessFileCollection() {
         TestFileTree tree = Mock()
         File f = new File('a')
-        FileTreeAdapter adapter = new FileTreeAdapter(tree)
+        FileTreeAdapter adapter = new FileTreeAdapter(patternSetFactory, tree)
 
         when:
         def result = adapter.contains(f)
@@ -143,7 +146,8 @@ class FileTreeAdapterTest extends Specification {
         result
         1 * tree.contains(f) >> true
     }
+
+    interface TestFileTree extends MinimalFileTree, Buildable, RandomAccessFileCollection {
+    }
 }
 
-interface TestFileTree extends MinimalFileTree, Buildable, RandomAccessFileCollection {
-}

@@ -16,20 +16,16 @@
 package org.gradle.internal.resource.local.ivy;
 
 import org.gradle.api.internal.artifacts.ivyservice.ArtifactCacheMetaData;
-import org.gradle.internal.component.external.model.ModuleComponentArtifactMetaData;
 import org.gradle.api.internal.artifacts.mvnsettings.CannotLocateLocalMavenRepositoryException;
 import org.gradle.api.internal.artifacts.mvnsettings.LocalMavenRepositoryLocator;
 import org.gradle.api.internal.artifacts.repositories.resolver.IvyResourcePattern;
 import org.gradle.api.internal.artifacts.repositories.resolver.M2ResourcePattern;
 import org.gradle.api.internal.artifacts.repositories.resolver.ResourcePattern;
-import org.gradle.internal.resource.local.CompositeLocallyAvailableResourceFinder;
-import org.gradle.internal.resource.local.LocallyAvailableResourceCandidates;
-import org.gradle.internal.resource.local.LocallyAvailableResourceFinder;
-import org.gradle.internal.resource.local.LocallyAvailableResourceFinderSearchableFileStoreAdapter;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
-import org.gradle.internal.resource.local.FileStoreSearcher;
+import org.gradle.internal.component.external.model.ModuleComponentArtifactMetaData;
 import org.gradle.internal.hash.HashValue;
-import org.gradle.internal.resource.local.LocallyAvailableResource;
+import org.gradle.internal.resource.local.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,12 +39,14 @@ public class LocallyAvailableResourceFinderFactory implements Factory<LocallyAva
     private final File rootCachesDirectory;
     private final LocalMavenRepositoryLocator localMavenRepositoryLocator;
     private final FileStoreSearcher<ModuleComponentArtifactMetaData> fileStore;
+    private final Factory<PatternSet> patternSetFactory;
 
     public LocallyAvailableResourceFinderFactory(
-            ArtifactCacheMetaData artifactCacheMetaData, LocalMavenRepositoryLocator localMavenRepositoryLocator, FileStoreSearcher<ModuleComponentArtifactMetaData> fileStore) {
+        ArtifactCacheMetaData artifactCacheMetaData, LocalMavenRepositoryLocator localMavenRepositoryLocator, FileStoreSearcher<ModuleComponentArtifactMetaData> fileStore, Factory<PatternSet> patternSetFactory) {
         this.rootCachesDirectory = artifactCacheMetaData.getCacheDir().getParentFile();
         this.localMavenRepositoryLocator = localMavenRepositoryLocator;
         this.fileStore = fileStore;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public LocallyAvailableResourceFinder<ModuleComponentArtifactMetaData> create() {
@@ -123,7 +121,7 @@ public class LocallyAvailableResourceFinderFactory implements Factory<LocallyAva
 
     private void addForPattern(List<LocallyAvailableResourceFinder<ModuleComponentArtifactMetaData>> finders, File baseDir, ResourcePattern pattern) {
         if (baseDir.exists()) {
-            finders.add(new PatternBasedLocallyAvailableResourceFinder(baseDir, pattern));
+            finders.add(new PatternBasedLocallyAvailableResourceFinder(baseDir, pattern, patternSetFactory));
         }
     }
 

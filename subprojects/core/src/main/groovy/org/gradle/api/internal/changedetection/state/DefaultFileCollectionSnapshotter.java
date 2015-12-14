@@ -24,6 +24,8 @@ import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContext;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.serialize.SerializerRegistry;
 import org.gradle.util.ChangeListener;
 import org.gradle.util.NoOpChangeListener;
@@ -36,11 +38,13 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     private final FileSnapshotter snapshotter;
     private TaskArtifactStateCacheAccess cacheAccess;
     private final StringInterner stringInterner;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public DefaultFileCollectionSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner) {
+    public DefaultFileCollectionSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, Factory<PatternSet> patternSetFactory) {
         this.snapshotter = snapshotter;
         this.cacheAccess = cacheAccess;
         this.stringInterner = stringInterner;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public void registerSerializers(SerializerRegistry<FileCollectionSnapshot> registry) {
@@ -88,7 +92,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     protected void visitFiles(FileCollection input, final List<FileVisitDetails> allFileVisitDetails, final List<File> missingFiles) {
-        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext();
+        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(patternSetFactory);
         context.add(input);
         List<FileTreeInternal> fileTrees = context.resolveAsFileTrees();
 

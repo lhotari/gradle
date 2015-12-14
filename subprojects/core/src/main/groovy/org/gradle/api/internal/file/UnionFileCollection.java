@@ -17,6 +17,8 @@ package org.gradle.api.internal.file;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.util.GUtil;
 
 import java.util.Arrays;
@@ -25,13 +27,15 @@ import java.util.Set;
 
 public class UnionFileCollection extends CompositeFileCollection {
     private final Set<FileCollection> source;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public UnionFileCollection(FileCollection... source) {
-        this(Arrays.asList(source));
+    public UnionFileCollection(Factory<PatternSet> patternSetFactory, FileCollection... source) {
+        this(patternSetFactory, Arrays.asList(source));
     }
 
-    public UnionFileCollection(Iterable<? extends FileCollection> source) {
+    public UnionFileCollection(Factory<PatternSet> patternSetFactory, Iterable<? extends FileCollection> source) {
         this.source = GUtil.addToCollection(new LinkedHashSet<FileCollection>(), source);
+        this.patternSetFactory = patternSetFactory;
     }
 
     public String getDisplayName() {
@@ -51,5 +55,10 @@ public class UnionFileCollection extends CompositeFileCollection {
     @Override
     public void visitContents(FileCollectionResolveContext context) {
         context.add(source);
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return patternSetFactory;
     }
 }

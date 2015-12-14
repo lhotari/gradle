@@ -27,6 +27,7 @@ import org.gradle.api.internal.file.pattern.PatternStepFactory;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 import org.gradle.internal.nativeintegration.services.FileSystems;
 
@@ -48,12 +49,13 @@ public class SingleIncludePatternFileTree implements MinimalFileTree {
     private final List<String> patternSegments;
     private final Spec<FileTreeElement> excludeSpec;
     private final FileSystem fileSystem = FileSystems.getDefault();
+    private final Factory<PatternSet> patternSetFactory;
 
-    public SingleIncludePatternFileTree(File baseDir, String includePattern) {
-        this(baseDir, includePattern, Specs.<FileTreeElement>satisfyNone());
+    public SingleIncludePatternFileTree(File baseDir, String includePattern, Factory<PatternSet> patternSetFactory) {
+        this(baseDir, includePattern, Specs.<FileTreeElement>satisfyNone(), patternSetFactory);
     }
 
-    public SingleIncludePatternFileTree(File baseDir, String includePattern, Spec<FileTreeElement> excludeSpec) {
+    public SingleIncludePatternFileTree(File baseDir, String includePattern, Spec<FileTreeElement> excludeSpec, Factory<PatternSet> patternSetFactory) {
         this.baseDir = baseDir;
         if (includePattern.endsWith("/") || includePattern.endsWith("\\")) {
             includePattern += "**";
@@ -61,6 +63,7 @@ public class SingleIncludePatternFileTree implements MinimalFileTree {
         this.includePattern = includePattern;
         this.patternSegments = Arrays.asList(includePattern.split("[/\\\\]"));
         this.excludeSpec = excludeSpec;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public void visit(FileVisitor visitor) {
@@ -75,7 +78,7 @@ public class SingleIncludePatternFileTree implements MinimalFileTree {
         String segment = patternSegments.get(segmentIndex);
 
         if (segment.contains("**")) {
-            PatternSet patternSet = new PatternSet();
+            PatternSet patternSet = patternSetFactory.create();
             patternSet.include(includePattern);
             patternSet.exclude(excludeSpec);
             DirectoryFileTree fileTree = new DirectoryFileTree(baseDir, patternSet);
@@ -134,7 +137,7 @@ public class SingleIncludePatternFileTree implements MinimalFileTree {
 
     @Override
     public void registerWatchPoints(FileSystemSubset.Builder builder) {
-        builder.add(baseDir, new PatternSet().include(includePattern).exclude(excludeSpec));
+        builder.add(baseDir, patternSetFactory.create().include(includePattern).exclude(excludeSpec));
     }
 
     @Override

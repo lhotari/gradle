@@ -22,6 +22,8 @@ import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
 import org.gradle.api.internal.file.collections.MinimalFileSet;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.testfixtures.internal.NativeServicesTestFixture;
 import org.gradle.util.JUnit4GroovyMockery;
 import org.jmock.Expectations;
@@ -37,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import static org.gradle.api.internal.file.TestFiles.resolver;
 import static org.gradle.util.WrapUtil.*;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -155,8 +158,8 @@ public class CompositeFileCollectionTest {
 
     @Test
     public void getAsFileTreesReturnsUnionOfFileTrees() {
-        final DirectoryFileTree set1 = new DirectoryFileTree(new File("dir1").getAbsoluteFile());
-        final DirectoryFileTree set2 = new DirectoryFileTree(new File("dir2").getAbsoluteFile());
+        final DirectoryFileTree set1 = new DirectoryFileTree(new File("dir1").getAbsoluteFile(), new PatternSet());
+        final DirectoryFileTree set2 = new DirectoryFileTree(new File("dir2").getAbsoluteFile(), new PatternSet());
 
         context.checking(new Expectations() {{
             one(source1).getAsFileTrees();
@@ -253,6 +256,11 @@ public class CompositeFileCollectionTest {
         @Override
         public void visitContents(FileCollectionResolveContext context) {
             context.add(sourceCollections);
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return resolver().getPatternSetFactory();
         }
 
         @Override

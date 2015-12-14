@@ -26,7 +26,7 @@ class DefaultCompositeFileTreeTest extends WorkspaceTest {
 
     def "can be empty"() {
         when:
-        def ft = new DefaultCompositeFileTree(Collections.emptyList())
+        def ft = new DefaultCompositeFileTree(Collections.emptyList(), TestFiles.resolver().getPatternSetFactory())
 
         then:
         ft.files.isEmpty()
@@ -41,7 +41,7 @@ class DefaultCompositeFileTreeTest extends WorkspaceTest {
         when:
         def a = fileResolver.resolveFilesAsTree("a")
         def b = fileResolver.resolveFilesAsTree("b")
-        def composite = new DefaultCompositeFileTree(Arrays.asList(a, b))
+        def composite = new DefaultCompositeFileTree(Arrays.asList(a, b), TestFiles.resolver().getPatternSetFactory())
 
         then:
         composite.files == [a1, b1].toSet()
@@ -56,7 +56,7 @@ class DefaultCompositeFileTreeTest extends WorkspaceTest {
         when:
         def a = fileResolver.resolveFilesAsTree("a")
         def b = fileResolver.resolveFilesAsTree("b")
-        def composite = new DefaultCompositeFileTree(Arrays.asList(a, b))
+        def composite = new DefaultCompositeFileTree(Arrays.asList(a, b), TestFiles.resolver().getPatternSetFactory())
 
         and:
         def visited = []
@@ -80,7 +80,7 @@ class DefaultCompositeFileTreeTest extends WorkspaceTest {
         tree2.buildDependencies >> Stub(TaskDependency) { getDependencies(_) >> [task2, task3] }
 
         expect:
-        def composite = new DefaultCompositeFileTree([tree1, tree2])
+        def composite = new DefaultCompositeFileTree([tree1, tree2], TestFiles.resolver().getPatternSetFactory())
         composite.buildDependencies.getDependencies(null) == [task1, task2, task3] as LinkedHashSet
     }
 

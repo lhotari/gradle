@@ -25,6 +25,7 @@ import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.ClosureBackedAction;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.FileSystemSubset;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
 import org.gradle.internal.nativeintegration.filesystem.Chmod;
 import org.gradle.util.CollectionUtils;
@@ -40,18 +41,20 @@ public class MapFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     private final Map<RelativePath, Action<OutputStream>> elements = new LinkedHashMap<RelativePath, Action<OutputStream>>();
     private final Factory<File> tmpDirSource;
     private final Chmod chmod;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public MapFileTree(final File tmpDir, Chmod chmod) {
+    public MapFileTree(final File tmpDir, Chmod chmod, Factory<PatternSet> patternSetFactory) {
         this(new Factory<File>() {
                 public File create() {
                     return tmpDir;
                 }
-        }, chmod);
+        }, chmod, patternSetFactory);
     }
 
-    public MapFileTree(Factory<File> tmpDirSource, Chmod chmod) {
+    public MapFileTree(Factory<File> tmpDirSource, Chmod chmod, Factory<PatternSet> patternSetFactory) {
         this.tmpDirSource = tmpDirSource;
         this.chmod = chmod;
+        this.patternSetFactory = patternSetFactory;
     }
 
     private File getTmpDir() {
@@ -63,7 +66,7 @@ public class MapFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     }
 
     public DirectoryFileTree getMirror() {
-        return new DirectoryFileTree(getTmpDir());
+        return new DirectoryFileTree(getTmpDir(), patternSetFactory.create());
     }
 
     public void visit(FileVisitor visitor) {

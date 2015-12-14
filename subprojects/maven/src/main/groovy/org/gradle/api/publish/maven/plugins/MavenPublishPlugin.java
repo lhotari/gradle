@@ -174,7 +174,7 @@ public class MavenPublishPlugin implements Plugin<Project> {
 
             return instantiator.newInstance(
                     DefaultMavenPublication.class,
-                    name, projectIdentity, artifactNotationParser, instantiator, projectDependencyResolver
+                    name, projectIdentity, artifactNotationParser, instantiator, projectDependencyResolver, fileResolver.getPatternSetFactory()
             );
         }
     }

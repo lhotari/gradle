@@ -17,9 +17,11 @@
 package org.gradle.api.internal.artifacts;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.file.UnionFileCollection;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.graph.CachingDirectedGraphWalker;
 import org.gradle.internal.graph.DirectedGraph;
-import org.gradle.api.internal.file.UnionFileCollection;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,9 +31,11 @@ public class CachingDependencyResolveContext implements DependencyResolveContext
     private final List<Object> queue = new ArrayList<Object>();
     private final CachingDirectedGraphWalker<Object, FileCollection> walker = new CachingDirectedGraphWalker<Object, FileCollection>(new DependencyGraph());
     private final boolean transitive;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public CachingDependencyResolveContext(boolean transitive) {
+    public CachingDependencyResolveContext(boolean transitive, Factory<PatternSet> patternSetFactory) {
         this.transitive = transitive;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public boolean isTransitive() {
@@ -41,7 +45,7 @@ public class CachingDependencyResolveContext implements DependencyResolveContext
     public FileCollection resolve() {
         try {
             walker.add(queue);
-            return new UnionFileCollection(walker.findValues());
+            return new UnionFileCollection(patternSetFactory, walker.findValues());
         } finally {
             queue.clear();
         }

@@ -20,6 +20,7 @@ import org.gradle.api.internal.file.CompositeFileCollection;
 import org.gradle.api.internal.file.UnionFileCollection;
 import org.gradle.api.internal.file.collections.DefaultConfigurableFileCollection;
 import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContext;
+import org.gradle.api.tasks.util.internal.PatternSets;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
@@ -56,7 +57,7 @@ public class FileCollectionMatchers {
                 }
                 if (expected instanceof CompositeFileCollection) {
                     CompositeFileCollection collection = (CompositeFileCollection) expected;
-                    DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext();
+                    DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(PatternSets.getNonCachingPatternSetFactory());
                     collection.visitContents(context);
                     return context.resolveAsFileCollections();
                 }

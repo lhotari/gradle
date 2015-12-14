@@ -19,6 +19,7 @@
 package org.gradle.api.internal.tasks.compile.incremental.jar
 
 import org.gradle.api.file.FileTree
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassSetAnalysis
 import spock.lang.Specification
 import spock.lang.Subject
@@ -29,12 +30,13 @@ class JarClasspathSnapshotMakerTest extends Specification {
     def analysis = Mock(ClassSetAnalysis)
     def factory = Mock(JarClasspathSnapshotFactory)
     def finder = Mock(ClasspathJarFinder)
+    def patternSetFactory = TestFiles.resolver().getPatternSetFactory()
 
     @Subject maker = new JarClasspathSnapshotMaker(store, factory, finder)
 
     def "stores jar snapshots"() {
-        def jar1 = new JarArchive(new File("jar1.jar"), Mock(FileTree));
-        def jar2 = new JarArchive(new File("jar2.jar"), Mock(FileTree))
+        def jar1 = new JarArchive(new File("jar1.jar"), Mock(FileTree), patternSetFactory);
+        def jar2 = new JarArchive(new File("jar2.jar"), Mock(FileTree), patternSetFactory)
 
         def snapshotData = Stub(JarClasspathSnapshotData)
         def classpathSnapshot = Stub(JarClasspathSnapshot) { getData() >> snapshotData }
@@ -55,7 +57,7 @@ class JarClasspathSnapshotMakerTest extends Specification {
     }
 
     def "gets classpath snapshot"() {
-        def jar1 = new JarArchive(new File("jar1.jar"), Mock(FileTree));
+        def jar1 = new JarArchive(new File("jar1.jar"), Mock(FileTree), patternSetFactory);
 
         def classpathSnapshot = Stub(JarClasspathSnapshot)
         def filesDummy = [new File("f")]

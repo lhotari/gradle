@@ -17,19 +17,20 @@
 
 package org.gradle.api.internal.tasks.util
 
-import org.gradle.api.internal.file.TestFiles
-
-import java.nio.charset.Charset
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.FileResolver
+import org.gradle.api.internal.file.TestFiles
+import org.gradle.internal.jvm.Jvm
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.DefaultJavaForkOptions
 import org.gradle.util.JUnit4GroovyMockery
-import org.gradle.internal.jvm.Jvm
 import org.jmock.integration.junit4.JMock
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+
+import java.nio.charset.Charset
+
 import static org.gradle.util.Matchers.isEmpty
 import static org.gradle.util.Matchers.isEmptyMap
 import static org.hamcrest.Matchers.*
@@ -44,6 +45,8 @@ public class DefaultJavaForkOptionsTest {
     @Before
     public void setup() {
         context.checking {
+            allowing(resolver).getPatternSetFactory();
+            will(returnValue(TestFiles.resolver().getPatternSetFactory()));
             allowing(resolver).resolveLater(".")
         }
         options = new DefaultJavaForkOptions(resolver, Jvm.current())

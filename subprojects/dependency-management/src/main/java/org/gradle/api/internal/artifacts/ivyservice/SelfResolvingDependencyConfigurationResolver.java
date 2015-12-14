@@ -22,6 +22,8 @@ import org.gradle.api.internal.artifacts.ConfigurationResolver;
 import org.gradle.api.internal.artifacts.ResolverResults;
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal;
 import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.util.CollectionUtils;
 
 import java.io.File;
@@ -30,9 +32,11 @@ import java.util.Set;
 
 public class SelfResolvingDependencyConfigurationResolver implements ConfigurationResolver {
     private final ConfigurationResolver delegate;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public SelfResolvingDependencyConfigurationResolver(ConfigurationResolver delegate) {
+    public SelfResolvingDependencyConfigurationResolver(ConfigurationResolver delegate, Factory<PatternSet> patternSetFactory) {
         this.delegate = delegate;
+        this.patternSetFactory = patternSetFactory;
     }
 
     @Override
@@ -47,7 +51,7 @@ public class SelfResolvingDependencyConfigurationResolver implements Configurati
 
         ResolvedConfiguration resolvedConfiguration = results.getResolvedConfiguration();
         Set<Dependency> dependencies = configuration.getAllDependencies();
-        CachingDependencyResolveContext resolveContext = new CachingDependencyResolveContext(configuration.isTransitive());
+        CachingDependencyResolveContext resolveContext = new CachingDependencyResolveContext(configuration.isTransitive(), patternSetFactory);
         SelfResolvingFilesProvider provider = new SelfResolvingFilesProvider(resolveContext, dependencies);
 
         results.withResolvedConfiguration(new FilesAggregatingResolvedConfiguration(resolvedConfiguration, provider));

@@ -16,12 +16,13 @@
 
 package org.gradle.api.internal.artifacts
 
+import org.gradle.api.internal.file.TestFiles
 import spock.lang.Specification
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.UnionFileCollection
 
 class CachingDependencyResolveContextTest extends Specification {
-    private final CachingDependencyResolveContext context = new CachingDependencyResolveContext(true)
+    private final CachingDependencyResolveContext context = new CachingDependencyResolveContext(true, TestFiles.resolver().getPatternSetFactory())
 
     def resolvesAFileCollection() {
         ResolvableDependency dependency = Mock()

@@ -20,6 +20,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.base.internal.LanguageSourceSetInternal;
 import org.gradle.language.base.internal.registry.LanguageTransform;
@@ -39,7 +40,7 @@ public class PCHCompileTaskConfig extends CompileTaskConfig {
     }
 
     @Override
-    protected void configureCompileTask(AbstractNativeCompileTask task, final NativeBinarySpecInternal binary, final LanguageSourceSetInternal languageSourceSet) {
+    protected void configureCompileTask(AbstractNativeCompileTask task, final NativeBinarySpecInternal binary, final LanguageSourceSetInternal languageSourceSet, Factory<PatternSet> patternSetFactory) {
         // Note that the sourceSet is the sourceSet this pre-compiled header will be used with - it's not an
         // input sourceSet to the compile task.
         final DependentSourceSetInternal sourceSet = (DependentSourceSetInternal) languageSourceSet;
@@ -66,10 +67,10 @@ public class PCHCompileTaskConfig extends CompileTaskConfig {
         }));
 
         // This is so that VisualCpp has the object file of the generated source file available at link time
-        binary.binaryInputs(task.getOutputs().getFiles().getAsFileTree().matching(new PatternSet().include("**/*.obj", "**/*.o")));
+        binary.binaryInputs(task.getOutputs().getFiles().getAsFileTree().matching(patternSetFactory.create().include("**/*.obj", "**/*.o")));
 
         PreCompiledHeader pch = binary.getPrefixFileToPCH().get(sourceSet.getPrefixHeaderFile());
-        pch.setPchObjects(task.getOutputs().getFiles().getAsFileTree().matching(new PatternSet().include("**/*.pch", "**/*.gch")));
+        pch.setPchObjects(task.getOutputs().getFiles().getAsFileTree().matching(patternSetFactory.create().include("**/*.pch", "**/*.gch")));
         pch.builtBy(task);
     }
 }

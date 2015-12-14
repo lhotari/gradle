@@ -24,6 +24,8 @@ import org.gradle.api.internal.tasks.TaskDependencyContainer;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.*;
@@ -38,6 +40,8 @@ import java.util.*;
  * <p>The dependencies of this collection are calculated from the result of calling {@link #visitDependencies(TaskDependencyResolveContext)}.</p>
  */
 public abstract class CompositeFileCollection extends AbstractFileCollection implements FileCollectionContainer, TaskDependencyContainer {
+    protected abstract Factory<PatternSet> getPatternSetFactory();
+
     public Set<File> getFiles() {
         // Gather each of the backing Sets first, so we can set the initial capacity of the LinkedHashSet
         List<Set<File>> fileSets = new LinkedList<Set<File>>();
@@ -93,12 +97,19 @@ public abstract class CompositeFileCollection extends AbstractFileCollection imp
 
     @Override
     public FileTree getAsFileTree() {
+        final Factory<PatternSet> patternSetFactory = getPatternSetFactory();
+
         return new CompositeFileTree() {
             @Override
             public void visitContents(FileCollectionResolveContext context) {
                 ResolvableFileCollectionResolveContext nested = context.newContext();
                 CompositeFileCollection.this.visitContents(nested);
                 context.add(nested.resolveAsFileTrees());
+            }
+
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                return patternSetFactory;
             }
 
             @Override
@@ -115,12 +126,18 @@ public abstract class CompositeFileCollection extends AbstractFileCollection imp
 
     @Override
     public FileCollection filter(final Spec<? super File> filterSpec) {
+        final Factory<PatternSet> patternSetFactory = getPatternSetFactory();
         return new CompositeFileCollection() {
             @Override
             public void visitContents(FileCollectionResolveContext context) {
                 for (FileCollection collection : CompositeFileCollection.this.getSourceCollections()) {
                     context.add(collection.filter(filterSpec));
                 }
+            }
+
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                return patternSetFactory;
             }
 
             @Override
@@ -157,7 +174,7 @@ public abstract class CompositeFileCollection extends AbstractFileCollection imp
     }
 
     protected Collection<? extends FileCollectionInternal> getSourceCollections() {
-        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext();
+        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(getPatternSetFactory());
         visitContents(context);
         return context.resolveAsFileCollections();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.api.internal.tasks.compile.incremental.jar;
 
-import org.gradle.api.file.FileTree;
+package org.gradle.api.tasks.util.internal;
+
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
 
-import java.io.File;
+public class PatternSets {
+    private static final Factory<PatternSet> PATTERN_SET_FACTORY = new Factory<PatternSet>() {
+        @Override
+        public PatternSet create() {
+            return new PatternSet();
+        }
+    };
 
-public class JarArchive {
-    final File file;
-    final FileTree contents;
-
-    public JarArchive(File jar, FileTree contents, Factory<PatternSet> patternSetFactory) {
-        this.file = jar;
-        this.contents = contents.matching(patternSetFactory.create().include("**/*.class"));
+    public static Factory<PatternSet> getNonCachingPatternSetFactory() {
+        return PATTERN_SET_FACTORY;
     }
 }

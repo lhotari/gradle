@@ -17,6 +17,7 @@
 package org.gradle.api.internal.tasks.compile.incremental.jar
 
 import org.gradle.api.file.FileTree
+import org.gradle.api.internal.file.TestFiles
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -24,6 +25,7 @@ class JarClasspathSnapshotFactoryTest extends Specification {
 
     def snapshotter = Mock(JarSnapshotter)
     @Subject factory = new JarClasspathSnapshotFactory(snapshotter)
+    def patternSetFactory = TestFiles.resolver().getPatternSetFactory()
 
     def "creates classpath snapshot with correct duplicate classes"() {
         def jar1 = Stub(JarArchive); def jar2 = Stub(JarArchive); def jar3 = Stub(JarArchive)
@@ -45,8 +47,8 @@ class JarClasspathSnapshotFactoryTest extends Specification {
     }
 
     def "creates classpath snapshot with correct hashes"() {
-        def jar1 = new JarArchive(new File("f1"), Stub(FileTree))
-        def jar2 = new JarArchive(new File("f2"), Stub(FileTree))
+        def jar1 = new JarArchive(new File("f1"), Stub(FileTree), patternSetFactory)
+        def jar2 = new JarArchive(new File("f2"), Stub(FileTree), patternSetFactory)
 
         def sn1 = Stub(JarSnapshot) { getHash() >> new byte[1] }
         def sn2 = Stub(JarSnapshot) { getHash() >> new byte[2] }

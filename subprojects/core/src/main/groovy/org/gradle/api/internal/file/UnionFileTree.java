@@ -19,7 +19,9 @@ import com.google.common.collect.Sets;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Cast;
+import org.gradle.internal.Factory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,18 +30,20 @@ import java.util.Set;
 public class UnionFileTree extends CompositeFileTree {
     private final Set<FileTreeInternal> sourceTrees;
     private final String displayName;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public UnionFileTree(FileTreeInternal... sourceTrees) {
-        this("file tree", Arrays.asList(sourceTrees));
+    public UnionFileTree(Factory<PatternSet> patternSetFactory, FileTreeInternal... sourceTrees) {
+        this("file tree", patternSetFactory, Arrays.asList(sourceTrees));
     }
 
-    public UnionFileTree(String displayName, FileTreeInternal... sourceTrees) {
-        this(displayName, Arrays.asList(sourceTrees));
+    public UnionFileTree(String displayName, Factory<PatternSet> patternSetFactory, FileTreeInternal... sourceTrees) {
+        this(displayName, patternSetFactory, Arrays.asList(sourceTrees));
     }
 
-    public UnionFileTree(String displayName, Collection<? extends FileTreeInternal> sourceTrees) {
+    public UnionFileTree(String displayName, Factory<PatternSet> patternSetFactory, Collection<? extends FileTreeInternal> sourceTrees) {
         this.displayName = displayName;
         this.sourceTrees = Sets.newLinkedHashSet(sourceTrees);
+        this.patternSetFactory = patternSetFactory;
     }
 
     @Override
@@ -60,5 +64,10 @@ public class UnionFileTree extends CompositeFileTree {
 
         sourceTrees.add(Cast.cast(FileTreeInternal.class, source));
         return this;
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return patternSetFactory;
     }
 }

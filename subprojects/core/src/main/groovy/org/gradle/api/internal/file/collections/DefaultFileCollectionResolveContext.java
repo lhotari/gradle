@@ -25,7 +25,9 @@ import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.IdentityFileResolver;
 import org.gradle.api.tasks.TaskDependency;
 import org.gradle.api.tasks.TaskOutputs;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Cast;
+import org.gradle.internal.Factory;
 import org.gradle.internal.UncheckedException;
 import org.gradle.util.GUtil;
 
@@ -40,14 +42,12 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
     private final Converter<? extends FileCollectionInternal> fileCollectionConverter;
     private final Converter<? extends FileTreeInternal> fileTreeConverter;
 
-    public DefaultFileCollectionResolveContext() {
-        this(new IdentityFileResolver());
+    public DefaultFileCollectionResolveContext(Factory<PatternSet> patternSetFactory) {
+        this(new IdentityFileResolver(patternSetFactory));
     }
 
     public DefaultFileCollectionResolveContext(FileResolver fileResolver) {
-        this.fileResolver = fileResolver;
-        fileCollectionConverter = new FileCollectionConverter();
-        fileTreeConverter = new FileTreeConverter();
+        this(fileResolver, new FileCollectionConverter(fileResolver.getPatternSetFactory()), new FileTreeConverter(fileResolver.getPatternSetFactory()));
     }
 
     protected DefaultFileCollectionResolveContext(FileResolver fileResolver, Converter<? extends FileCollectionInternal> fileCollectionConverter, Converter<? extends FileTreeInternal> fileTreeConverter) {
@@ -155,6 +155,12 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
     }
 
     private static class FileCollectionConverter implements Converter<FileCollectionInternal> {
+        private final Factory<PatternSet> patternSetFactory;
+
+        public FileCollectionConverter(Factory<PatternSet> patternSetFactory) {
+            this.patternSetFactory = patternSetFactory;
+        }
+
         public void convertInto(Object element, Collection<? super FileCollectionInternal> result, FileResolver fileResolver) {
             if (element instanceof DefaultFileCollectionResolveContext) {
                 DefaultFileCollectionResolveContext nestedContext = (DefaultFileCollectionResolveContext) element;
@@ -164,7 +170,7 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
                 result.add(Cast.cast(FileCollectionInternal.class, fileCollection));
             } else if (element instanceof MinimalFileTree) {
                 MinimalFileTree fileTree = (MinimalFileTree) element;
-                result.add(new FileTreeAdapter(fileTree));
+                result.add(new FileTreeAdapter(patternSetFactory, fileTree));
             } else if (element instanceof MinimalFileSet) {
                 MinimalFileSet fileSet = (MinimalFileSet) element;
                 result.add(new FileCollectionAdapter(fileSet));
@@ -180,6 +186,12 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
     }
 
     private static class FileTreeConverter implements Converter<FileTreeInternal> {
+        private final Factory<PatternSet> patternSetFactory;
+
+        public FileTreeConverter(Factory<PatternSet> patternSetFactory) {
+            this.patternSetFactory = patternSetFactory;
+        }
+
         public void convertInto(Object element, Collection<? super FileTreeInternal> result, FileResolver fileResolver) {
             if (element instanceof DefaultFileCollectionResolveContext) {
                 DefaultFileCollectionResolveContext nestedContext = (DefaultFileCollectionResolveContext) element;
@@ -189,7 +201,7 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
                 result.add(Cast.cast(FileTreeInternal.class, fileTree));
             } else if (element instanceof MinimalFileTree) {
                 MinimalFileTree fileTree = (MinimalFileTree) element;
-                result.add(new FileTreeAdapter(fileTree));
+                result.add(new FileTreeAdapter(patternSetFactory, fileTree));
             } else if (element instanceof MinimalFileSet) {
                 MinimalFileSet fileSet = (MinimalFileSet) element;
                 for (File file : fileSet.getFiles()) {
@@ -212,9 +224,9 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
 
         private void convertFileToFileTree(File file, Collection<? super FileTreeInternal> result) {
             if (file.isDirectory()) {
-                result.add(new FileTreeAdapter(new DirectoryFileTree(file)));
+                result.add(new FileTreeAdapter(patternSetFactory, new DirectoryFileTree(file, patternSetFactory.create())));
             } else if (file.isFile()) {
-                result.add(new FileTreeAdapter(new SingletonFileTree(file)));
+                result.add(new FileTreeAdapter(patternSetFactory, new SingletonFileTree(file)));
             }
         }
     }

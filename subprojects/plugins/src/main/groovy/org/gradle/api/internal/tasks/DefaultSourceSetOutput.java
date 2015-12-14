@@ -22,6 +22,8 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.collections.DefaultConfigurableFileCollection;
 import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
 import org.gradle.api.tasks.SourceSetOutput;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.HashMap;
@@ -103,5 +105,10 @@ public class DefaultSourceSetOutput extends CompositeFileCollection implements S
 
     public FileCollection getDirs() {
         return dirs;
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return fileResolver.getPatternSetFactory();
     }
 }

@@ -21,9 +21,11 @@ import org.gradle.api.internal.changedetection.state.InMemoryTaskArtifactCache
 import org.gradle.api.internal.tasks.TaskExecuter
 import org.gradle.api.internal.tasks.execution.ExecuteAtMostOnceTaskExecuter
 import org.gradle.api.invocation.Gradle
+import org.gradle.api.tasks.util.PatternSet
 import org.gradle.cache.CacheBuilder
 import org.gradle.cache.CacheRepository
 import org.gradle.cache.PersistentCache
+import org.gradle.internal.Factory
 import org.gradle.internal.concurrent.ExecutorFactory
 import org.gradle.internal.environment.GradleBuildEnvironment
 import org.gradle.internal.event.ListenerManager
@@ -52,6 +54,11 @@ class TaskExecutionServicesTest extends Specification {
         _ * parent.get(InMemoryTaskArtifactCache) >> Mock(InMemoryTaskArtifactCache)
         _ * parent.get(StartParameter) >> Mock(StartParameter)
         _ * parent.get(StringInterner) >> new StringInterner()
+        _ * parent.getFactory(PatternSet) >> new Factory<PatternSet>() {
+            PatternSet create() {
+                return new PatternSet()
+            }
+        }
         _ * cacheRepository.cache(gradle, 'taskArtifacts') >> cacheBuilder
         _ * cacheBuilder.withDisplayName(!null) >> cacheBuilder
         _ * cacheBuilder.withLockOptions(!null) >> cacheBuilder

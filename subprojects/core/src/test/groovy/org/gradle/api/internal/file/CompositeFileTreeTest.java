@@ -20,6 +20,7 @@ import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.testfixtures.internal.NativeServicesTestFixture;
 import org.gradle.util.JUnit4GroovyMockery;
 import org.gradle.util.TestUtil;
@@ -30,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.gradle.api.internal.file.TestFiles.resolver;
 import static org.gradle.util.WrapUtil.toList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -41,6 +43,11 @@ public class CompositeFileTreeTest {
     private final FileTreeInternal source1 = context.mock(FileTreeInternal.class);
     private final FileTreeInternal source2 = context.mock(FileTreeInternal.class);
     private final CompositeFileTree tree = new CompositeFileTree() {
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return resolver().getPatternSetFactory();
+        }
+
         @Override
         public String getDisplayName() {
             return "<display-name>";

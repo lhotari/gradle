@@ -115,6 +115,7 @@ public class AbstractFileTreeTest extends Specification {
         TaskDependency buildDependencies
 
         def TestFileTree(List files, TaskDependency dependencies = null) {
+            super(TestFiles.resolver().getPatternSetFactory());
             this.contents = files
             this.buildDependencies = dependencies
         }

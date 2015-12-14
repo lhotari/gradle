@@ -25,6 +25,7 @@ import org.gradle.api.internal.file.IdentityFileResolver;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.api.internal.file.collections.SingleIncludePatternFileTree;
 import org.gradle.api.internal.file.copy.DeleteActionImpl;
+import org.gradle.api.tasks.util.internal.PatternSets;
 import org.gradle.util.GFileUtils;
 
 import java.io.File;
@@ -172,7 +173,7 @@ public class PathKeyFileStore implements FileStore<String>, FileStoreSearcher<St
     }
 
     private MinimalFileTree findFiles(String pattern) {
-        return new SingleIncludePatternFileTree(baseDir, pattern);
+        return new SingleIncludePatternFileTree(baseDir, pattern, PatternSets.getNonCachingPatternSetFactory());
     }
 
     protected LocallyAvailableResource entryAt(File file) {

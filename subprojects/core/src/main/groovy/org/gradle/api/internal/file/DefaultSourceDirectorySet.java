@@ -25,6 +25,7 @@ import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.util.GUtil;
 
 import java.io.File;
@@ -35,13 +36,15 @@ public class DefaultSourceDirectorySet extends CompositeFileTree implements Sour
     private final String name;
     private final String displayName;
     private final FileResolver fileResolver;
-    private final PatternSet patterns = new PatternSet();
-    private final PatternSet filter = new PatternSet();
+    private final PatternSet patterns;
+    private final PatternSet filter;
 
     public DefaultSourceDirectorySet(String name, String displayName, FileResolver fileResolver) {
         this.name = name;
         this.displayName = displayName;
         this.fileResolver = fileResolver;
+        this.patterns = fileResolver.getPatternSetFactory().create();
+        this.filter = fileResolver.getPatternSetFactory().create();
     }
 
     public DefaultSourceDirectorySet(String name, FileResolver fileResolver) {
@@ -183,5 +186,10 @@ public class DefaultSourceDirectorySet extends CompositeFileTree implements Sour
     public SourceDirectorySet source(SourceDirectorySet source) {
         this.source.add(source);
         return this;
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return fileResolver.getPatternSetFactory();
     }
 }

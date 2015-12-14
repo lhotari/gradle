@@ -21,8 +21,12 @@ import org.gradle.api.internal.file.collections.FileCollectionResolveContext
 import org.gradle.api.internal.tasks.TaskDependencyContainer
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext
 import org.gradle.api.tasks.TaskDependency
+import org.gradle.api.tasks.util.PatternSet
+import org.gradle.internal.Factory
 import org.gradle.util.UsesNativeServices
 import spock.lang.Specification
+
+import static org.gradle.api.internal.file.TestFiles.resolver
 
 @UsesNativeServices
 class CompositeFileCollectionSpec extends Specification {
@@ -305,6 +309,11 @@ class CompositeFileCollectionSpec extends Specification {
         @Override
         void visitContents(FileCollectionResolveContext context) {
             throw new UnsupportedOperationException()
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return resolver().getPatternSetFactory()
         }
     }
 }

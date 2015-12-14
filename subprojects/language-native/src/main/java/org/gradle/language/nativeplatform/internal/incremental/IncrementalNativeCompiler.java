@@ -28,6 +28,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.cache.PersistentStateCache;
 import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.Compiler;
@@ -53,17 +54,19 @@ public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements C
     private final FileSnapshotter fileSnapshotter;
     private final CompilationStateCacheFactory compilationStateCacheFactory;
     private final Logger logger = Logging.getLogger(IncrementalNativeCompiler.class);
+    private final Factory<PatternSet> patternSetFactory;
 
     private final CSourceParser sourceParser = new RegexBackedCSourceParser();
 
     public IncrementalNativeCompiler(TaskInternal task, TaskArtifactStateCacheAccess cacheAccess, FileSnapshotter fileSnapshotter, CompilationStateCacheFactory compilationStateCacheFactory,
-                                     Compiler<T> delegateCompiler, NativeToolChain toolChain) {
+                                     Compiler<T> delegateCompiler, NativeToolChain toolChain, Factory<PatternSet> patternSetFactory) {
         this.task = task;
         this.cacheAccess = cacheAccess;
         this.fileSnapshotter = fileSnapshotter;
         this.compilationStateCacheFactory = compilationStateCacheFactory;
         this.delegateCompiler = delegateCompiler;
         this.importsAreIncludes = Clang.class.isAssignableFrom(toolChain.getClass()) || Gcc.class.isAssignableFrom(toolChain.getClass());
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(final T spec) {
@@ -87,7 +90,7 @@ public class IncrementalNativeCompiler<T extends NativeCompileSpec> implements C
             logger.info("The path to some #include files could not be determined.  Falling back to slow path which includes all files in the include search path as inputs for {}.", task.getName());
             for (final File includeRoot : spec.getIncludeRoots()) {
                 logger.info("adding files in {} to discovered inputs for {}", includeRoot, task.getName());
-                new DirectoryFileTree(includeRoot).visit(new FileVisitor() {
+                new DirectoryFileTree(includeRoot, patternSetFactory.create()).visit(new FileVisitor() {
                     @Override
                     public void visitDir(FileVisitDetails dirDetails) {
                         // ignore

@@ -29,7 +29,10 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -66,11 +69,16 @@ public class TestReport extends DefaultTask {
      */
     @InputFiles @SkipWhenEmpty
     public FileCollection getTestResultDirs() {
-        UnionFileCollection dirs = new UnionFileCollection();
+        UnionFileCollection dirs = new UnionFileCollection(getPatternSetFactory());
         for (Object result : results) {
             addTo(result, dirs);
         }
         return dirs;
+    }
+
+    @Inject
+    protected Factory<PatternSet> getPatternSetFactory() {
+        throw new UnsupportedOperationException();
     }
 
     private void addTo(Object result, UnionFileCollection dirs) {

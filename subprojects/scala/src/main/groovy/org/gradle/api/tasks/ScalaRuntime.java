@@ -19,7 +19,10 @@ import org.gradle.api.*;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.internal.file.collections.LazilyInitializedFileCollection;
+import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.regex.Matcher;
@@ -72,6 +75,8 @@ public class ScalaRuntime {
      * @return a class path containing a corresponding 'scala-compiler' Jar and its dependencies
      */
     public FileCollection inferScalaClasspath(final Iterable<File> classpath) {
+        final Factory<PatternSet> patternSetFactory = ((ProjectInternal)project).getFileResolver().getPatternSetFactory();
+
         // alternatively, we could return project.files(Runnable)
         // would differ in the following ways: 1. live (not sure if we want live here) 2. no autowiring (probably want autowiring here)
         return new LazilyInitializedFileCollection() {
@@ -98,6 +103,11 @@ public class ScalaRuntime {
                 }
 
                 return project.getConfigurations().detachedConfiguration(new DefaultExternalModuleDependency("org.scala-lang", "scala-compiler", scalaVersion));
+            }
+
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                return patternSetFactory;
             }
 
             // let's override this so that delegate isn't created at autowiring time (which would mean on every build)

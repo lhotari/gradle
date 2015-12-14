@@ -26,6 +26,7 @@ import org.gradle.api.internal.artifacts.DefaultResolverResults
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.projectresult.ResolvedLocalComponentsResult
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.specs.Spec
 import org.gradle.api.specs.Specs
 import spock.lang.Specification
@@ -37,7 +38,7 @@ public class SelfResolvingDependencyConfigurationResolverTest extends Specificat
     private configuration = Mock(ConfigurationInternal)
     private dependencies = Mock(DependencySet)
     private results = new DefaultResolverResults()
-    private resolver = new SelfResolvingDependencyConfigurationResolver(delegate);
+    private resolver = new SelfResolvingDependencyConfigurationResolver(delegate, TestFiles.resolver().getPatternSetFactory());
 
     void "returns correct resolved configuration"() {
         given:

@@ -19,6 +19,7 @@ package org.gradle.language.nativeplatform.internal;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.base.internal.LanguageSourceSetInternal;
 import org.gradle.language.base.internal.registry.LanguageTransform;
@@ -35,7 +36,7 @@ public class SourceCompileTaskConfig extends CompileTaskConfig {
         super(languageTransform, taskType);
     }
 
-    protected void configureCompileTask(AbstractNativeCompileTask abstractTask, final NativeBinarySpecInternal binary, final LanguageSourceSetInternal sourceSet) {
+    protected void configureCompileTask(AbstractNativeCompileTask abstractTask, final NativeBinarySpecInternal binary, final LanguageSourceSetInternal sourceSet, Factory<PatternSet> patternSetFactory) {
         AbstractNativeSourceCompileTask task = (AbstractNativeSourceCompileTask) abstractTask;
 
         task.setDescription(String.format("Compiles the %s of %s", sourceSet, binary));
@@ -54,6 +55,6 @@ public class SourceCompileTaskConfig extends CompileTaskConfig {
             task.setPreCompiledHeader(pch);
         }
 
-        binary.binaryInputs(task.getOutputs().getFiles().getAsFileTree().matching(new PatternSet().include("**/*.obj", "**/*.o")));
+        binary.binaryInputs(task.getOutputs().getFiles().getAsFileTree().matching(patternSetFactory.create().include("**/*.obj", "**/*.o")));
     }
 }

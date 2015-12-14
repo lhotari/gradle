@@ -27,6 +27,7 @@ import org.gradle.api.file.CopySpec
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.FileOperations
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.internal.file.copy.CopySpecInternal
 import org.gradle.api.internal.file.copy.DestinationRootCopySpec
 import org.gradle.api.java.archives.Manifest
@@ -76,7 +77,7 @@ class PlayDistributionPluginTest extends Specification {
             create(_) >> Stub(Configuration)
             maybeCreate(_) >> Stub(Configuration)
         }
-        PlayPluginConfigurations configurations = new PlayPluginConfigurations(configurationContainer, Stub(DependencyHandler))
+        PlayPluginConfigurations configurations = new PlayPluginConfigurations(configurationContainer, Stub(DependencyHandler), TestFiles.resolver().getPatternSetFactory())
 
         when:
         plugin.createDistributions(distributionContainer, binaryContainer, configurations, serviceRegistry)
@@ -125,7 +126,7 @@ class PlayDistributionPluginTest extends Specification {
             create(_) >> Stub(Configuration)
             maybeCreate(_) >> Stub(Configuration)
         }
-        PlayPluginConfigurations configurations = new PlayPluginConfigurations(configurationContainer, Stub(DependencyHandler))
+        PlayPluginConfigurations configurations = new PlayPluginConfigurations(configurationContainer, Stub(DependencyHandler), TestFiles.resolver().getPatternSetFactory())
 
         when:
         plugin.createDistributionContentTasks(tasks, buildDir, distributions, configurations)

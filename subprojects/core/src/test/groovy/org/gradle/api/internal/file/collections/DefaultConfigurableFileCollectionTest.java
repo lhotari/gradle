@@ -20,6 +20,7 @@ import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileCollectionInternal;
 import org.gradle.api.internal.file.FileResolver;
+import org.gradle.api.internal.file.TestFiles;
 import org.gradle.api.internal.tasks.TaskResolver;
 import org.gradle.api.tasks.TaskDependency;
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider;
@@ -67,6 +68,7 @@ public class DefaultConfigurableFileCollectionTest {
         DefaultConfigurableFileCollection collection = new DefaultConfigurableFileCollection(resolverMock, taskResolverStub, "a", "b");
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             one(resolverMock).resolve("a");
             will(returnValue(file1));
             one(resolverMock).resolve("b");
@@ -103,6 +105,7 @@ public class DefaultConfigurableFileCollectionTest {
                 "src2");
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             one(resolverMock).resolve("src1");
             will(returnValue(file1));
             one(resolverMock).resolve("src2");
@@ -118,6 +121,7 @@ public class DefaultConfigurableFileCollectionTest {
         final File file2 = new File("2");
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             allowing(resolverMock).resolve('a');
             will(returnValue(file1));
             allowing(resolverMock).resolve('b');
@@ -143,6 +147,7 @@ public class DefaultConfigurableFileCollectionTest {
         collection.from(closure);
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             one(resolverMock).resolve('a');
             will(returnValue(file));
         }});
@@ -154,6 +159,9 @@ public class DefaultConfigurableFileCollectionTest {
     public void closureCanReturnNull() {
         Closure closure = TestUtil.returns(null);
 
+        context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
+        }});
         collection.from(closure);
 
         assertThat(collection.getFiles(), isEmpty());
@@ -165,6 +173,7 @@ public class DefaultConfigurableFileCollectionTest {
         final File file2 = new File("2");
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             allowing(resolverMock).resolve("src1");
             will(returnValue(file1));
             allowing(resolverMock).resolve("src2");
@@ -187,6 +196,7 @@ public class DefaultConfigurableFileCollectionTest {
         final File file2 = new File("2");
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             allowing(resolverMock).resolve("src1");
             will(returnValue(file1));
             allowing(resolverMock).resolve("src2");
@@ -203,6 +213,7 @@ public class DefaultConfigurableFileCollectionTest {
         final File file2 = new File("2");
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             allowing(resolverMock).resolve("src1");
             will(returnValue(file1));
             allowing(resolverMock).resolve("src2");
@@ -223,6 +234,7 @@ public class DefaultConfigurableFileCollectionTest {
         collection.from(src);
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             one(src).getFiles();
             will(returnValue(toLinkedSet(file1)));
         }});
@@ -230,6 +242,7 @@ public class DefaultConfigurableFileCollectionTest {
         assertThat(collection.getFiles(), equalTo(toLinkedSet(file1)));
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             one(src).getFiles();
             will(returnValue(toLinkedSet(file1, file2)));
         }});
@@ -244,6 +257,7 @@ public class DefaultConfigurableFileCollectionTest {
         final Callable callable = context.mock(Callable.class);
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             one(callable).call();
             will(returnValue(toList("src1", "src2")));
             allowing(resolverMock).resolve("src1");
@@ -261,6 +275,7 @@ public class DefaultConfigurableFileCollectionTest {
         final Callable callable = context.mock(Callable.class);
 
         context.checking(new Expectations() {{
+            addGetPatternSetFactory(this, resolverMock);
             one(callable).call();
             will(returnValue(null));
         }});
@@ -343,6 +358,7 @@ public class DefaultConfigurableFileCollectionTest {
 
         final Task task = context.mock(Task.class);
         context.checking(new Expectations(){{
+            addGetPatternSetFactory(this, resolverMock);
             allowing(taskResolverStub).resolveTask("task");
             will(returnValue(task));
         }});
@@ -352,4 +368,8 @@ public class DefaultConfigurableFileCollectionTest {
         assertThat(collection.getAsFileTree().matching(TestUtil.TEST_CLOSURE).getBuildDependencies().getDependencies(null), equalTo((Set) toSet(task)));
     }
 
+    static void addGetPatternSetFactory(Expectations expectations, FileResolver resolverMock) {
+        expectations.allowing(resolverMock).getPatternSetFactory();
+        expectations.will(expectations.returnValue(TestFiles.resolver().getPatternSetFactory()));
+    }
 }

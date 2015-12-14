@@ -19,8 +19,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.collections.DefaultConfigurableFileCollection;
 import org.gradle.api.internal.tasks.TaskResolver;
-import org.gradle.jvm.Classpath;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.jvm.Classpath;
 
 public class DefaultClasspath implements Classpath {
     private final FileCollection files;

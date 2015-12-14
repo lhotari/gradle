@@ -54,10 +54,6 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
     private static final Factory<DirectoryWalker> DEFAULT_DIRECTORY_WALKER_FACTORY = new DefaultDirectoryWalkerFactory();
     private final Factory<DirectoryWalker> directoryWalkerFactory;
 
-    public DirectoryFileTree(File dir) {
-        this(dir, new PatternSet());
-    }
-
     public DirectoryFileTree(File dir, PatternSet patternSet) {
         this(dir, patternSet, DEFAULT_DIRECTORY_WALKER_FACTORY);
     }

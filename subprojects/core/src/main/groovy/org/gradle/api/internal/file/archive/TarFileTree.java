@@ -32,6 +32,8 @@ import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.api.internal.file.collections.SingletonFileTree;
 import org.gradle.api.resources.ResourceException;
 import org.gradle.api.resources.internal.ReadableResourceInternal;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.nativeintegration.filesystem.Chmod;
 import org.gradle.util.GFileUtils;
@@ -46,13 +48,15 @@ public class TarFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     private final ReadableResourceInternal resource;
     private final Chmod chmod;
     private final File tmpDir;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public TarFileTree(@Nullable File tarFile, ReadableResourceInternal resource, File tmpDir, Chmod chmod) {
+    public TarFileTree(@Nullable File tarFile, ReadableResourceInternal resource, File tmpDir, Chmod chmod, Factory<PatternSet> patternSetFactory) {
         this.tarFile = tarFile;
         this.resource = resource;
         this.chmod = chmod;
         String expandDirName = String.format("%s_%s", resource.getBaseName(), HashUtil.createCompactMD5(resource.getURI().toString()));
         this.tmpDir = new File(tmpDir, expandDirName);
+        this.patternSetFactory = patternSetFactory;
     }
 
     public String getDisplayName() {
@@ -60,7 +64,7 @@ public class TarFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     }
 
     public DirectoryFileTree getMirror() {
-        return new DirectoryFileTree(tmpDir);
+        return new DirectoryFileTree(tmpDir, patternSetFactory.create());
     }
 
     public void visit(FileVisitor visitor) {

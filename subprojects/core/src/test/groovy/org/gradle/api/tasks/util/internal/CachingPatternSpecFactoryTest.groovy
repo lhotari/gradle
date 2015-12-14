@@ -21,14 +21,12 @@ import org.gradle.api.specs.AndSpec
 import org.gradle.api.specs.NotSpec
 import org.gradle.api.specs.OrSpec
 import org.gradle.api.specs.Spec
-import org.gradle.api.tasks.util.PatternSet
 import spock.lang.Specification
-
 
 class CachingPatternSpecFactoryTest extends Specification {
     def "check that Spec<FileTreeElement> instances added to include/exclude aren't cached"() {
         given:
-        def patternSet = new PatternSet(new CachingPatternSpecFactory())
+        def patternSet = new InternalPatternSet(new CachingPatternSpecFactory())
         boolean desiredResult = true
         def includeSpecClosure = { FileTreeElement e -> desiredResult } as Spec
         patternSet.include(includeSpecClosure)
@@ -63,7 +61,7 @@ class CachingPatternSpecFactoryTest extends Specification {
 
     def "check that patterns are cached"() {
         given:
-        def patternSet = new PatternSet(new CachingPatternSpecFactory())
+        def patternSet = new InternalPatternSet(new CachingPatternSpecFactory())
         patternSet.include("pattern")
         def spec = patternSet.getAsSpec()
         expect:

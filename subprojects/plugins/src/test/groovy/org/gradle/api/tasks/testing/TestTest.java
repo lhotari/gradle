@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.gradle.api.internal.file.TestFiles.resolver;
 import static org.gradle.util.Matchers.isEmpty;
 import static org.gradle.util.WrapUtil.toLinkedSet;
 import static org.gradle.util.WrapUtil.toSet;
@@ -202,7 +203,7 @@ public class TestTest extends AbstractConventionTaskTest {
     private void assertIsDirectoryTree(FileTree classFiles, Set<String> includes, Set<String> excludes) {
         assertThat(classFiles, instanceOf(CompositeFileTree.class));
         CompositeFileTree files = (CompositeFileTree) classFiles;
-        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext();
+        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(resolver());
         files.visitContents(context);
         List<? extends FileTree> contents = context.resolveAsFileTrees();
         FileTreeAdapter adapter = (FileTreeAdapter) contents.get(0);

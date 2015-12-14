@@ -21,6 +21,8 @@ import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.file.UnionFileCollection;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.api.tasks.testing.TestTaskReports;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.jvm.internal.JvmAssembly;
 import org.gradle.jvm.internal.WithJvmAssembly;
 import org.gradle.jvm.platform.JavaPlatform;
@@ -104,11 +106,12 @@ public class JUnitTestSuitePlugin implements Plugin<Project> {
         }
 
         @Mutate
-        void configureClasspath(final ModelMap<Test> testTasks) {
+        void configureClasspath(final ModelMap<Test> testTasks,
+                                final Factory<PatternSet> patternSetFactory) {
             testTasks.all(new Action<Test>() {
                 @Override
                 public void execute(Test test) {
-                    UnionFileCollection testClasspath = new UnionFileCollection(test.getClasspath());
+                    UnionFileCollection testClasspath = new UnionFileCollection(patternSetFactory, test.getClasspath());
                     Set<? extends Task> tasks = test.getTaskDependencies().getDependencies(test);
                     for (Task task : tasks) {
                         if (task instanceof PlatformJavaCompile) {

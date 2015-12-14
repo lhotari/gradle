@@ -24,13 +24,23 @@ import org.gradle.api.tasks.TaskDependency;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Cast;
+import org.gradle.internal.Factory;
 import org.gradle.util.ConfigureUtil;
 
 import java.io.File;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractFileTree extends AbstractFileCollection implements FileTreeInternal {
+    protected final Factory<PatternSet> patternSetFactory;
+
+    protected AbstractFileTree(Factory<PatternSet> patternSetFactory) {
+        this.patternSetFactory = patternSetFactory;
+    }
+
     public Set<File> getFiles() {
         final Set<File> files = new LinkedHashSet<File>();
         visit(new EmptyFileVisitor() {
@@ -54,13 +64,13 @@ public abstract class AbstractFileTree extends AbstractFileCollection implements
     }
 
     public FileTree matching(Closure filterConfigClosure) {
-        PatternSet patternSet = new PatternSet();
+        PatternSet patternSet = patternSetFactory.create();
         ConfigureUtil.configure(filterConfigClosure, patternSet);
         return matching(patternSet);
     }
 
     public FileTree matching(PatternFilterable patterns) {
-        PatternSet patternSet = new PatternSet();
+        PatternSet patternSet = patternSetFactory.create();
         patternSet.copyFrom(patterns);
         return new FilteredFileTreeImpl(this, patternSet.getAsSpec());
     }
@@ -105,7 +115,7 @@ public abstract class AbstractFileTree extends AbstractFileCollection implements
     }
 
     public FileTree plus(FileTree fileTree) {
-        return new UnionFileTree(this, Cast.cast(FileTreeInternal.class, fileTree));
+        return new UnionFileTree(getPatternSetFactory(), this, Cast.cast(FileTreeInternal.class, fileTree));
     }
 
     public FileTree visit(Closure closure) {
@@ -122,6 +132,7 @@ public abstract class AbstractFileTree extends AbstractFileCollection implements
         private final Spec<FileTreeElement> spec;
 
         public FilteredFileTreeImpl(AbstractFileTree fileTree, Spec<FileTreeElement> spec) {
+            super(fileTree.patternSetFactory);
             this.fileTree = fileTree;
             this.spec = spec;
         }

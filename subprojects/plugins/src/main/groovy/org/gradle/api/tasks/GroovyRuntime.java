@@ -25,8 +25,11 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileCollectionInternal;
 import org.gradle.api.internal.file.collections.LazilyInitializedFileCollection;
 import org.gradle.api.internal.plugins.GroovyJarFile;
+import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Cast;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.List;
@@ -72,6 +75,8 @@ public class GroovyRuntime {
      * @return a corresponding class path for executing Groovy tools such as the Groovy compiler and Groovydoc tool
      */
     public FileCollection inferGroovyClasspath(final Iterable<File> classpath) {
+        final Factory<PatternSet> patternSetFactory = ((ProjectInternal)project).getFileResolver().getPatternSetFactory();
+
         // alternatively, we could return project.files(Runnable)
         // would differ in at least the following ways: 1. live 2. no autowiring
         return new LazilyInitializedFileCollection() {
@@ -104,6 +109,11 @@ public class GroovyRuntime {
                     dependencies.add(project.getDependencies().create(notation.replace(":groovy:", ":groovy-ant:")));
                 }
                 return project.getConfigurations().detachedConfiguration(dependencies.toArray(new Dependency[dependencies.size()]));
+            }
+
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                return patternSetFactory;
             }
 
             // let's override this so that delegate isn't created at autowiring time (which would mean on every build)

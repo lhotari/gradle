@@ -22,6 +22,8 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.copy.CopySpecInternal;
 import org.gradle.api.internal.project.ProjectIdentifier;
 import org.gradle.api.plugins.ExtensionContainer;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.jvm.internal.JvmAssembly;
 import org.gradle.jvm.tasks.Jar;
@@ -64,10 +66,12 @@ public class PlayApplicationPlugin implements Plugin<Project> {
     public static final int DEFAULT_HTTP_PORT = 9000;
     public static final String RUN_GROUP = "Run";
     private final ModelRegistry modelRegistry;
+    private final Factory<PatternSet> patternSetFactory;
 
     @Inject
-    public PlayApplicationPlugin(ModelRegistry modelRegistry) {
+    public PlayApplicationPlugin(ModelRegistry modelRegistry, Factory<PatternSet> patternSetFactory) {
         this.modelRegistry = modelRegistry;
+        this.patternSetFactory = patternSetFactory;
     }
 
     @Override
@@ -77,7 +81,7 @@ public class PlayApplicationPlugin implements Plugin<Project> {
         project.getPluginManager().apply(PlayTwirlPlugin.class);
         project.getPluginManager().apply(PlayRoutesPlugin.class);
 
-        project.getExtensions().create("playConfigurations", PlayPluginConfigurations.class, project.getConfigurations(), project.getDependencies());
+        project.getExtensions().create("playConfigurations", PlayPluginConfigurations.class, project.getConfigurations(), project.getDependencies(), patternSetFactory);
 
         modelRegistry.getRoot().applyTo(allLinksTransitive(withType(PlayApplicationSpec.class)), PlaySourceSetRules.class);
     }

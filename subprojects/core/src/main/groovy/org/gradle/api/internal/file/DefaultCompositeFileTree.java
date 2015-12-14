@@ -17,14 +17,18 @@
 package org.gradle.api.internal.file;
 
 import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.util.Collection;
 
 public class DefaultCompositeFileTree extends CompositeFileTree {
     private final Collection<? extends FileTreeInternal> fileTrees;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public DefaultCompositeFileTree(Collection<? extends FileTreeInternal> fileTrees) {
+    public DefaultCompositeFileTree(Collection<? extends FileTreeInternal> fileTrees, Factory<PatternSet> patternSetFactory) {
         this.fileTrees = fileTrees;
+        this.patternSetFactory = patternSetFactory;
     }
 
     @Override
@@ -35,5 +39,10 @@ public class DefaultCompositeFileTree extends CompositeFileTree {
     @Override
     public String getDisplayName() {
         return "file tree";
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return patternSetFactory;
     }
 }

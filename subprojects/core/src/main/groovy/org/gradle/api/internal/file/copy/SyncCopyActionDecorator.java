@@ -23,6 +23,8 @@ import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.api.internal.tasks.SimpleWorkResult;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.util.GFileUtils;
 
 import java.io.File;
@@ -32,10 +34,12 @@ import java.util.Set;
 public class SyncCopyActionDecorator implements CopyAction {
     private final File baseDestDir;
     private final CopyAction delegate;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public SyncCopyActionDecorator(File baseDestDir, CopyAction delegate) {
+    public SyncCopyActionDecorator(File baseDestDir, CopyAction delegate, Factory<PatternSet> patternSetFactory) {
         this.baseDestDir = baseDestDir;
         this.delegate = delegate;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(final CopyActionProcessingStream stream) {
@@ -54,7 +58,7 @@ public class SyncCopyActionDecorator implements CopyAction {
 
         SyncCopyActionDecoratorFileVisitor fileVisitor = new SyncCopyActionDecoratorFileVisitor(visited);
 
-        MinimalFileTree walker = new DirectoryFileTree(baseDestDir).postfix();
+        MinimalFileTree walker = new DirectoryFileTree(baseDestDir, patternSetFactory.create()).postfix();
         walker.visit(fileVisitor);
         visited.clear();
 

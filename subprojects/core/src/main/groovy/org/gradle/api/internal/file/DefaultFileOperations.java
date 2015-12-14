@@ -94,7 +94,7 @@ public class DefaultFileOperations implements FileOperations, ProcessOperations 
     }
 
     public FileTree zipTree(Object zipPath) {
-        return new FileTreeAdapter(new ZipFileTree(file(zipPath), getExpandDir(), fileSystem));
+        return new FileTreeAdapter(fileResolver.getPatternSetFactory(), new ZipFileTree(file(zipPath), getExpandDir(), fileSystem, fileResolver.getPatternSetFactory()));
     }
 
     public FileTree tarTree(Object tarPath) {
@@ -109,8 +109,8 @@ public class DefaultFileOperations implements FileOperations, ProcessOperations 
             tarFile = file(tarPath);
             resource = new FileResource(tarFile);
         }
-        TarFileTree tarTree = new TarFileTree(tarFile, new MaybeCompressedFileResource(resource), getExpandDir(), fileSystem);
-        return new FileTreeAdapter(tarTree);
+        TarFileTree tarTree = new TarFileTree(tarFile, new MaybeCompressedFileResource(resource), getExpandDir(), fileSystem, fileResolver.getPatternSetFactory());
+        return new FileTreeAdapter(fileResolver.getPatternSetFactory(), tarTree);
     }
 
     private File getExpandDir() {

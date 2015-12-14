@@ -52,7 +52,7 @@ public class FileCopier {
     public WorkResult sync(Action<? super CopySpec> action) {
         DestinationRootCopySpec copySpec = createCopySpec(action);
         File destinationDir = copySpec.getDestinationDir();
-        return doCopy(copySpec, new SyncCopyActionDecorator(destinationDir, getCopyVisitor(destinationDir)));
+        return doCopy(copySpec, new SyncCopyActionDecorator(destinationDir, getCopyVisitor(destinationDir), fileResolver.getPatternSetFactory()));
     }
 
     private FileCopyAction getCopyVisitor(File destination) {

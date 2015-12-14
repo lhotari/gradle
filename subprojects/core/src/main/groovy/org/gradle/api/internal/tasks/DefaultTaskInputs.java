@@ -48,7 +48,7 @@ public class DefaultTaskInputs implements TaskInputs {
     }
 
     public FileCollection getFiles() {
-        return new UnionFileCollection(inputFiles, sourceFiles);
+        return new UnionFileCollection(resolver.getPatternSetFactory(), inputFiles, sourceFiles);
     }
 
     public TaskInputs files(final Object... paths) {

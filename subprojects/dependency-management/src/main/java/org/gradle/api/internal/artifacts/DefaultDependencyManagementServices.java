@@ -42,7 +42,9 @@ import org.gradle.api.internal.artifacts.repositories.transport.RepositoryTransp
 import org.gradle.api.internal.component.ComponentTypeRegistry;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.filestore.ivy.ArtifactIdentifierFileStore;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.initialization.ProjectAccessListener;
+import org.gradle.internal.Factory;
 import org.gradle.internal.authentication.AuthenticationSchemeRegistry;
 import org.gradle.internal.component.external.model.ModuleComponentArtifactMetaData;
 import org.gradle.internal.event.ListenerManager;
@@ -146,17 +148,19 @@ public class DefaultDependencyManagementServices implements DependencyManagement
                                                        ComponentIdentifierFactory componentIdentifierFactory,
                                                        CacheLockingManager cacheLockingManager,
                                                        ResolutionResultsStoreFactory resolutionResultsStoreFactory,
-                                                       StartParameter startParameter) {
+                                                       StartParameter startParameter,
+                                                       Factory<PatternSet> patternSetFactory) {
             return new ErrorHandlingConfigurationResolver(
                     new ShortCircuitEmptyConfigurationResolver(
                             new SelfResolvingDependencyConfigurationResolver(
                                     new DefaultConfigurationResolver(
-                                            artifactDependencyResolver,
-                                            repositories,
-                                            metadataHandler,
-                                            cacheLockingManager,
-                                            resolutionResultsStoreFactory,
-                                            startParameter.isBuildProjectDependencies())),
+                                        artifactDependencyResolver,
+                                        repositories,
+                                        metadataHandler,
+                                        cacheLockingManager,
+                                        resolutionResultsStoreFactory,
+                                        startParameter.isBuildProjectDependencies()),
+                                patternSetFactory),
                             componentIdentifierFactory)
             );
         }

@@ -21,7 +21,11 @@ import org.gradle.api.internal.file.collections.FileCollectionResolveContext
 import org.gradle.api.internal.tasks.TaskDependencyContainer
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext
 import org.gradle.api.tasks.util.PatternFilterable
+import org.gradle.api.tasks.util.PatternSet
+import org.gradle.internal.Factory
 import spock.lang.Specification
+
+import static org.gradle.api.internal.file.TestFiles.resolver
 
 class CompositeFileTreeSpec extends Specification {
     def "tree filtered by spec has same live dependencies as tree"() {
@@ -86,6 +90,11 @@ class CompositeFileTreeSpec extends Specification {
         @Override
         void visitDependencies(TaskDependencyResolveContext context) {
             throw new UnsupportedOperationException()
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return resolver().getPatternSetFactory()
         }
     }
 }

@@ -25,6 +25,8 @@ import org.gradle.api.internal.artifacts.dsl.DefaultRepositoryHandler
 import org.gradle.api.internal.artifacts.dsl.dependencies.DefaultDependencyHandler
 import org.gradle.api.internal.artifacts.ivyservice.IvyBackedArtifactPublisher
 import org.gradle.api.internal.artifacts.repositories.DefaultBaseRepositoryFactory
+import org.gradle.api.internal.file.TestFiles
+import org.gradle.api.tasks.util.PatternSet
 import org.gradle.internal.reflect.DirectInstantiator
 import org.gradle.internal.reflect.Instantiator
 import org.gradle.internal.service.DefaultServiceRegistry
@@ -43,6 +45,7 @@ class DefaultDependencyManagementServicesTest extends Specification {
         _ * parent.get(Instantiator) >> instantiator
         _ * parent.get({it instanceof Class}) >> { Class t -> Stub(t) }
         _ * parent.get({it instanceof ParameterizedType}) >> { ParameterizedType t -> Stub(t.rawType) }
+        _ * parent.getFactory(PatternSet) >> TestFiles.resolver().getPatternSetFactory()
     }
 
     def "can create dependency resolution DSL services"() {

@@ -22,13 +22,15 @@ import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.internal.file.collections.ListBackedFileSet;
 import org.gradle.api.internal.file.collections.MinimalFileSet;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.List;
 
 public class MinimalFileSetSnapshotter extends DefaultFileCollectionSnapshotter {
-    public MinimalFileSetSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner) {
-        super(snapshotter, cacheAccess, stringInterner);
+    public MinimalFileSetSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, Factory<PatternSet> patternSetFactory) {
+        super(snapshotter, cacheAccess, stringInterner, patternSetFactory);
     }
 
     @Override

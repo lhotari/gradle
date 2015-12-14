@@ -18,12 +18,13 @@ package org.gradle.internal.resource.local.ivy;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.EmptyFileVisitor;
 import org.gradle.api.file.FileVisitDetails;
-import org.gradle.internal.component.external.model.ModuleComponentArtifactMetaData;
 import org.gradle.api.internal.artifacts.repositories.resolver.ResourcePattern;
-import org.gradle.internal.resource.local.AbstractLocallyAvailableResourceFinder;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.api.internal.file.collections.SingleIncludePatternFileTree;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
+import org.gradle.internal.component.external.model.ModuleComponentArtifactMetaData;
+import org.gradle.internal.resource.local.AbstractLocallyAvailableResourceFinder;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -31,11 +32,11 @@ import java.util.List;
 
 public class PatternBasedLocallyAvailableResourceFinder extends AbstractLocallyAvailableResourceFinder<ModuleComponentArtifactMetaData> {
 
-    public PatternBasedLocallyAvailableResourceFinder(File baseDir, ResourcePattern pattern) {
-        super(createProducer(baseDir, pattern));
+    public PatternBasedLocallyAvailableResourceFinder(File baseDir, ResourcePattern pattern, Factory<PatternSet> patternSetFactory) {
+        super(createProducer(baseDir, pattern, patternSetFactory));
     }
 
-    private static Transformer<Factory<List<File>>, ModuleComponentArtifactMetaData> createProducer(final File baseDir, final ResourcePattern pattern) {
+    private static Transformer<Factory<List<File>>, ModuleComponentArtifactMetaData> createProducer(final File baseDir, final ResourcePattern pattern, final Factory<PatternSet> patternSetFactory) {
         return new Transformer<Factory<List<File>>, ModuleComponentArtifactMetaData>() {
             public Factory<List<File>> transform(final ModuleComponentArtifactMetaData artifact) {
                 return new Factory<List<File>>() {
@@ -55,7 +56,7 @@ public class PatternBasedLocallyAvailableResourceFinder extends AbstractLocallyA
 
             private MinimalFileTree getMatchingFiles(ModuleComponentArtifactMetaData artifact) {
                 String patternString = pattern.getLocation(artifact).getPath();
-                return new SingleIncludePatternFileTree(baseDir, patternString);
+                return new SingleIncludePatternFileTree(baseDir, patternString, patternSetFactory);
             }
 
         };
