@@ -36,6 +36,8 @@ import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.internal.tasks.SimpleWorkResult;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.classloader.DefaultClassLoaderFactory;
 import org.gradle.internal.classloader.FilteringClassLoader;
 import org.gradle.internal.classpath.DefaultClassPath;
@@ -51,9 +53,11 @@ import java.util.*;
 
 public class ApiGroovyCompiler implements org.gradle.language.base.internal.compile.Compiler<GroovyJavaJointCompileSpec>, Serializable {
     private final Compiler<JavaCompileSpec> javaCompiler;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public ApiGroovyCompiler(Compiler<JavaCompileSpec> javaCompiler) {
+    public ApiGroovyCompiler(Compiler<JavaCompileSpec> javaCompiler, Factory<PatternSet> patternSetFactory) {
         this.javaCompiler = javaCompiler;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(final GroovyJavaJointCompileSpec spec) {
@@ -133,11 +137,11 @@ public class ApiGroovyCompiler implements org.gradle.language.base.internal.comp
                         if (shouldProcessAnnotations) {
                             // In order for the Groovy stubs to have annotation processors invoked against them, they must be compiled as source.
                             // Classes compiled as a result of being on the -sourcepath do not have the annotation processor run against them
-                            spec.setSource(spec.getSource().plus(new SimpleFileCollection(stubDir).getAsFileTree()));
+                            spec.setSource(spec.getSource().plus(new SimpleFileCollection(patternSetFactory, stubDir).getAsFileTree()));
                         } else {
                             // When annotation processing isn't required, it's better to add the Groovy stubs as part of the source path.
                             // This allows compilations to complete faster, because only the Groovy stubs that are needed by the java source are compiled.
-                            FileCollection sourcepath = new SimpleFileCollection(stubDir);
+                            FileCollection sourcepath = new SimpleFileCollection(patternSetFactory, stubDir);
                             if (spec.getCompileOptions().getSourcepath() != null) {
                                 sourcepath = spec.getCompileOptions().getSourcepath().plus(sourcepath);
                             }

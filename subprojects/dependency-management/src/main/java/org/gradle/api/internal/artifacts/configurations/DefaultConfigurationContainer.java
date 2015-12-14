@@ -26,9 +26,11 @@ import org.gradle.api.internal.artifacts.ConfigurationResolver;
 import org.gradle.api.internal.artifacts.dsl.dependencies.ProjectFinder;
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.ConfigurationComponentMetaDataBuilder;
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultResolutionStrategy;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.initialization.ProjectAccessListener;
-import org.gradle.internal.reflect.Instantiator;
+import org.gradle.internal.Factory;
 import org.gradle.internal.event.ListenerManager;
+import org.gradle.internal.reflect.Instantiator;
 
 import java.util.Collection;
 import java.util.Set;
@@ -36,7 +38,7 @@ import java.util.Set;
 public class DefaultConfigurationContainer extends AbstractNamedDomainObjectContainer<Configuration>
         implements ConfigurationContainerInternal, ConfigurationsProvider {
     public static final String DETACHED_CONFIGURATION_DEFAULT_NAME = "detachedConfiguration";
-    
+
     private final ConfigurationResolver resolver;
     private final Instantiator instantiator;
     private final DomainObjectContext context;
@@ -44,6 +46,7 @@ public class DefaultConfigurationContainer extends AbstractNamedDomainObjectCont
     private final DependencyMetaDataProvider dependencyMetaDataProvider;
     private final ProjectAccessListener projectAccessListener;
     private final ProjectFinder projectFinder;
+    private final Factory<PatternSet> patternSetFactory;
     private ConfigurationComponentMetaDataBuilder configurationComponentMetaDataBuilder;
 
     private int detachedConfigurationDefaultNameCounter = 1;
@@ -51,7 +54,7 @@ public class DefaultConfigurationContainer extends AbstractNamedDomainObjectCont
     public DefaultConfigurationContainer(ConfigurationResolver resolver,
                                          Instantiator instantiator, DomainObjectContext context, ListenerManager listenerManager,
                                          DependencyMetaDataProvider dependencyMetaDataProvider, ProjectAccessListener projectAccessListener,
-                                         ProjectFinder projectFinder, ConfigurationComponentMetaDataBuilder configurationComponentMetaDataBuilder) {
+                                         ProjectFinder projectFinder, ConfigurationComponentMetaDataBuilder configurationComponentMetaDataBuilder, Factory<PatternSet> patternSetFactory) {
         super(Configuration.class, instantiator, new Configuration.Namer());
         this.resolver = resolver;
         this.instantiator = instantiator;
@@ -61,6 +64,7 @@ public class DefaultConfigurationContainer extends AbstractNamedDomainObjectCont
         this.projectAccessListener = projectAccessListener;
         this.projectFinder = projectFinder;
         this.configurationComponentMetaDataBuilder = configurationComponentMetaDataBuilder;
+        this.patternSetFactory = patternSetFactory;
     }
 
     @Override
@@ -92,8 +96,8 @@ public class DefaultConfigurationContainer extends AbstractNamedDomainObjectCont
         String name = DETACHED_CONFIGURATION_DEFAULT_NAME + detachedConfigurationDefaultNameCounter++;
         DetachedConfigurationsProvider detachedConfigurationsProvider = new DetachedConfigurationsProvider();
         DefaultConfiguration detachedConfiguration = new DefaultConfiguration(
-                name, name, detachedConfigurationsProvider, resolver,
-                listenerManager, dependencyMetaDataProvider, new DefaultResolutionStrategy(), projectAccessListener, projectFinder, configurationComponentMetaDataBuilder);
+            name, name, detachedConfigurationsProvider, resolver,
+            listenerManager, dependencyMetaDataProvider, new DefaultResolutionStrategy(), projectAccessListener, projectFinder, configurationComponentMetaDataBuilder, patternSetFactory);
         DomainObjectSet<Dependency> detachedDependencies = detachedConfiguration.getDependencies();
         for (Dependency dependency : dependencies) {
             detachedDependencies.add(dependency.copy());

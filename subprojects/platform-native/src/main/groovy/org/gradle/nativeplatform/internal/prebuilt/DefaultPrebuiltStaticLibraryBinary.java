@@ -18,6 +18,8 @@ package org.gradle.nativeplatform.internal.prebuilt;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.nativeplatform.BuildType;
 import org.gradle.nativeplatform.Flavor;
 import org.gradle.nativeplatform.PrebuiltLibrary;
@@ -29,8 +31,8 @@ import java.io.File;
 public class DefaultPrebuiltStaticLibraryBinary extends AbstractPrebuiltLibraryBinary implements PrebuiltStaticLibraryBinary {
     private File staticLibraryFile;
 
-    public DefaultPrebuiltStaticLibraryBinary(String name, PrebuiltLibrary library, BuildType buildType, NativePlatform targetPlatform, Flavor flavor) {
-        super(name, library, buildType, targetPlatform, flavor);
+    public DefaultPrebuiltStaticLibraryBinary(String name, PrebuiltLibrary library, BuildType buildType, NativePlatform targetPlatform, Flavor flavor, Factory<PatternSet> patternSetFactory) {
+        super(name, library, buildType, targetPlatform, flavor, patternSetFactory);
     }
 
     public String getDisplayName() {
@@ -50,6 +52,6 @@ public class DefaultPrebuiltStaticLibraryBinary extends AbstractPrebuiltLibraryB
     }
 
     public FileCollection getRuntimeFiles() {
-        return new SimpleFileCollection();
+        return new SimpleFileCollection(patternSetFactory);
     }
 }

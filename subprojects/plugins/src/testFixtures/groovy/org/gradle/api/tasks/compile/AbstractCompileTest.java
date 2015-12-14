@@ -16,6 +16,7 @@
 
 package org.gradle.api.tasks.compile;
 
+import org.gradle.api.internal.file.TestFiles;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.tasks.AbstractConventionTaskTest;
 import org.gradle.util.WrapUtil;
@@ -67,7 +68,7 @@ public abstract class AbstractCompileTest extends AbstractConventionTaskTest {
         compile.setTargetCompatibility("1.5");
         compile.setDestinationDir(destDir);
 
-        compile.setClasspath(new SimpleFileCollection(TEST_DEPENDENCY_MANAGER_CLASSPATH));
+        compile.setClasspath(new SimpleFileCollection(TestFiles.resolver().getPatternSetFactory(), TEST_DEPENDENCY_MANAGER_CLASSPATH));
     }
 
     @Test public void testIncludes() {

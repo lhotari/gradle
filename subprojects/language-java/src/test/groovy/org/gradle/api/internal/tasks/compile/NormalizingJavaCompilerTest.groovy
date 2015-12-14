@@ -25,7 +25,7 @@ import spock.lang.Specification
 class NormalizingJavaCompilerTest extends Specification {
     org.gradle.language.base.internal.compile.Compiler<JavaCompileSpec> target = Mock()
     DefaultJavaCompileSpec spec = new DefaultJavaCompileSpec()
-    NormalizingJavaCompiler compiler = new NormalizingJavaCompiler(target)
+    NormalizingJavaCompiler compiler = new NormalizingJavaCompiler(target, patternSetFactory)
 
     def setup() {
         spec.source = files("Source1.java", "Source2.java", "Source3.java")
@@ -70,7 +70,7 @@ class NormalizingJavaCompilerTest extends Specification {
 
         when:
         compiler.execute(spec)
-        
+
         then:
         CompilationFailedException e = thrown()
         e == failure

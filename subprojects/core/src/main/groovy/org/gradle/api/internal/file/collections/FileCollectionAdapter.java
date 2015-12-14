@@ -18,6 +18,8 @@ package org.gradle.api.internal.file.collections;
 import org.gradle.api.Buildable;
 import org.gradle.api.internal.file.AbstractFileCollection;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.io.Serializable;
@@ -28,14 +30,21 @@ import java.util.Set;
  */
 public class FileCollectionAdapter extends AbstractFileCollection implements FileCollectionContainer, Serializable {
     private final MinimalFileSet fileCollection;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public FileCollectionAdapter(MinimalFileSet fileSet) {
+    public FileCollectionAdapter(Factory<PatternSet> patternSetFactory, MinimalFileSet fileSet) {
+        this.patternSetFactory = patternSetFactory;
         this.fileCollection = fileSet;
     }
 
     @Override
     public String getDisplayName() {
         return fileCollection.getDisplayName();
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return patternSetFactory;
     }
 
     @Override

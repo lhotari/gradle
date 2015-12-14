@@ -23,6 +23,8 @@ import org.gradle.api.internal.tasks.compile.daemon.CompilerDaemonManager;
 import org.gradle.api.internal.tasks.compile.daemon.DaemonGroovyCompiler;
 import org.gradle.api.internal.tasks.compile.daemon.InProcessCompilerDaemonFactory;
 import org.gradle.api.tasks.compile.GroovyCompileOptions;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.language.base.internal.compile.CompilerFactory;
 
@@ -31,19 +33,21 @@ public class GroovyCompilerFactory implements CompilerFactory<GroovyJavaJointCom
     private final JavaCompilerFactory javaCompilerFactory;
     private final CompilerDaemonManager compilerDaemonFactory;
     private final InProcessCompilerDaemonFactory inProcessCompilerDaemonFactory;
+    private final Factory<PatternSet> patternSetFactory;
 
     public GroovyCompilerFactory(ProjectInternal project, JavaCompilerFactory javaCompilerFactory, CompilerDaemonManager compilerDaemonManager,
-                                 InProcessCompilerDaemonFactory inProcessCompilerDaemonFactory) {
+                                 InProcessCompilerDaemonFactory inProcessCompilerDaemonFactory, Factory<PatternSet> patternSetFactory) {
         this.project = project;
         this.javaCompilerFactory = javaCompilerFactory;
         this.compilerDaemonFactory = compilerDaemonManager;
         this.inProcessCompilerDaemonFactory = inProcessCompilerDaemonFactory;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public Compiler<GroovyJavaJointCompileSpec> newCompiler(GroovyJavaJointCompileSpec spec) {
         GroovyCompileOptions groovyOptions = spec.getGroovyCompileOptions();
         Compiler<JavaCompileSpec> javaCompiler = javaCompilerFactory.createForJointCompilation(spec.getClass());
-        Compiler<GroovyJavaJointCompileSpec> groovyCompiler = new ApiGroovyCompiler(javaCompiler);
+        Compiler<GroovyJavaJointCompileSpec> groovyCompiler = new ApiGroovyCompiler(javaCompiler, patternSetFactory);
         CompilerDaemonFactory daemonFactory;
         if (groovyOptions.isFork()) {
             daemonFactory = compilerDaemonFactory;
@@ -51,6 +55,6 @@ public class GroovyCompilerFactory implements CompilerFactory<GroovyJavaJointCom
             daemonFactory = inProcessCompilerDaemonFactory;
         }
         groovyCompiler = new DaemonGroovyCompiler(project.getRootProject().getProjectDir(), groovyCompiler, project.getServices().get(ClassPathRegistry.class), daemonFactory);
-        return new NormalizingGroovyCompiler(groovyCompiler);
+        return new NormalizingGroovyCompiler(groovyCompiler, project.getServices().getFactory(PatternSet.class));
     }
 }

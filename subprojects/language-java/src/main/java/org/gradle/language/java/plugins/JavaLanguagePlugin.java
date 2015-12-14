@@ -23,6 +23,7 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.internal.artifacts.ArtifactDependencyResolver;
 import org.gradle.api.internal.artifacts.repositories.ResolutionAwareRepository;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Transformers;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.jvm.JvmByteCode;
@@ -144,7 +145,7 @@ public class JavaLanguagePlugin implements Plugin<Project> {
             ArtifactDependencyResolver dependencyResolver = serviceRegistry.get(ArtifactDependencyResolver.class);
             RepositoryHandler repositories = serviceRegistry.get(RepositoryHandler.class);
             List<ResolutionAwareRepository> resolutionAwareRepositories = CollectionUtils.collect(repositories, Transformers.cast(ResolutionAwareRepository.class));
-            return new DependencyResolvingClasspath(binary, javaSourceSet, dependencies, dependencyResolver, schemaStore, resolutionAwareRepositories);
+            return new DependencyResolvingClasspath(binary, javaSourceSet, dependencies, dependencyResolver, schemaStore, resolutionAwareRepositories, serviceRegistry.getFactory(PatternSet.class));
         }
 
         private Iterable<DependencySpec> compileDependencies(BinarySpec binary, DependentSourceSet sourceSet) {

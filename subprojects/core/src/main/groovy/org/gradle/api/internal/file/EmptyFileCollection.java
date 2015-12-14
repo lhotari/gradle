@@ -16,6 +16,10 @@
 
 package org.gradle.api.internal.file;
 
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.api.tasks.util.internal.PatternSets;
+import org.gradle.internal.Factory;
+
 import java.io.File;
 import java.util.Set;
 
@@ -36,6 +40,11 @@ public class EmptyFileCollection extends AbstractFileCollection {
     @Override
     public String getDisplayName() {
         return displayName;
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return PatternSets.getNonCachingPatternSetFactory();
     }
 
     @Override

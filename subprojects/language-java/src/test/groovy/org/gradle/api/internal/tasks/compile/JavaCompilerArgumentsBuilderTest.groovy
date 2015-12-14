@@ -30,7 +30,7 @@ class JavaCompilerArgumentsBuilderTest extends Specification {
     TestNameTestDirectoryProvider tempDir = new TestNameTestDirectoryProvider()
 
     def spec = new DefaultJavaCompileSpec()
-    def builder = new JavaCompilerArgumentsBuilder(spec)
+    def builder = new JavaCompilerArgumentsBuilder(spec, patternSetFactory)
 
     def setup() {
         spec.tempDir = tempDir.file("tmp")

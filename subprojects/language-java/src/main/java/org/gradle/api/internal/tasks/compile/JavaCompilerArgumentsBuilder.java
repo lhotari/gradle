@@ -22,6 +22,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.tasks.compile.CompileOptions;
 import org.gradle.api.tasks.compile.ForkOptions;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ public class JavaCompilerArgumentsBuilder {
     public static final String EMPTY_SOURCE_PATH_REF_DIR = "emptySourcePathRef";
 
     private final JavaCompileSpec spec;
+    private final Factory<PatternSet> patternSetFactory;
 
     private boolean includeLauncherOptions;
     private boolean includeMainOptions = true;
@@ -41,8 +44,9 @@ public class JavaCompilerArgumentsBuilder {
 
     private List<String> args;
 
-    public JavaCompilerArgumentsBuilder(JavaCompileSpec spec) {
+    public JavaCompilerArgumentsBuilder(JavaCompileSpec spec, Factory<PatternSet> patternSetFactory) {
         this.spec = spec;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public JavaCompilerArgumentsBuilder includeLauncherOptions(boolean flag) {
@@ -207,6 +211,6 @@ public class JavaCompilerArgumentsBuilder {
         if (classpath instanceof FileCollection) {
             return (FileCollection) classpath;
         }
-        return new SimpleFileCollection(Lists.newArrayList(classpath));
+        return new SimpleFileCollection(patternSetFactory, Lists.newArrayList(classpath));
     }
 }

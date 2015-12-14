@@ -21,6 +21,7 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.internal.artifacts.dsl.dependencies.ProjectFinder
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.ConfigurationComponentMetaDataBuilder
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultResolutionStrategy
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.initialization.ProjectAccessListener
 import org.gradle.internal.event.ListenerManager
 import org.gradle.internal.reflect.Instantiator
@@ -40,8 +41,8 @@ public class DefaultConfigurationContainerSpec extends Specification {
     def ConfigurationInternal conf = Mock()
 
     private DefaultConfigurationContainer configurationContainer = new DefaultConfigurationContainer(
-            resolver, instantiator, domainObjectContext,
-            listenerManager, metaDataProvider, projectAccessListener, projectFinder, metaDataBuilder);
+        resolver, instantiator, domainObjectContext,
+        listenerManager, metaDataProvider, projectAccessListener, projectFinder, metaDataBuilder, TestFiles.resolver().getPatternSetFactory());
 
     def "adds and gets"() {
         _ * conf.getName() >> "compile"

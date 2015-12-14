@@ -29,6 +29,8 @@ import org.gradle.api.internal.artifacts.repositories.ResolutionAwareRepository;
 import org.gradle.api.internal.file.AbstractFileCollection;
 import org.gradle.api.internal.tasks.DefaultTaskDependency;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.component.local.model.LocalConfigurationMetaData;
 import org.gradle.internal.component.model.ConfigurationMetaData;
 import org.gradle.internal.resolve.ModuleVersionResolveException;
@@ -59,23 +61,31 @@ public class DependencyResolvingClasspath extends AbstractFileCollection {
 
     private ResolveResult resolveResult;
 
+    private final Factory<PatternSet> patternSetFactory;
+
     public DependencyResolvingClasspath(
-            BinarySpec binarySpec,
-            LanguageSourceSet sourceSet,
-            Iterable<DependencySpec> dependencies,
-            ArtifactDependencyResolver dependencyResolver,
-            ModelSchemaStore schemaStore,
-            List<ResolutionAwareRepository> remoteRepositories) {
+        BinarySpec binarySpec,
+        LanguageSourceSet sourceSet,
+        Iterable<DependencySpec> dependencies,
+        ArtifactDependencyResolver dependencyResolver,
+        ModelSchemaStore schemaStore,
+        List<ResolutionAwareRepository> remoteRepositories, Factory<PatternSet> patternSetFactory) {
         this.binary = (BinarySpecInternal) binarySpec;
         this.sourceSet = sourceSet;
         this.dependencyResolver = dependencyResolver;
         this.remoteRepositories = remoteRepositories;
+        this.patternSetFactory = patternSetFactory;
         this.resolveContext = new DependentSourceSetResolveContext(binary.getId(), sourceSet, variantsMetaDataFrom(binary, schemaStore), dependencies);
     }
 
     @Override
     public String getDisplayName() {
         return "Classpath for " + sourceSet.getDisplayName();
+    }
+
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return patternSetFactory;
     }
 
     @Override

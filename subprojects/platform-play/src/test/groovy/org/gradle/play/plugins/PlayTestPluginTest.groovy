@@ -49,7 +49,7 @@ class PlayTestPluginTest extends Specification {
 
     File buildDir = new File("tmp")
 
-    PlayTestPlugin plugin = new PlayTestPlugin()
+    PlayTestPlugin plugin = new PlayTestPlugin(patternSetFactory)
 
     def setup(){
         _ * binaryContainer.iterator() >> [binary].iterator()

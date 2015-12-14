@@ -21,12 +21,14 @@ import com.google.common.collect.Lists;
 import com.typesafe.zinc.*;
 import org.gradle.api.internal.tasks.SimpleWorkResult;
 import org.gradle.api.internal.tasks.compile.CompilationFailedException;
-import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.api.internal.tasks.compile.JavaCompilerArgumentsBuilder;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.jvm.Jvm;
+import org.gradle.language.base.internal.compile.Compiler;
 import scala.Option;
 import xsbti.F0;
 
@@ -34,31 +36,35 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 
+import org.gradle.language.base.internal.compile.Compiler;
+
 public class ZincScalaCompiler implements Compiler<ScalaJavaJointCompileSpec>, Serializable {
     private static final Logger LOGGER = Logging.getLogger(ZincScalaCompiler.class);
     private final Iterable<File> scalaClasspath;
     private Iterable<File> zincClasspath;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public ZincScalaCompiler(Iterable<File> scalaClasspath, Iterable<File> zincClasspath) {
+    public ZincScalaCompiler(Iterable<File> scalaClasspath, Iterable<File> zincClasspath, Factory<PatternSet> patternSetFactory) {
         this.scalaClasspath = scalaClasspath;
         this.zincClasspath = zincClasspath;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(ScalaJavaJointCompileSpec spec) {
-        return Compiler.execute(scalaClasspath, zincClasspath, spec);
+        return Compiler.execute(scalaClasspath, zincClasspath, spec, patternSetFactory);
     }
 
     // need to defer loading of Zinc/sbt/Scala classes until we are
     // running in the compiler daemon and have them on the class path
     private static class Compiler {
-        static WorkResult execute(Iterable<File> scalaClasspath, Iterable<File> zincClasspath, ScalaJavaJointCompileSpec spec) {
+        static WorkResult execute(Iterable<File> scalaClasspath, Iterable<File> zincClasspath, ScalaJavaJointCompileSpec spec, Factory<PatternSet> patternSetFactory) {
             LOGGER.info("Compiling with Zinc Scala compiler.");
 
             xsbti.Logger logger = new SbtLoggerAdapter();
 
             com.typesafe.zinc.Compiler compiler = createCompiler(scalaClasspath, zincClasspath, logger);
             List<String> scalacOptions = new ZincScalaCompilerArgumentsGenerator().generate(spec);
-            List<String> javacOptions = new JavaCompilerArgumentsBuilder(spec).includeClasspath(false).build();
+            List<String> javacOptions = new JavaCompilerArgumentsBuilder(spec, patternSetFactory).includeClasspath(false).build();
             Inputs inputs = Inputs.create(ImmutableList.copyOf(spec.getClasspath()), ImmutableList.copyOf(spec.getSource()), spec.getDestinationDir(),
                     scalacOptions, javacOptions, spec.getScalaCompileOptions().getIncrementalOptions().getAnalysisFile(), spec.getAnalysisMap(), "mixed", getIncOptions(), true);
             if (LOGGER.isDebugEnabled()) {

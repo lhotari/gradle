@@ -18,6 +18,7 @@ package org.gradle.api.internal.tasks.compile;
 import org.gradle.api.internal.tasks.SimpleWorkResult;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.api.tasks.compile.CompileOptions;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.slf4j.Logger;
@@ -33,9 +34,11 @@ import java.util.List;
 public class JdkJavaCompiler implements Compiler<JavaCompileSpec>, Serializable {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdkJavaCompiler.class);
     private final Factory<JavaCompiler> javaHomeBasedJavaCompilerFactory;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public JdkJavaCompiler(Factory<JavaCompiler> javaHomeBasedJavaCompilerFactory) {
+    public JdkJavaCompiler(Factory<JavaCompiler> javaHomeBasedJavaCompilerFactory, Factory<PatternSet> patternSetFactory) {
         this.javaHomeBasedJavaCompilerFactory = javaHomeBasedJavaCompilerFactory;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(JavaCompileSpec spec) {
@@ -51,7 +54,7 @@ public class JdkJavaCompiler implements Compiler<JavaCompileSpec>, Serializable 
     }
 
     private JavaCompiler.CompilationTask createCompileTask(JavaCompileSpec spec) {
-        List<String> options = new JavaCompilerArgumentsBuilder(spec).build();
+        List<String> options = new JavaCompilerArgumentsBuilder(spec, patternSetFactory).build();
         JavaCompiler compiler = javaHomeBasedJavaCompilerFactory.create();
         CompileOptions compileOptions = spec.getCompileOptions();
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, compileOptions.getEncoding() != null ? Charset.forName(compileOptions.getEncoding()) : null);

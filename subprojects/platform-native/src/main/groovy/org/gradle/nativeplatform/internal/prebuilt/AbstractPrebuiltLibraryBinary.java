@@ -21,6 +21,8 @@ import org.gradle.api.internal.AbstractBuildableModelElement;
 import org.gradle.api.internal.file.collections.FileCollectionAdapter;
 import org.gradle.api.internal.file.collections.MinimalFileSet;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.nativeplatform.BuildType;
 import org.gradle.nativeplatform.Flavor;
 import org.gradle.nativeplatform.NativeLibraryBinary;
@@ -37,13 +39,15 @@ public abstract class AbstractPrebuiltLibraryBinary extends AbstractBuildableMod
     private final BuildType buildType;
     private final NativePlatform targetPlatform;
     private final Flavor flavor;
+    protected final Factory<PatternSet> patternSetFactory;
 
-    public AbstractPrebuiltLibraryBinary(String name, PrebuiltLibrary library, BuildType buildType, NativePlatform targetPlatform, Flavor flavor) {
+    public AbstractPrebuiltLibraryBinary(String name, PrebuiltLibrary library, BuildType buildType, NativePlatform targetPlatform, Flavor flavor, Factory<PatternSet> patternSetFactory) {
         this.name = name;
         this.library = library;
         this.buildType = buildType;
         this.targetPlatform = targetPlatform;
         this.flavor = flavor;
+        this.patternSetFactory = patternSetFactory;
     }
 
     @Override
@@ -72,11 +76,11 @@ public abstract class AbstractPrebuiltLibraryBinary extends AbstractBuildableMod
     }
 
     public FileCollection getHeaderDirs() {
-        return new SimpleFileCollection(library.getHeaders().getSrcDirs());
+        return new SimpleFileCollection(patternSetFactory, library.getHeaders().getSrcDirs());
     }
 
     protected FileCollection createFileCollection(File file, String fileDescription) {
-        return new FileCollectionAdapter(new ValidatingFileSet(file, getComponent().getName(), fileDescription));
+        return new FileCollectionAdapter(patternSetFactory, new ValidatingFileSet(file, getComponent().getName(), fileDescription));
     }
 
     private static class ValidatingFileSet implements MinimalFileSet {

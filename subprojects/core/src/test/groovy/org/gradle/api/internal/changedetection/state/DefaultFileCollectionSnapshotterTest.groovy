@@ -18,6 +18,7 @@ package org.gradle.api.internal.changedetection.state
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTreeElement
 import org.gradle.api.internal.cache.StringInterner
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.internal.file.collections.SimpleFileCollection
 import org.gradle.internal.hash.HashUtil
 import org.gradle.test.fixtures.file.TestFile
@@ -374,7 +375,7 @@ public class DefaultFileCollectionSnapshotterTest extends Specification {
     }
 
     private FileCollection files(File... files) {
-        new SimpleFileCollection(files)
+        new SimpleFileCollection(TestFiles.resolver().getPatternSetFactory(), files)
     }
 
 }

@@ -17,6 +17,8 @@
 package org.gradle.nativeplatform.internal.prebuilt;
 
 import org.gradle.api.Action;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.nativeplatform.BuildType;
 import org.gradle.nativeplatform.Flavor;
@@ -37,11 +39,13 @@ public class PrebuiltLibraryInitializer implements Action<PrebuiltLibrary> {
     private final Set<NativePlatform> allPlatforms = new LinkedHashSet<NativePlatform>();
     private final Set<BuildType> allBuildTypes = new LinkedHashSet<BuildType>();
     private final Set<Flavor> allFlavors = new LinkedHashSet<Flavor>();
+    private final Factory<PatternSet> patternSetFactory;
 
     public PrebuiltLibraryInitializer(Instantiator instantiator,
                                       NativePlatforms nativePlatforms,
-                                      Collection<? extends NativePlatform> allPlatforms, Collection<? extends BuildType> allBuildTypes, Collection<? extends Flavor> allFlavors) {
+                                      Collection<? extends NativePlatform> allPlatforms, Collection<? extends BuildType> allBuildTypes, Collection<? extends Flavor> allFlavors, Factory<PatternSet> patternSetFactory) {
         this.instantiator = instantiator;
+        this.patternSetFactory = patternSetFactory;
         this.allPlatforms.addAll(allPlatforms);
         this.allPlatforms.addAll(nativePlatforms.defaultPlatformDefinitions());
         this.allBuildTypes.addAll(allBuildTypes);
@@ -65,7 +69,7 @@ public class PrebuiltLibraryInitializer implements Action<PrebuiltLibrary> {
 
     public <T extends NativeLibraryBinary> void createNativeBinary(Class<T> type, PrebuiltLibrary library, NativePlatform platform, BuildType buildType, Flavor flavor) {
         String name = getName(type, library, platform, buildType, flavor);
-        T nativeBinary = instantiator.newInstance(type, name, library, buildType, platform, flavor);
+        T nativeBinary = instantiator.newInstance(type, name, library, buildType, platform, flavor, patternSetFactory);
         library.getBinaries().add(nativeBinary);
     }
 

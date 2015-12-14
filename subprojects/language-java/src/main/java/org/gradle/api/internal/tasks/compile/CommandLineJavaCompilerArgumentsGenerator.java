@@ -18,6 +18,8 @@ package org.gradle.api.internal.tasks.compile;
 
 import com.google.common.collect.Iterables;
 import org.gradle.api.UncheckedIOException;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.platform.base.internal.toolchain.ArgCollector;
 import org.gradle.platform.base.internal.toolchain.ArgWriter;
 
@@ -26,6 +28,12 @@ import java.util.Collections;
 import java.util.List;
 
 public class CommandLineJavaCompilerArgumentsGenerator implements CompileSpecToArguments<JavaCompileSpec>, Serializable {
+    private final Factory<PatternSet> patternSetFactory;
+
+    public CommandLineJavaCompilerArgumentsGenerator(Factory<PatternSet> patternSetFactory) {
+        this.patternSetFactory = patternSetFactory;
+    }
+
     public void collectArguments(JavaCompileSpec spec, ArgCollector collector) {
         for (String arg : generate(spec)) {
             collector.args(arg);
@@ -33,8 +41,8 @@ public class CommandLineJavaCompilerArgumentsGenerator implements CompileSpecToA
     }
 
     public Iterable<String> generate(JavaCompileSpec spec) {
-        List<String> launcherOptions = new JavaCompilerArgumentsBuilder(spec).includeLauncherOptions(true).includeMainOptions(false).includeClasspath(false).includeCustomizations(false).build();
-        List<String> remainingArgs = new JavaCompilerArgumentsBuilder(spec).includeSourceFiles(true).build();
+        List<String> launcherOptions = new JavaCompilerArgumentsBuilder(spec, patternSetFactory).includeLauncherOptions(true).includeMainOptions(false).includeClasspath(false).includeCustomizations(false).build();
+        List<String> remainingArgs = new JavaCompilerArgumentsBuilder(spec, patternSetFactory).includeSourceFiles(true).build();
         Iterable<String> allArgs = Iterables.concat(launcherOptions, remainingArgs);
         if (exceedsWindowsCommandLineLengthLimit(allArgs)) {
             return Iterables.concat(launcherOptions, shortenArgs(spec.getTempDir(), remainingArgs));

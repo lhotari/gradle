@@ -24,6 +24,8 @@ import org.gradle.api.artifacts.ResolveException;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.internal.artifacts.dsl.dependencies.ProjectFinder;
 import org.gradle.api.internal.tasks.compile.daemon.CompilerDaemonManager;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.scala.ScalaPlatform;
 import org.gradle.platform.base.internal.toolchain.ToolProvider;
 
@@ -36,12 +38,14 @@ public class DownloadingScalaToolChain implements ScalaToolChainInternal {
     private final ConfigurationContainer configurationContainer;
     private final DependencyHandler dependencyHandler;
     private final JavaVersion javaVersion;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public DownloadingScalaToolChain(ProjectFinder projectFinder, CompilerDaemonManager compilerDaemonManager, ConfigurationContainer configurationContainer, DependencyHandler dependencyHandler) {
+    public DownloadingScalaToolChain(ProjectFinder projectFinder, CompilerDaemonManager compilerDaemonManager, ConfigurationContainer configurationContainer, DependencyHandler dependencyHandler, Factory<PatternSet> patternSetFactory) {
         this.projectFinder = projectFinder;
         this.compilerDaemonManager = compilerDaemonManager;
         this.configurationContainer = configurationContainer;
         this.dependencyHandler = dependencyHandler;
+        this.patternSetFactory = patternSetFactory;
         this.javaVersion = JavaVersion.current();
     }
 
@@ -59,7 +63,7 @@ public class DownloadingScalaToolChain implements ScalaToolChainInternal {
             Configuration zincClasspath = resolveDependency(String.format("com.typesafe.zinc:zinc:%s", DefaultScalaToolProvider.DEFAULT_ZINC_VERSION));
             Set<File> resolvedScalaClasspath = scalaClasspath.resolve();
             Set<File> resolvedZincClasspath = zincClasspath.resolve();
-            return new DefaultScalaToolProvider(projectFinder, compilerDaemonManager, resolvedScalaClasspath, resolvedZincClasspath);
+            return new DefaultScalaToolProvider(projectFinder, compilerDaemonManager, resolvedScalaClasspath, resolvedZincClasspath, patternSetFactory);
 
         } catch(ResolveException resolveException) {
             return new NotFoundScalaToolProvider(resolveException);

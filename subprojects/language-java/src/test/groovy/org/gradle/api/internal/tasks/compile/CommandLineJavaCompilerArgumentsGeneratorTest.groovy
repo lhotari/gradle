@@ -29,7 +29,7 @@ class CommandLineJavaCompilerArgumentsGeneratorTest extends Specification {
     @Rule
     TestNameTestDirectoryProvider tempDir
 
-    CommandLineJavaCompilerArgumentsGenerator argsGenerator = new CommandLineJavaCompilerArgumentsGenerator()
+    CommandLineJavaCompilerArgumentsGenerator argsGenerator = new CommandLineJavaCompilerArgumentsGenerator(patternSetFactory)
 
     def "inlines arguments if they are short enough"() {
         def spec = createCompileSpec(25)

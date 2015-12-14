@@ -48,11 +48,11 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     public void registerSerializers(SerializerRegistry<FileCollectionSnapshot> registry) {
-        registry.register(FileCollectionSnapshotImpl.class, new DefaultFileSnapshotterSerializer(stringInterner));
+        registry.register(FileCollectionSnapshotImpl.class, new DefaultFileSnapshotterSerializer(stringInterner, patternSetFactory));
     }
 
     public FileCollectionSnapshot emptySnapshot() {
-        return new FileCollectionSnapshotImpl(new HashMap<String, IncrementalFileSnapshot>());
+        return new FileCollectionSnapshotImpl(new HashMap<String, IncrementalFileSnapshot>(), patternSetFactory);
     }
 
     public FileCollectionSnapshot snapshot(final FileCollection input) {
@@ -62,7 +62,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         visitFiles(input, allFileVisitDetails, missingFiles);
 
         if (allFileVisitDetails.isEmpty() && missingFiles.isEmpty()) {
-            return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
+            return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap(), patternSetFactory);
         }
 
         final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
@@ -88,7 +88,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
             }
         });
 
-        return new FileCollectionSnapshotImpl(snapshots);
+        return new FileCollectionSnapshotImpl(snapshots, patternSetFactory);
     }
 
     protected void visitFiles(FileCollection input, final List<FileVisitDetails> allFileVisitDetails, final List<File> missingFiles) {
@@ -172,9 +172,11 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
     static class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
         final Map<String, IncrementalFileSnapshot> snapshots;
+        private final Factory<PatternSet> patternSetFactory;
 
-        public FileCollectionSnapshotImpl(Map<String, IncrementalFileSnapshot> snapshots) {
+        public FileCollectionSnapshotImpl(Map<String, IncrementalFileSnapshot> snapshots, Factory<PatternSet> patternSetFactory) {
             this.snapshots = snapshots;
+            this.patternSetFactory = patternSetFactory;
         }
 
         public FileCollection getFiles() {
@@ -184,7 +186,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
                     files.add(new File(entry.getKey()));
                 }
             }
-            return new SimpleFileCollection(files);
+            return new SimpleFileCollection(patternSetFactory, files);
         }
 
         public FileCollection getAllFiles() {
@@ -194,7 +196,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
                     files.add(new File(entry.getKey()));
                 }
             }
-            return new SimpleFileCollection(files);
+            return new SimpleFileCollection(patternSetFactory,files);
         }
 
         public FilesSnapshotSet getSnapshot() {
@@ -257,7 +259,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
                     FileCollectionSnapshotImpl target = (FileCollectionSnapshotImpl) snapshot;
                     final Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(target.snapshots);
                     diff(snapshots, other.snapshots, new MapMergeChangeListener<String, IncrementalFileSnapshot>(listener, newSnapshots));
-                    return new FileCollectionSnapshotImpl(newSnapshots);
+                    return new FileCollectionSnapshotImpl(newSnapshots, patternSetFactory);
                 }
             };
         }

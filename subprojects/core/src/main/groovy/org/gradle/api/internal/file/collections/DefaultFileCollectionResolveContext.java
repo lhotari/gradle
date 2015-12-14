@@ -173,14 +173,14 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
                 result.add(new FileTreeAdapter(patternSetFactory, fileTree));
             } else if (element instanceof MinimalFileSet) {
                 MinimalFileSet fileSet = (MinimalFileSet) element;
-                result.add(new FileCollectionAdapter(fileSet));
+                result.add(new FileCollectionAdapter(patternSetFactory, fileSet));
             } else if (element instanceof MinimalFileCollection) {
                 throw new UnsupportedOperationException(String.format("Cannot convert instance of %s to FileTree", element.getClass().getSimpleName()));
             } else if (element instanceof TaskDependency) {
                 // Ignore
                 return;
             } else {
-                result.add(new FileCollectionAdapter(new ListBackedFileSet(fileResolver.resolve(element))));
+                result.add(new FileCollectionAdapter(patternSetFactory, new ListBackedFileSet(fileResolver.resolve(element))));
             }
         }
     }

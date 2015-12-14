@@ -181,4 +181,8 @@ public abstract class AbstractFileTree extends AbstractFileCollection implements
         }
     }
 
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return patternSetFactory;
+    }
 }

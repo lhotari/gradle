@@ -19,6 +19,8 @@ package org.gradle.api.internal.changedetection.rules;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.changedetection.state.*;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 /**
  * Represents the complete changes in a tasks state
@@ -36,7 +38,7 @@ public class TaskUpToDateState {
     private SummaryTaskStateChanges allTaskChanges;
     private SummaryTaskStateChanges rebuildChanges;
 
-    public TaskUpToDateState(TaskInternal task, TaskHistoryRepository.History history, FileCollectionSnapshotter outputFilesSnapshotter, FileCollectionSnapshotter inputFilesSnapshotter, FileCollectionSnapshotter discoveredFilesSnapshotter) {
+    public TaskUpToDateState(TaskInternal task, TaskHistoryRepository.History history, FileCollectionSnapshotter outputFilesSnapshotter, FileCollectionSnapshotter inputFilesSnapshotter, FileCollectionSnapshotter discoveredFilesSnapshotter, Factory<PatternSet> patternSetFactory) {
         TaskExecution thisExecution = history.getCurrentExecution();
         TaskExecution lastExecution = history.getPreviousExecution();
 
@@ -62,7 +64,7 @@ public class TaskUpToDateState {
 
         // Capture discovered inputs state from previous execution
         try {
-            discoveredInputFilesState = DiscoveredInputFilesStateChangeRule.create(lastExecution, thisExecution, discoveredFilesSnapshotter);
+            discoveredInputFilesState = DiscoveredInputFilesStateChangeRule.create(lastExecution, thisExecution, discoveredFilesSnapshotter, patternSetFactory);
         } catch (UncheckedIOException e) {
             throw new UncheckedIOException(String.format("Failed to capture snapshot of input files for task '%s' during up-to-date check.", task.getName()), e);
         }

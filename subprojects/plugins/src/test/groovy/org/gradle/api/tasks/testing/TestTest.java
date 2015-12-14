@@ -20,6 +20,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.internal.file.CompositeFileTree;
+import org.gradle.api.internal.file.TestFiles;
 import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContext;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.FileTreeAdapter;
@@ -77,7 +78,7 @@ public class TestTest extends AbstractConventionTaskTest {
 
     TestFramework testFrameworkMock = context.mock(TestFramework.class);
     TestExecuter testExecuterMock = context.mock(TestExecuter.class);
-    private FileCollection classpathMock = new SimpleFileCollection(new File("classpath"));
+    private FileCollection classpathMock = new SimpleFileCollection(TestFiles.resolver().getPatternSetFactory(), new File("classpath"));
     private Test test;
 
     @Before

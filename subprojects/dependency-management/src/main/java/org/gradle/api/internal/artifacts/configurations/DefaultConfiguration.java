@@ -39,7 +39,9 @@ import org.gradle.api.internal.tasks.DefaultTaskDependency;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.initialization.ProjectAccessListener;
+import org.gradle.internal.Factory;
 import org.gradle.internal.component.local.model.DefaultLocalComponentMetaData;
 import org.gradle.internal.component.model.ComponentResolveMetaData;
 import org.gradle.internal.event.ListenerBroadcast;
@@ -85,6 +87,8 @@ public class DefaultConfiguration extends AbstractFileCollection implements Conf
     private final String path;
     private final String name;
 
+    private final Factory<PatternSet> patternSetFactory;
+
     private Visibility visibility = Visibility.PUBLIC;
     private boolean transitive = true;
     private Set<Configuration> extendsFrom = new LinkedHashSet<Configuration>();
@@ -107,9 +111,11 @@ public class DefaultConfiguration extends AbstractFileCollection implements Conf
                                 ResolutionStrategyInternal resolutionStrategy,
                                 ProjectAccessListener projectAccessListener,
                                 ProjectFinder projectFinder,
-                                ConfigurationComponentMetaDataBuilder configurationComponentMetaDataBuilder) {
+                                ConfigurationComponentMetaDataBuilder configurationComponentMetaDataBuilder,
+                                Factory<PatternSet> patternSetFactory) {
         this.path = path;
         this.name = name;
+        this.patternSetFactory = patternSetFactory;
         this.configurationsProvider = configurationsProvider;
         this.resolver = resolver;
         this.listenerManager = listenerManager;
@@ -131,9 +137,9 @@ public class DefaultConfiguration extends AbstractFileCollection implements Conf
         DefaultDomainObjectSet<PublishArtifact> ownArtifacts = new DefaultDomainObjectSet<PublishArtifact>(PublishArtifact.class);
         ownArtifacts.beforeChange(validateMutationType(this, MutationType.ARTIFACTS));
 
-        artifacts = new DefaultPublishArtifactSet(String.format("%s artifacts", getDisplayName()), ownArtifacts);
+        artifacts = new DefaultPublishArtifactSet(String.format("%s artifacts", getDisplayName()), ownArtifacts, patternSetFactory);
         inheritedArtifacts = CompositeDomainObjectSet.create(PublishArtifact.class, ownArtifacts);
-        allArtifacts = new DefaultPublishArtifactSet(String.format("%s all artifacts", getDisplayName()), inheritedArtifacts);
+        allArtifacts = new DefaultPublishArtifactSet(String.format("%s all artifacts", getDisplayName()), inheritedArtifacts, patternSetFactory);
 
         resolutionStrategy.setMutationValidator(this);
     }
@@ -471,6 +477,11 @@ public class DefaultConfiguration extends AbstractFileCollection implements Conf
         return builder.toString();
     }
 
+    @Override
+    protected Factory<PatternSet> getPatternSetFactory() {
+        return patternSetFactory;
+    }
+
     public ResolvableDependencies getIncoming() {
         return resolvableDependencies;
     }
@@ -494,7 +505,7 @@ public class DefaultConfiguration extends AbstractFileCollection implements Conf
     private DefaultConfiguration createCopy(Set<Dependency> dependencies, boolean recursive) {
         DetachedConfigurationsProvider configurationsProvider = new DetachedConfigurationsProvider();
         DefaultConfiguration copiedConfiguration = new DefaultConfiguration(path + "Copy", name + "Copy",
-            configurationsProvider, resolver, listenerManager, metaDataProvider, resolutionStrategy.copy(), projectAccessListener, projectFinder, configurationComponentMetaDataBuilder);
+            configurationsProvider, resolver, listenerManager, metaDataProvider, resolutionStrategy.copy(), projectAccessListener, projectFinder, configurationComponentMetaDataBuilder, patternSetFactory);
         configurationsProvider.setTheOnlyConfiguration(copiedConfiguration);
         // state, cachedResolvedConfiguration, and extendsFrom intentionally not copied - must re-resolve copy
         // copying extendsFrom could mess up dependencies when copy was re-resolved
@@ -654,6 +665,11 @@ public class DefaultConfiguration extends AbstractFileCollection implements Conf
 
         public String getDisplayName() {
             return String.format("%s dependencies", DefaultConfiguration.this);
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return DefaultConfiguration.this.getPatternSetFactory();
         }
 
         public Set<File> getFiles() {

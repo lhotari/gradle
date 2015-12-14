@@ -18,6 +18,7 @@ package org.gradle.api.internal.tasks.compile.incremental;
 
 import com.google.common.collect.Iterables;
 import org.gradle.api.file.FileTree;
+import org.gradle.api.internal.file.EmptyFileCollection;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
@@ -37,7 +38,7 @@ class IncrementalCompilationInitializer {
 
     public void initializeCompilation(JavaCompileSpec spec, Collection<String> staleClasses) {
         if (staleClasses.isEmpty()) {
-            spec.setSource(new SimpleFileCollection());
+            spec.setSource(new EmptyFileCollection());
             return; //do nothing. No classes need recompilation.
         }
 

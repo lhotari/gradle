@@ -21,14 +21,14 @@ import org.gradle.internal.serialize.SerializerSpec
 
 class DefaultFileSnapshotterSerializerTest extends SerializerSpec {
 
-    def serializer = new DefaultFileSnapshotterSerializer(new StringInterner())
+    def serializer = new DefaultFileSnapshotterSerializer(new StringInterner(), patternSetFactory)
 
     def "reads and writes the snapshot"() {
         when:
         DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl out = serialize(new DefaultFileCollectionSnapshotter.FileCollectionSnapshotImpl([
-                "1": DefaultFileCollectionSnapshotter.DirSnapshot.getInstance(),
-                "2": new DefaultFileCollectionSnapshotter.MissingFileSnapshot(),
-                "3": new DefaultFileCollectionSnapshotter.FileHashSnapshot("foo".bytes)]), serializer)
+            "1": DefaultFileCollectionSnapshotter.DirSnapshot.getInstance(),
+            "2": new DefaultFileCollectionSnapshotter.MissingFileSnapshot(),
+            "3": new DefaultFileCollectionSnapshotter.FileHashSnapshot("foo".bytes)], patternSetFactory), serializer)
 
         then:
         out.snapshots.size() == 3

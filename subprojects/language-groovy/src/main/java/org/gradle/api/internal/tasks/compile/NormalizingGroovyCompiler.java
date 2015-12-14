@@ -24,6 +24,8 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.util.CollectionUtils;
 
@@ -37,9 +39,11 @@ import java.util.List;
 public class NormalizingGroovyCompiler implements Compiler<GroovyJavaJointCompileSpec> {
     private static final Logger LOGGER = Logging.getLogger(NormalizingGroovyCompiler.class);
     private final Compiler<GroovyJavaJointCompileSpec> delegate;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public NormalizingGroovyCompiler(Compiler<GroovyJavaJointCompileSpec> delegate) {
+    public NormalizingGroovyCompiler(Compiler<GroovyJavaJointCompileSpec> delegate, Factory<PatternSet> patternSetFactory) {
         this.delegate = delegate;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(GroovyJavaJointCompileSpec spec) {
@@ -63,7 +67,7 @@ public class NormalizingGroovyCompiler implements Compiler<GroovyJavaJointCompil
             }
         });
 
-        spec.setSource(new SimpleFileCollection(filtered.getFiles()));
+        spec.setSource(new SimpleFileCollection(patternSetFactory, filtered.getFiles()));
     }
 
     private void resolveClasspath(GroovyJavaJointCompileSpec spec) {
@@ -104,7 +108,7 @@ public class NormalizingGroovyCompiler implements Compiler<GroovyJavaJointCompil
             return;
         }
 
-        List<String> compilerArgs = new JavaCompilerArgumentsBuilder(spec).includeLauncherOptions(true).includeSourceFiles(true).build();
+        List<String> compilerArgs = new JavaCompilerArgumentsBuilder(spec, patternSetFactory).includeLauncherOptions(true).includeSourceFiles(true).build();
         String joinedArgs = Joiner.on(' ').join(compilerArgs);
         LOGGER.debug("Java compiler arguments: {}", joinedArgs);
     }

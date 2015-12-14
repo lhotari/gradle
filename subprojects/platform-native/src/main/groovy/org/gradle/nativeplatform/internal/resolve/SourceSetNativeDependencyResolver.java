@@ -18,10 +18,13 @@ package org.gradle.nativeplatform.internal.resolve;
 
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.AbstractFileCollection;
-import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.internal.file.EmptyFileCollection;
 import org.gradle.api.tasks.TaskDependency;
-import org.gradle.language.nativeplatform.HeaderExportingSourceSet;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.api.tasks.util.internal.PatternSets;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.LanguageSourceSet;
+import org.gradle.language.nativeplatform.HeaderExportingSourceSet;
 import org.gradle.nativeplatform.NativeDependencySet;
 
 import java.io.File;
@@ -65,7 +68,7 @@ public class SourceSetNativeDependencyResolver implements NativeDependencyResolv
         }
 
         private FileCollection empty() {
-            return new SimpleFileCollection();
+            return new EmptyFileCollection();
         }
     }
 
@@ -81,6 +84,12 @@ public class SourceSetNativeDependencyResolver implements NativeDependencyResolv
                 @Override
                 public String getDisplayName() {
                     return "Include roots of " + sourceSet.getName();
+                }
+
+                @Override
+                protected Factory<PatternSet> getPatternSetFactory() {
+                    //TODO wire Factory<PatternSet>
+                    return PatternSets.getNonCachingPatternSetFactory();
                 }
 
                 public Set<File> getFiles() {

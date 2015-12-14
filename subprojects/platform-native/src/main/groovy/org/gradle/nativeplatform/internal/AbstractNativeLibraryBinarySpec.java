@@ -19,6 +19,9 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.AbstractFileCollection;
 import org.gradle.api.internal.tasks.DefaultTaskDependency;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.api.tasks.util.internal.PatternSets;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.nativeplatform.HeaderExportingSourceSet;
 import org.gradle.nativeplatform.NativeLibrarySpec;
@@ -59,6 +62,12 @@ public abstract class AbstractNativeLibraryBinarySpec extends AbstractNativeBina
                 return String.format("Headers for %s", getName());
             }
 
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                // TODO: wire Factory<PatternSet>
+                return PatternSets.getNonCachingPatternSetFactory();
+            }
+
             public Set<File> getFiles() {
                 Set<File> headerDirs = new LinkedHashSet<File>();
                 for (HeaderExportingSourceSet sourceSet : getInputs().withType(HeaderExportingSourceSet.class)) {
@@ -79,6 +88,12 @@ public abstract class AbstractNativeLibraryBinarySpec extends AbstractNativeBina
     }
 
     protected abstract class LibraryOutputs extends AbstractFileCollection {
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            // TODO: wire Factory<PatternSet>
+            return PatternSets.getNonCachingPatternSetFactory();
+        }
+
         public final Set<File> getFiles() {
             if (hasOutputs()) {
                 return getOutputs();

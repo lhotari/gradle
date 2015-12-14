@@ -26,7 +26,7 @@ import spock.lang.Specification
 class NormalizingScalaCompilerTest extends Specification {
     Compiler<ScalaJavaJointCompileSpec> target = Mock()
     DefaultScalaJavaJointCompileSpec spec = new DefaultScalaJavaJointCompileSpec()
-    NormalizingScalaCompiler compiler = new NormalizingScalaCompiler(target)
+    NormalizingScalaCompiler compiler = new NormalizingScalaCompiler(target, patternSetFactory)
 
     def setup() {
         spec.destinationDir = new File("dest")

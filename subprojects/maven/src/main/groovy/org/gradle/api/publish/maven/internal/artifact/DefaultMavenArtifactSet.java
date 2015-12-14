@@ -19,6 +19,8 @@ import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.DefaultDomainObjectSet;
 import org.gradle.api.internal.file.AbstractFileCollection;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.internal.typeconversion.NotationParser;
 import org.gradle.api.internal.tasks.AbstractTaskDependency;
 import org.gradle.api.internal.tasks.TaskDependencyInternal;
@@ -36,11 +38,13 @@ public class DefaultMavenArtifactSet extends DefaultDomainObjectSet<MavenArtifac
     private final TaskDependencyInternal builtBy = new ArtifactsTaskDependency();
     private final ArtifactsFileCollection files = new ArtifactsFileCollection();
     private final NotationParser<Object, MavenArtifact> mavenArtifactParser;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public DefaultMavenArtifactSet(String publicationName, NotationParser<Object, MavenArtifact> mavenArtifactParser) {
+    public DefaultMavenArtifactSet(String publicationName, NotationParser<Object, MavenArtifact> mavenArtifactParser, Factory<PatternSet> patternSetFactory) {
         super(MavenArtifact.class);
         this.publicationName = publicationName;
         this.mavenArtifactParser = mavenArtifactParser;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public MavenArtifact artifact(Object source) {
@@ -63,6 +67,11 @@ public class DefaultMavenArtifactSet extends DefaultDomainObjectSet<MavenArtifac
 
         public String getDisplayName() {
             return String.format("artifacts for " + publicationName + " publication");
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return DefaultMavenArtifactSet.this.patternSetFactory;
         }
 
         @Override

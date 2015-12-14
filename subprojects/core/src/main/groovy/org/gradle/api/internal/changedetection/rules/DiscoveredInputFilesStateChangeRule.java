@@ -23,6 +23,8 @@ import org.gradle.api.internal.changedetection.state.FileCollectionSnapshot;
 import org.gradle.api.internal.changedetection.state.FileCollectionSnapshotter;
 import org.gradle.api.internal.changedetection.state.TaskExecution;
 import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.util.ChangeListener;
 
 import java.io.File;
@@ -32,7 +34,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class DiscoveredInputFilesStateChangeRule {
-    public static DiscoveredTaskStateChanges create(final TaskExecution previousExecution, final TaskExecution currentExecution, final FileCollectionSnapshotter inputFilesSnapshotter) {
+    public static DiscoveredTaskStateChanges create(final TaskExecution previousExecution, final TaskExecution currentExecution, final FileCollectionSnapshotter inputFilesSnapshotter, final Factory<PatternSet> patternSetFactory) {
         return new DiscoveredTaskStateChanges() {
             private final Collection<File> discoveredFiles = Sets.newHashSet();
 
@@ -42,7 +44,7 @@ public class DiscoveredInputFilesStateChangeRule {
                 }
 
                 Iterables.addAll(discoveredFiles, previousExecution.getDiscoveredInputFilesSnapshot().getAllFiles());
-                final FileCollectionSnapshot discoveredFileSnapshot = inputFilesSnapshotter.snapshot(new SimpleFileCollection(discoveredFiles));
+                final FileCollectionSnapshot discoveredFileSnapshot = inputFilesSnapshotter.snapshot(new SimpleFileCollection(patternSetFactory, discoveredFiles));
 
                 return new AbstractIterator<TaskStateChange>() {
                     final FileCollectionSnapshot.ChangeIterator<String> changeIterator = discoveredFileSnapshot.iterateChangesSince(previousExecution.getDiscoveredInputFilesSnapshot());
@@ -66,7 +68,7 @@ public class DiscoveredInputFilesStateChangeRule {
 
             public void snapshotAfterTask() {
 
-                currentExecution.setDiscoveredInputFilesSnapshot(inputFilesSnapshotter.snapshot(new SimpleFileCollection(discoveredFiles)));
+                currentExecution.setDiscoveredInputFilesSnapshot(inputFilesSnapshotter.snapshot(new SimpleFileCollection(patternSetFactory, discoveredFiles)));
             }
         };
     }

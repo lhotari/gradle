@@ -17,7 +17,7 @@
 package org.gradle.nativeplatform.internal.resolve;
 
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.file.collections.SimpleFileCollection;
+import org.gradle.api.internal.file.EmptyFileCollection;
 import org.gradle.nativeplatform.NativeDependencySet;
 import org.gradle.nativeplatform.NativeLibraryRequirement;
 
@@ -94,11 +94,11 @@ public class ApiRequirementNativeDependencyResolver implements NativeDependencyR
         }
 
         public FileCollection getLinkFiles() {
-            return new SimpleFileCollection();
+            return new EmptyFileCollection();
         }
 
         public FileCollection getRuntimeFiles() {
-            return new SimpleFileCollection();
+            return new EmptyFileCollection();
         }
     }
 }

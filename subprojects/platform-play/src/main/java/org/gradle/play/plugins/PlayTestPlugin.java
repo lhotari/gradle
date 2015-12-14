@@ -46,6 +46,12 @@ import java.util.Arrays;
 @SuppressWarnings("UnusedDeclaration")
 @Incubating
 public class PlayTestPlugin extends RuleSource {
+    private final Factory<PatternSet> patternSetFactory;
+
+    public PlayTestPlugin(Factory<PatternSet> patternSetFactory) {
+        this.patternSetFactory = patternSetFactory;
+    }
+
     @Mutate
     void createTestTasks(ModelMap<Task> tasks, ModelMap<PlayApplicationBinarySpecInternal> playBinaries, final PlayPluginConfigurations configurations,
                          final FileResolver fileResolver, final ProjectIdentifier projectIdentifier, @Path("buildDir") final File buildDir,
@@ -56,7 +62,7 @@ public class PlayTestPlugin extends RuleSource {
 
             final String testCompileTaskName = binary.getTasks().taskName("compile", "tests");
             final File testSourceDir = fileResolver.resolve("test");
-            final FileCollection testSources = new SimpleFileCollection(testSourceDir).getAsFileTree().matching(patternSetFactory.create().include("**/*.scala", "**/*.java"));
+            final FileCollection testSources = new SimpleFileCollection(patternSetFactory, testSourceDir).getAsFileTree().matching(patternSetFactory.create().include("**/*.scala", "**/*.java"));
             final File testClassesDir = new File(buildDir, String.format("%s/testClasses", binary.getProjectScopedName()));
             tasks.create(testCompileTaskName, PlatformScalaCompile.class, new Action<PlatformScalaCompile>() {
                 public void execute(PlatformScalaCompile scalaCompile) {
@@ -99,11 +105,11 @@ public class PlayTestPlugin extends RuleSource {
     }
 
     private FileCollection getTestCompileClasspath(PlayApplicationBinarySpec binary, PlayToolProvider playToolProvider, PlayPluginConfigurations configurations) {
-        return new SimpleFileCollection(binary.getJarFile()).plus(configurations.getPlayTest().getAllArtifacts());
+        return new SimpleFileCollection(patternSetFactory, binary.getJarFile()).plus(configurations.getPlayTest().getAllArtifacts());
     }
 
     private FileCollection getRuntimeClasspath(File testClassesDir, FileCollection testCompileClasspath) {
-        return new SimpleFileCollection(testClassesDir).plus(testCompileClasspath);
+        return new SimpleFileCollection(patternSetFactory, testClassesDir).plus(testCompileClasspath);
     }
 
     @Mutate

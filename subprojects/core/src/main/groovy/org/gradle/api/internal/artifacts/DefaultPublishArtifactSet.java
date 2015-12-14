@@ -20,11 +20,14 @@ import org.gradle.api.artifacts.PublishArtifactSet;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.DelegatingDomainObjectSet;
+import org.gradle.api.internal.artifacts.publish.DefaultPublishArtifact;
 import org.gradle.api.internal.file.AbstractFileCollection;
 import org.gradle.api.internal.tasks.AbstractTaskDependency;
 import org.gradle.api.internal.tasks.TaskDependencyInternal;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 
 import java.io.File;
 import java.util.LinkedHashSet;
@@ -34,10 +37,12 @@ public class DefaultPublishArtifactSet extends DelegatingDomainObjectSet<Publish
     private final TaskDependencyInternal builtBy = new ArtifactsTaskDependency();
     private final ArtifactsFileCollection files = new ArtifactsFileCollection();
     private final String displayName;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public DefaultPublishArtifactSet(String displayName, DomainObjectSet<PublishArtifact> backingSet) {
+    public DefaultPublishArtifactSet(String displayName, DomainObjectSet<PublishArtifact> backingSet, Factory<PatternSet> patternSetFactory) {
         super(backingSet);
         this.displayName = displayName;
+        this.patternSetFactory = patternSetFactory;
     }
 
     @Override
@@ -57,6 +62,11 @@ public class DefaultPublishArtifactSet extends DelegatingDomainObjectSet<Publish
 
         public String getDisplayName() {
             return displayName;
+        }
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return DefaultPublishArtifactSet.this.patternSetFactory;
         }
 
         @Override

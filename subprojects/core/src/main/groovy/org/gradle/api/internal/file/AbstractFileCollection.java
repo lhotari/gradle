@@ -85,10 +85,16 @@ public abstract class AbstractFileCollection implements FileCollectionInternal {
     }
 
     public FileCollection minus(final FileCollection collection) {
+        final Factory<PatternSet> patternSetFactory = getPatternSetFactory();
         return new AbstractFileCollection() {
             @Override
             public String getDisplayName() {
                 return AbstractFileCollection.this.getDisplayName();
+            }
+
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                return patternSetFactory;
             }
 
             @Override
@@ -148,15 +154,7 @@ public abstract class AbstractFileCollection implements FileCollectionInternal {
         return fileTrees;
     }
 
-    // TODO: wire managed PatternSet factory
-    protected Factory<PatternSet> getPatternSetFactory() {
-        return new Factory<PatternSet>() {
-            @Override
-            public PatternSet create() {
-                return new PatternSet();
-            }
-        };
-    }
+    protected abstract Factory<PatternSet> getPatternSetFactory();
 
     public Object addToAntBuilder(Object node, String childNodeName) {
         addToAntBuilder(node, childNodeName, AntType.ResourceCollection);
@@ -233,10 +231,16 @@ public abstract class AbstractFileCollection implements FileCollectionInternal {
     }
 
     public FileCollection filter(final Spec<? super File> filterSpec) {
+        final Factory<PatternSet> patternSetFactory = getPatternSetFactory();
         return new AbstractFileCollection() {
             @Override
             public String getDisplayName() {
                 return AbstractFileCollection.this.getDisplayName();
+            }
+
+            @Override
+            protected Factory<PatternSet> getPatternSetFactory() {
+                return patternSetFactory;
             }
 
             @Override

@@ -25,6 +25,8 @@ import org.gradle.api.internal.tasks.compile.JavaCompilerArgumentsBuilder;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.util.CollectionUtils;
 
@@ -38,9 +40,11 @@ import java.util.List;
 public class NormalizingScalaCompiler implements Compiler<ScalaJavaJointCompileSpec> {
     private static final Logger LOGGER = Logging.getLogger(NormalizingScalaCompiler.class);
     private final Compiler<ScalaJavaJointCompileSpec> delegate;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public NormalizingScalaCompiler(Compiler<ScalaJavaJointCompileSpec> delegate) {
+    public NormalizingScalaCompiler(Compiler<ScalaJavaJointCompileSpec> delegate, Factory<PatternSet> patternSetFactory) {
         this.delegate = delegate;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(ScalaJavaJointCompileSpec spec) {
@@ -53,7 +57,7 @@ public class NormalizingScalaCompiler implements Compiler<ScalaJavaJointCompileS
     }
 
     private void resolveAndFilterSourceFiles(final ScalaJavaJointCompileSpec spec) {
-        spec.setSource(new SimpleFileCollection(spec.getSource().getFiles()));
+        spec.setSource(new SimpleFileCollection(patternSetFactory, spec.getSource().getFiles()));
     }
 
     private void resolveClasspath(ScalaJavaJointCompileSpec spec) {
@@ -91,7 +95,7 @@ public class NormalizingScalaCompiler implements Compiler<ScalaJavaJointCompileS
             return;
         }
 
-        List<String> compilerArgs = new JavaCompilerArgumentsBuilder(spec).includeLauncherOptions(true).includeSourceFiles(true).build();
+        List<String> compilerArgs = new JavaCompilerArgumentsBuilder(spec, patternSetFactory).includeLauncherOptions(true).includeSourceFiles(true).build();
         String joinedArgs = Joiner.on(' ').join(compilerArgs);
         LOGGER.debug("Java compiler arguments: {}", joinedArgs);
     }

@@ -15,16 +15,19 @@
  */
 package org.gradle.api.internal.file.collections;
 
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
+
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
 
 public class SimpleFileCollection extends FileCollectionAdapter implements Serializable {
-    public SimpleFileCollection(File... files) {
-        super(new ListBackedFileSet(files));
+    public SimpleFileCollection(Factory<PatternSet> patternSetFactory, File... files) {
+        super(patternSetFactory, new ListBackedFileSet(files));
     }
 
-    public SimpleFileCollection(Collection<File> files) {
-        super(new ListBackedFileSet(files));
+    public SimpleFileCollection(Factory<PatternSet> patternSetFactory, Collection<File> files) {
+        super(patternSetFactory, new ListBackedFileSet(files));
     }
 }

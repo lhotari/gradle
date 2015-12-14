@@ -112,7 +112,8 @@ public class TaskExecutionServices {
                 instantiator,
                 outputFilesSnapshotter,
                 fileCollectionSnapshotter,
-                discoveredFileCollectionSnapshotter
+                discoveredFileCollectionSnapshotter,
+                patternSetFactory
             )
         );
     }

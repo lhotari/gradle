@@ -16,6 +16,7 @@
 
 package org.gradle.nativeplatform.internal.prebuilt
 
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.nativeplatform.BuildType
 import org.gradle.nativeplatform.Flavor
 import org.gradle.nativeplatform.PrebuiltLibrary
@@ -23,7 +24,7 @@ import org.gradle.nativeplatform.platform.NativePlatform
 import spock.lang.Specification
 
 class DefaultPrebuiltStaticLibraryBinaryTest extends Specification {
-    def binary = new DefaultPrebuiltStaticLibraryBinary("name", Stub(PrebuiltLibrary), Stub(BuildType), Stub(NativePlatform), Stub(Flavor))
+    def binary = new DefaultPrebuiltStaticLibraryBinary("name", Stub(PrebuiltLibrary), Stub(BuildType), Stub(NativePlatform), Stub(Flavor), TestFiles.resolver().getPatternSetFactory())
 
     def "has useful string representation"() {
         expect:

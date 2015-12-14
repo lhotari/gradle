@@ -30,6 +30,7 @@ import org.gradle.api.internal.artifacts.dsl.dependencies.ProjectFinder
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.ConfigurationComponentMetaDataBuilder
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.projectresult.ResolvedLocalComponentsResult
 import org.gradle.api.internal.artifacts.publish.DefaultPublishArtifact
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.internal.tasks.DefaultTaskDependency
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.TaskDependency
@@ -1319,6 +1320,6 @@ All Artifacts:
     }
 
     private PublishArtifactSet artifacts(PublishArtifact... containedArtifacts) {
-        new DefaultPublishArtifactSet("artifacts", WrapUtil.toDomainObjectSet(PublishArtifact.class, containedArtifacts))
+        new DefaultPublishArtifactSet("artifacts", WrapUtil.toDomainObjectSet(PublishArtifact.class, containedArtifacts), TestFiles.resolver().getPatternSetFactory())
     }
 }

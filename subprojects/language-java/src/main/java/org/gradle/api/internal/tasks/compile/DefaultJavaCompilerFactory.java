@@ -16,6 +16,7 @@
 package org.gradle.api.internal.tasks.compile;
 
 import org.gradle.api.internal.tasks.compile.daemon.CompilerDaemonFactory;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.CompileSpec;
 import org.gradle.language.base.internal.compile.Compiler;
@@ -27,11 +28,13 @@ public class DefaultJavaCompilerFactory implements JavaCompilerFactory {
     private final File daemonWorkingDir;
     private final CompilerDaemonFactory compilerDaemonFactory;
     private final Factory<JavaCompiler> javaHomeBasedJavaCompilerFactory;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public DefaultJavaCompilerFactory(File daemonWorkingDir, CompilerDaemonFactory compilerDaemonFactory, Factory<JavaCompiler> javaHomeBasedJavaCompilerFactory) {
+    public DefaultJavaCompilerFactory(File daemonWorkingDir, CompilerDaemonFactory compilerDaemonFactory, Factory<JavaCompiler> javaHomeBasedJavaCompilerFactory, Factory<PatternSet> patternSetFactory) {
         this.daemonWorkingDir = daemonWorkingDir;
         this.compilerDaemonFactory = compilerDaemonFactory;
         this.javaHomeBasedJavaCompilerFactory = javaHomeBasedJavaCompilerFactory;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public Compiler<JavaCompileSpec> createForJointCompilation(Class<? extends CompileSpec> type) {
@@ -40,7 +43,7 @@ public class DefaultJavaCompilerFactory implements JavaCompilerFactory {
 
     public Compiler<JavaCompileSpec> create(Class<? extends CompileSpec> type) {
         Compiler<JavaCompileSpec> result = createTargetCompiler(type, false);
-        return new NormalizingJavaCompiler(result);
+        return new NormalizingJavaCompiler(result, patternSetFactory);
     }
 
     private Compiler<JavaCompileSpec> createTargetCompiler(Class<? extends CompileSpec> type, boolean jointCompilation) {
@@ -49,10 +52,10 @@ public class DefaultJavaCompilerFactory implements JavaCompilerFactory {
         }
 
         if (CommandLineJavaCompileSpec.class.isAssignableFrom(type)) {
-            return new CommandLineJavaCompiler();
+            return new CommandLineJavaCompiler(patternSetFactory);
         }
 
-        Compiler<JavaCompileSpec> compiler = new JdkJavaCompiler(javaHomeBasedJavaCompilerFactory);
+        Compiler<JavaCompileSpec> compiler = new JdkJavaCompiler(javaHomeBasedJavaCompilerFactory, patternSetFactory);
         if (ForkingJavaCompileSpec.class.isAssignableFrom(type) && !jointCompilation) {
             return new DaemonJavaCompiler(daemonWorkingDir, compiler, compilerDaemonFactory);
         }

@@ -71,7 +71,7 @@ public class DefaultIvyPublication implements IvyPublicationInternal {
         this.projectDependencyResolver = projectDependencyResolver;
         this.patternSetFactory = patternSetFactory;
         configurations = instantiator.newInstance(DefaultIvyConfigurationContainer.class, instantiator);
-        ivyArtifacts = instantiator.newInstance(DefaultIvyArtifactSet.class, name, ivyArtifactNotationParser);
+        ivyArtifacts = instantiator.newInstance(DefaultIvyArtifactSet.class, name, ivyArtifactNotationParser, patternSetFactory);
         ivyDependencies = instantiator.newInstance(DefaultIvyDependencySet.class);
         descriptor = instantiator.newInstance(DefaultIvyModuleDescriptorSpec.class, this);
     }

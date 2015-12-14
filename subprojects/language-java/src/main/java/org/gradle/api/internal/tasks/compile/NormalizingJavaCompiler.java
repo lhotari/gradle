@@ -24,6 +24,8 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.util.CollectionUtils;
 
@@ -36,9 +38,11 @@ import java.util.List;
 public class NormalizingJavaCompiler implements Compiler<JavaCompileSpec> {
     private static final Logger LOGGER = Logging.getLogger(NormalizingJavaCompiler.class);
     private final Compiler<JavaCompileSpec> delegate;
+    private final Factory<PatternSet> patternSetFactory;
 
-    public NormalizingJavaCompiler(Compiler<JavaCompileSpec> delegate) {
+    public NormalizingJavaCompiler(Compiler<JavaCompileSpec> delegate, Factory<PatternSet> patternSetFactory) {
         this.delegate = delegate;
+        this.patternSetFactory = patternSetFactory;
     }
 
     public WorkResult execute(JavaCompileSpec spec) {
@@ -59,11 +63,11 @@ public class NormalizingJavaCompiler implements Compiler<JavaCompileSpec> {
             }
         });
 
-        spec.setSource(new SimpleFileCollection(javaOnly.getFiles()));
+        spec.setSource(new SimpleFileCollection(patternSetFactory, javaOnly.getFiles()));
     }
 
     private void resolveClasspath(JavaCompileSpec spec) {
-        spec.setClasspath(new SimpleFileCollection(Lists.newArrayList(spec.getClasspath())));
+        spec.setClasspath(new SimpleFileCollection(patternSetFactory, Lists.newArrayList(spec.getClasspath())));
     }
 
     private void resolveNonStringsInCompilerArgs(JavaCompileSpec spec) {
@@ -91,7 +95,7 @@ public class NormalizingJavaCompiler implements Compiler<JavaCompileSpec> {
             return;
         }
 
-        List<String> compilerArgs = new JavaCompilerArgumentsBuilder(spec).includeLauncherOptions(true).includeSourceFiles(true).build();
+        List<String> compilerArgs = new JavaCompilerArgumentsBuilder(spec, patternSetFactory).includeLauncherOptions(true).includeSourceFiles(true).build();
         String joinedArgs = Joiner.on(' ').join(compilerArgs);
         LOGGER.debug("Compiler arguments: {}", joinedArgs);
     }

@@ -15,6 +15,7 @@
  */
 package org.gradle.api.internal.tasks.compile
 import groovy.transform.InheritConstructors
+import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.internal.file.collections.SimpleFileCollection
 import org.gradle.api.tasks.compile.CompileOptions
 import org.gradle.api.tasks.compile.GroovyCompileOptions
@@ -23,8 +24,8 @@ import spock.lang.Specification
 class NormalizingGroovyCompilerTest extends Specification {
     org.gradle.language.base.internal.compile.Compiler<GroovyJavaJointCompileSpec> target = Mock()
     DefaultGroovyJavaJointCompileSpec spec = new DefaultGroovyJavaJointCompileSpec()
-    NormalizingGroovyCompiler compiler = new NormalizingGroovyCompiler(target)
-    
+    NormalizingGroovyCompiler compiler = new NormalizingGroovyCompiler(target, TestFiles.resolver().getPatternSetFactory())
+
     def setup() {
         spec.classpath = files('Dep1.jar', 'Dep2.jar', 'Dep3.jar')
         spec.groovyClasspath = spec.classpath
@@ -62,5 +63,5 @@ class NormalizingGroovyCompilerTest extends Specification {
 
     // file collection whose type is distinguishable from SimpleFileCollection
     @InheritConstructors
-    static class TestFileCollection extends SimpleFileCollection {} 
+    static class TestFileCollection extends SimpleFileCollection {}
 }

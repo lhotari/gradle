@@ -136,7 +136,7 @@ public class PlayPluginConfigurations {
                     files.add(artifact.getFile());
                 }
             }
-            return new SimpleFileCollection(files.build());
+            return new SimpleFileCollection(patternSetFactory, files.build());
         }
 
         @Override

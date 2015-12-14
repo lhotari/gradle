@@ -23,7 +23,7 @@ class FileCollectionAdapterTest extends Specification {
 
     def delegatesToTargetCollectionToBuildSetOfFiles() {
         MinimalFileSet fileSet = Mock()
-        FileCollectionAdapter adapter = new FileCollectionAdapter(fileSet)
+        FileCollectionAdapter adapter = new FileCollectionAdapter(patternSetFactory, fileSet)
         def expectedFiles = [new File('a'), new File('b')] as Set
 
         when:
@@ -37,7 +37,7 @@ class FileCollectionAdapterTest extends Specification {
 
     def resolveAddsTargetCollectionToContext() {
         MinimalFileSet fileSet = Mock()
-        FileCollectionAdapter adapter = new FileCollectionAdapter(fileSet)
+        FileCollectionAdapter adapter = new FileCollectionAdapter(patternSetFactory, fileSet)
         FileCollectionResolveContext context = Mock()
 
         when:
@@ -51,7 +51,7 @@ class FileCollectionAdapterTest extends Specification {
     def getBuildDependenciesDelegatesToTargetCollectionWhenItImplementsBuildable() {
         TestFileSet fileSet = Mock()
         TaskDependency expectedDependency = Mock()
-        FileCollectionAdapter adapter = new FileCollectionAdapter(fileSet)
+        FileCollectionAdapter adapter = new FileCollectionAdapter(patternSetFactory, fileSet)
 
         when:
         def dependencies = adapter.buildDependencies

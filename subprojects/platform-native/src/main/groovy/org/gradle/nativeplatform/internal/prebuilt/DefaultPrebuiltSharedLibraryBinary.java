@@ -17,6 +17,8 @@
 package org.gradle.nativeplatform.internal.prebuilt;
 
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.nativeplatform.BuildType;
 import org.gradle.nativeplatform.Flavor;
 import org.gradle.nativeplatform.PrebuiltLibrary;
@@ -29,8 +31,8 @@ public class DefaultPrebuiltSharedLibraryBinary extends AbstractPrebuiltLibraryB
     private File sharedLibraryFile;
     private File sharedLibraryLinkFile;
 
-    public DefaultPrebuiltSharedLibraryBinary(String name, PrebuiltLibrary library, BuildType buildType, NativePlatform targetPlatform, Flavor flavor) {
-        super(name, library, buildType, targetPlatform, flavor);
+    public DefaultPrebuiltSharedLibraryBinary(String name, PrebuiltLibrary library, BuildType buildType, NativePlatform targetPlatform, Flavor flavor, Factory<PatternSet> patternSetFactory) {
+        super(name, library, buildType, targetPlatform, flavor, patternSetFactory);
     }
 
     public String getDisplayName() {

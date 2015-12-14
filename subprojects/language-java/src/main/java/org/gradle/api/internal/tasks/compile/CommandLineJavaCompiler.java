@@ -18,6 +18,8 @@ package org.gradle.api.internal.tasks.compile;
 
 import org.gradle.api.internal.tasks.SimpleWorkResult;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.internal.Factory;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.process.ExecResult;
 import org.gradle.process.internal.ExecHandle;
@@ -33,7 +35,12 @@ import java.io.Serializable;
 public class CommandLineJavaCompiler implements Compiler<JavaCompileSpec>, Serializable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandLineJavaCompiler.class);
 
-    private final CompileSpecToArguments<JavaCompileSpec> argumentsGenerator = new CommandLineJavaCompilerArgumentsGenerator();
+    private final CompileSpecToArguments<JavaCompileSpec> argumentsGenerator;
+
+    public CommandLineJavaCompiler(Factory<PatternSet> patternSetFactory) {
+        argumentsGenerator = new CommandLineJavaCompilerArgumentsGenerator(patternSetFactory);
+    }
+
 
     public WorkResult execute(JavaCompileSpec spec) {
         String executable = spec.getCompileOptions().getForkOptions().getExecutable();

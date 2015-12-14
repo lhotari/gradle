@@ -13,28 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.api.internal.file;
+package org.gradle.api.internal.file
 
-import org.gradle.api.Task;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileTree;
-import org.gradle.api.file.FileVisitorUtil;
-import org.gradle.api.specs.Spec;
-import org.gradle.api.tasks.StopExecutionException;
-import org.gradle.api.tasks.TaskDependency;
-import org.gradle.test.fixtures.file.TestFile;
-import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider;
-import org.gradle.util.GUtil;
+import org.gradle.api.Task
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTree
+import org.gradle.api.file.FileVisitorUtil
+import org.gradle.api.specs.Spec
+import org.gradle.api.tasks.StopExecutionException
+import org.gradle.api.tasks.TaskDependency
+import org.gradle.api.tasks.util.PatternSet
+import org.gradle.internal.Factory
+import org.gradle.test.fixtures.file.TestFile
+import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
+import org.gradle.util.GUtil
 import org.gradle.util.TestUtil
-import org.gradle.util.UsesNativeServices;
-import org.junit.Rule;
-import spock.lang.Specification;
+import org.gradle.util.UsesNativeServices
+import org.junit.Rule
+import spock.lang.Specification
 
-import static org.gradle.api.tasks.AntBuilderAwareUtil.*;
-import static org.gradle.util.Matchers.isEmpty;
-import static org.gradle.util.WrapUtil.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.gradle.api.tasks.AntBuilderAwareUtil.*
+import static org.gradle.util.Matchers.isEmpty
+import static org.gradle.util.WrapUtil.*
+import static org.hamcrest.Matchers.*
+import static org.junit.Assert.*
 
 @UsesNativeServices
 public class AbstractFileCollectionTest extends Specification {
@@ -423,6 +425,11 @@ public class AbstractFileCollectionTest extends Specification {
 
     private class TestFileCollection extends AbstractFileCollection {
         Set<File> files = new LinkedHashSet<File>();
+
+        @Override
+        protected Factory<PatternSet> getPatternSetFactory() {
+            return TestFiles.resolver().getPatternSetFactory()
+        }
 
         TestFileCollection(File... files) {
             this.files.addAll(Arrays.asList(files));
