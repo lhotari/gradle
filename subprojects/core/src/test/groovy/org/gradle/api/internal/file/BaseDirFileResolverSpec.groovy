@@ -211,16 +211,16 @@ The following types/formats are supported:
     }
 
     private BaseDirFileResolver resolver(File baseDir = tmpDir.testDirectory) {
-        new BaseDirFileResolver(TestFiles.fileSystem(), baseDir)
+        new BaseDirFileResolver(TestFiles.fileSystem(), baseDir, TestFiles.resolver().getPatternSetFactory())
     }
 
     private File[] getFsRoots() {
         File.listRoots().findAll { !it.absolutePath.startsWith("A:") }
     }
-    
+
     private File nonexistentFsRoot() {
-        ('Z'..'A').collect { 
-            "$it:\\" 
+        ('Z'..'A').collect {
+            "$it:\\"
         }.findResult {
             new File(it).exists() ? null : new File(it)
         }

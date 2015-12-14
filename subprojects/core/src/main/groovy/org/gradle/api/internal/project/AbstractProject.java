@@ -48,6 +48,7 @@ import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.resources.ResourceHandler;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.configuration.ScriptPluginFactory;
 import org.gradle.configuration.project.ProjectConfigurationActionContainer;
 import org.gradle.configuration.project.ProjectEvaluator;
@@ -218,6 +219,11 @@ public abstract class AbstractProject extends AbstractPluginAware implements Pro
         @Hidden @Model
         FileOperations fileOperations(ServiceRegistry serviceRegistry) {
             return serviceRegistry.get(FileOperations.class);
+        }
+
+        @Hidden @Model
+        Factory<PatternSet> patternSetFactory(ServiceRegistry serviceRegistry) {
+            return serviceRegistry.getFactory(PatternSet.class);
         }
     }
 

@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-package org.gradle.api.internal.file.collections;
+package org.gradle.api.tasks.util.internal;
 
 import org.gradle.api.tasks.util.PatternSet;
-import org.gradle.api.tasks.util.internal.PatternSets;
-import org.gradle.internal.Factory;
 
-import java.io.File;
-
-public class FileBackedDirectoryFileTree extends DirectoryFileTree {
-    private final File file;
-
-    public FileBackedDirectoryFileTree(File file, Factory<PatternSet> patternSetFactory) {
-        super(file.getParentFile(), patternSetFactory.create().include(file.getName()));
-        this.file = file;
-    }
-
-    public FileBackedDirectoryFileTree(File file) {
-        this(file, PatternSets.getNonCachingPatternSetFactory());
-    }
-
-    public File getFile() {
-        return file;
+public class InternalPatternSet extends PatternSet {
+    public InternalPatternSet(PatternSpecFactory patternSpecFactory) {
+        super(patternSpecFactory);
     }
 }
