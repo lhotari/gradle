@@ -28,6 +28,7 @@ import java.io.File;
 
 class WatchPointsRegistry {
     private FileSystemSubset combinedFileSystemSubset;
+    private ImmutableSet<? extends File> allRequestedWatchPoints;
     private ImmutableCollection<? extends File> currentWatchPoints;
     private final boolean createNewStartingPointsUnderExistingRoots;
 
@@ -35,6 +36,7 @@ class WatchPointsRegistry {
         this.createNewStartingPointsUnderExistingRoots = createNewStartingPointsUnderExistingRoots;
         combinedFileSystemSubset = FileSystemSubset.builder().build();
         currentWatchPoints = ImmutableSet.of();
+        allRequestedWatchPoints = ImmutableSet.of();
     }
 
     public Delta appendFileSystemSubset(FileSystemSubset fileSystemSubset) {
@@ -58,6 +60,7 @@ class WatchPointsRegistry {
 
         private Delta init() {
             roots = fileSystemSubset.getRoots();
+            allRequestedWatchPoints = ImmutableSet.<File>builder().addAll(allRequestedWatchPoints).addAll(roots).build();
             unfiltered = fileSystemSubset.unfiltered();
             Iterable<? extends File> startingWatchPointCandidates = calculateStartingWatchPoints(roots, unfiltered);
             if (!currentWatchPoints.isEmpty()) {
@@ -121,7 +124,13 @@ class WatchPointsRegistry {
                     }
                 }
             }
+            return false;
+        }
 
+        private boolean isParentOfRequestedWatchPoint(File file) {
+            for (File watchpoint : allRequestedWatchPoints) {
+
+            }
             return false;
         }
 
