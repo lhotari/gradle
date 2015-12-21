@@ -43,6 +43,7 @@ class WatchServiceRegistrar implements FileWatcherListener {
         ? new WatchEvent.Modifier[]{ExtendedWatchEventModifier.FILE_TREE, SensitivityWatchEventModifier.HIGH}
         : new WatchEvent.Modifier[]{SensitivityWatchEventModifier.HIGH};
     private static final WatchEvent.Kind[] WATCH_KINDS = new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY};
+    private static final long DELAY_BEFORE_LISTING_SUBDIRECTORIES = 1L;
 
     private final WatchService watchService;
     private final FileWatcherListener delegate;
@@ -66,6 +67,7 @@ class WatchServiceRegistrar implements FileWatcherListener {
                 final Path dirPath = dir.toPath();
                 watchDir(dirPath);
                 if (!FILE_TREE_WATCHING_SUPPORTED) {
+                    waitBeforeListingSubdirectories();
                     Files.walkFileTree(dirPath, new SimpleFileVisitor<Path>() {
                         @Override
                         public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs) throws IOException {
@@ -88,6 +90,17 @@ class WatchServiceRegistrar implements FileWatcherListener {
             LOG.debug("End - adding watches for {}", fileSystemSubset);
         } finally {
             lock.unlock();
+        }
+    }
+
+    private void waitBeforeListingSubdirectories() {
+        try {
+            // add a very short delay before listing subdirectories
+            // to prevent missing subdirectory creation events when
+            // subdirectories get created immediately after watch has been added
+            Thread.sleep(DELAY_BEFORE_LISTING_SUBDIRECTORIES);
+        } catch (InterruptedException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
         }
     }
 
