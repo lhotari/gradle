@@ -19,6 +19,7 @@ package org.gradle.internal.filewatch
 import org.gradle.api.Action
 import org.gradle.api.internal.file.FileSystemSubset
 import org.gradle.initialization.DefaultBuildCancellationToken
+import org.gradle.internal.SingleThreadTimeProvider
 import org.gradle.test.fixtures.concurrent.ConcurrentSpec
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
 import org.gradle.util.Requires
@@ -36,7 +37,7 @@ class DefaultFileSystemChangeWaiterTest extends ConcurrentSpec {
 
     def "can wait for filesystem change"() {
         when:
-        def wf = new DefaultFileSystemChangeWaiterFactory(new DefaultFileWatcherFactory(executorFactory))
+        def wf = new DefaultFileSystemChangeWaiterFactory(new DefaultFileWatcherFactory(executorFactory), new SingleThreadTimeProvider(executorFactory))
         def f = FileSystemSubset.builder().add(testDirectory.testDirectory).build()
         def c = new DefaultBuildCancellationToken()
         def w = wf.createChangeWaiter(c)
@@ -64,7 +65,7 @@ class DefaultFileSystemChangeWaiterTest extends ConcurrentSpec {
 
     def "escapes on cancel"() {
         when:
-        def wf = new DefaultFileSystemChangeWaiterFactory(new DefaultFileWatcherFactory(executorFactory))
+        def wf = new DefaultFileSystemChangeWaiterFactory(new DefaultFileWatcherFactory(executorFactory), new SingleThreadTimeProvider(executorFactory))
         def f = FileSystemSubset.builder().add(testDirectory.testDirectory).build()
         def c = new DefaultBuildCancellationToken()
         def w = wf.createChangeWaiter(c)
@@ -101,7 +102,7 @@ class DefaultFileSystemChangeWaiterTest extends ConcurrentSpec {
 
         }
         when:
-        def wf = new DefaultFileSystemChangeWaiterFactory(fileWatcherFactory)
+        def wf = new DefaultFileSystemChangeWaiterFactory(fileWatcherFactory, new SingleThreadTimeProvider(executorFactory))
         def f = FileSystemSubset.builder().add(testDirectory.testDirectory).build()
         def c = new DefaultBuildCancellationToken()
         def w = wf.createChangeWaiter(c)
@@ -134,7 +135,7 @@ class DefaultFileSystemChangeWaiterTest extends ConcurrentSpec {
     def "waits until there is a quiet period - #description"(String description, Closure fileChanger) {
         when:
         def quietPeriod = 1000L
-        def wf = new DefaultFileSystemChangeWaiterFactory(new DefaultFileWatcherFactory(executorFactory), quietPeriod)
+        def wf = new DefaultFileSystemChangeWaiterFactory(new DefaultFileWatcherFactory(executorFactory), new SingleThreadTimeProvider(executorFactory), quietPeriod)
         def f = FileSystemSubset.builder().add(testDirectory.testDirectory).build()
         def c = new DefaultBuildCancellationToken()
         def w = wf.createChangeWaiter(c)

@@ -17,7 +17,8 @@
 package org.gradle.internal.filewatch;
 
 import org.gradle.initialization.BuildCancellationToken;
+import org.gradle.internal.concurrent.Stoppable;
 
-public interface FileSystemChangeWaiterFactory {
+public interface FileSystemChangeWaiterFactory extends Stoppable {
     FileSystemChangeWaiter createChangeWaiter(BuildCancellationToken cancellationToken);
 }

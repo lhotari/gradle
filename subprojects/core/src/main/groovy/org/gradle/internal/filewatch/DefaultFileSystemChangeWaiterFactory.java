@@ -20,7 +20,9 @@ import com.google.common.collect.ImmutableList;
 import org.gradle.api.Action;
 import org.gradle.api.internal.file.FileSystemSubset;
 import org.gradle.initialization.BuildCancellationToken;
+import org.gradle.internal.TimeProvider;
 import org.gradle.internal.UncheckedException;
+import org.gradle.internal.concurrent.Stoppable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,19 +38,28 @@ import java.util.concurrent.locks.ReentrantLock;
 public class DefaultFileSystemChangeWaiterFactory implements FileSystemChangeWaiterFactory {
     private final FileWatcherFactory fileWatcherFactory;
     private final long quietPeriodMillis;
+    private final TimeProvider timeProvider;
 
-    public DefaultFileSystemChangeWaiterFactory(FileWatcherFactory fileWatcherFactory) {
-        this(fileWatcherFactory, 250L);
+    public DefaultFileSystemChangeWaiterFactory(FileWatcherFactory fileWatcherFactory, TimeProvider timeProvider) {
+        this(fileWatcherFactory, timeProvider, 250L);
     }
 
-    public DefaultFileSystemChangeWaiterFactory(FileWatcherFactory fileWatcherFactory, long quietPeriodMillis) {
+    public DefaultFileSystemChangeWaiterFactory(FileWatcherFactory fileWatcherFactory, TimeProvider timeProvider, long quietPeriodMillis) {
         this.fileWatcherFactory = fileWatcherFactory;
         this.quietPeriodMillis = quietPeriodMillis;
+        this.timeProvider = timeProvider;
     }
 
     @Override
     public FileSystemChangeWaiter createChangeWaiter(BuildCancellationToken cancellationToken) {
-        return new ChangeWaiter(fileWatcherFactory, quietPeriodMillis, cancellationToken);
+        return new ChangeWaiter(fileWatcherFactory, timeProvider, quietPeriodMillis, cancellationToken);
+    }
+
+    @Override
+    public void stop() {
+        if (timeProvider instanceof Stoppable) {
+            ((Stoppable) timeProvider).stop();
+        }
     }
 
     private static class ChangeWaiter implements FileSystemChangeWaiter {
@@ -62,8 +73,10 @@ public class DefaultFileSystemChangeWaiterFactory implements FileSystemChangeWai
         private final Action<Throwable> onError;
         private boolean watching;
         private final List<FileWatcherEvent> receivedEvents = Collections.synchronizedList(new ArrayList<FileWatcherEvent>());
+        private final TimeProvider timeProvider;
 
-        private ChangeWaiter(FileWatcherFactory fileWatcherFactory, long quietPeriodMillis, BuildCancellationToken cancellationToken) {
+        private ChangeWaiter(FileWatcherFactory fileWatcherFactory, final TimeProvider timeProvider, long quietPeriodMillis, BuildCancellationToken cancellationToken) {
+            this.timeProvider = timeProvider;
             this.quietPeriodMillis = quietPeriodMillis;
             this.cancellationToken = cancellationToken;
             this.onError = new Action<Throwable>() {
@@ -83,7 +96,7 @@ public class DefaultFileSystemChangeWaiterFactory implements FileSystemChangeWai
                             signal(lock, condition, new Runnable() {
                                 @Override
                                 public void run() {
-                                    lastChangeAt.set(monotonicClockMillis());
+                                    lastChangeAt.set(timeProvider.getCurrentTime());
                                 }
                             });
                         }
@@ -120,7 +133,7 @@ public class DefaultFileSystemChangeWaiterFactory implements FileSystemChangeWai
                 lock.lock();
                 try {
                     long lastChangeAtValue = lastChangeAt.get();
-                    while (!cancellationToken.isCancellationRequested() && error.get() == null && (lastChangeAtValue == 0 || monotonicClockMillis() - lastChangeAtValue < quietPeriodMillis)) {
+                    while (!cancellationToken.isCancellationRequested() && error.get() == null && (lastChangeAtValue == 0 || timeProvider.getCurrentTime() - lastChangeAtValue < quietPeriodMillis)) {
                         condition.await(quietPeriodMillis, TimeUnit.MILLISECONDS);
                         lastChangeAtValue = lastChangeAt.get();
                     }
@@ -149,10 +162,6 @@ public class DefaultFileSystemChangeWaiterFactory implements FileSystemChangeWai
         public void stop() {
             watcher.stop();
         }
-    }
-
-    private static long monotonicClockMillis() {
-        return System.nanoTime() / 1000000L;
     }
 
     private static void signal(Lock lock, Condition condition, Runnable runnable) {
