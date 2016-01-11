@@ -29,8 +29,10 @@ import org.gradle.execution.PassThruCancellableOperationManager;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.initialization.BuildRequestContext;
 import org.gradle.initialization.ReportedException;
+import org.gradle.internal.time.SingleThreadTimeProvider;
 import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.concurrent.ExecutorFactory;
+import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.event.ListenerManager;
 import org.gradle.internal.filewatch.*;
 import org.gradle.internal.invocation.BuildAction;
@@ -44,7 +46,7 @@ import org.gradle.util.SingleMessageLogger;
 
 import java.util.List;
 
-public class ContinuousBuildActionExecuter implements BuildExecuter {
+public class ContinuousBuildActionExecuter implements BuildExecuter, Stoppable {
     private final BuildActionExecuter<BuildActionParameters> delegate;
     private final ListenerManager listenerManager;
     private final OperatingSystem operatingSystem;
@@ -54,7 +56,7 @@ public class ContinuousBuildActionExecuter implements BuildExecuter {
     private final StyledTextOutput logger;
 
     public ContinuousBuildActionExecuter(BuildActionExecuter<BuildActionParameters> delegate, FileWatcherFactory fileWatcherFactory, ListenerManager listenerManager, StyledTextOutputFactory styledTextOutputFactory, ExecutorFactory executorFactory) {
-        this(delegate, listenerManager, styledTextOutputFactory, JavaVersion.current(), OperatingSystem.current(), executorFactory, new DefaultFileSystemChangeWaiterFactory(fileWatcherFactory));
+        this(delegate, listenerManager, styledTextOutputFactory, JavaVersion.current(), OperatingSystem.current(), executorFactory, new DefaultFileSystemChangeWaiterFactory(fileWatcherFactory, new SingleThreadTimeProvider(executorFactory)));
     }
 
     ContinuousBuildActionExecuter(BuildActionExecuter<BuildActionParameters> delegate, ListenerManager listenerManager, StyledTextOutputFactory styledTextOutputFactory, JavaVersion javaVersion, OperatingSystem operatingSystem, ExecutorFactory executorFactory, FileSystemChangeWaiterFactory changeWaiterFactory) {
@@ -181,4 +183,8 @@ public class ContinuousBuildActionExecuter implements BuildExecuter {
         }
     }
 
+    @Override
+    public void stop() {
+        changeWaiterFactory.stop();
+    }
 }
