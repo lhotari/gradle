@@ -26,8 +26,6 @@ import org.gradle.api.internal.initialization.ScriptHandlerFactory;
 import org.gradle.api.internal.initialization.ScriptHandlerInternal;
 import org.gradle.api.internal.plugins.PluginManagerInternal;
 import org.gradle.api.internal.project.ProjectInternal;
-import org.gradle.api.tasks.util.PatternSet;
-import org.gradle.api.tasks.util.internal.PatternSets;
 import org.gradle.groovy.scripts.*;
 import org.gradle.groovy.scripts.internal.*;
 import org.gradle.internal.Actions;
@@ -96,11 +94,7 @@ public class DefaultScriptPluginFactory implements ScriptPluginFactory {
         }
 
         public void apply(final Object target) {
-            final DefaultServiceRegistry services = new DefaultServiceRegistry() {
-                Factory<PatternSet> createPatternSetFactory() {
-                    return PatternSets.getNonCachingPatternSetFactory();
-                }
-            };
+            final DefaultServiceRegistry services = new DefaultServiceRegistry();
             services.add(ScriptPluginFactory.class, DefaultScriptPluginFactory.this);
             services.add(ScriptHandlerFactory.class, scriptHandlerFactory);
             services.add(ClassLoaderScope.class, targetScope);

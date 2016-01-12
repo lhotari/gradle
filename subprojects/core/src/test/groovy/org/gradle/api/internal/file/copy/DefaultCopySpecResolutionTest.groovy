@@ -21,7 +21,6 @@ import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.RelativePath
 import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.internal.file.FileTreeInternal
-import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.util.PatternSet
 import org.gradle.internal.reflect.DirectInstantiator
@@ -46,7 +45,7 @@ public class DefaultCopySpecResolutionTest {
     public TestNameTestDirectoryProvider testDir = new TestNameTestDirectoryProvider();
     private TestFile baseFile = testDir.testDirectory
     private final JUnit4GroovyMockery context = new JUnit4GroovyMockery();
-    private FileResolver fileResolver = [resolve: { it as File }, getPatternSetFactory: { TestFiles.getPatternSetFactory() }] as FileResolver
+    private final FileResolver fileResolver = context.mock(FileResolver);
     private final Instantiator instantiator = DirectInstantiator.INSTANCE
     private final DefaultCopySpec parentSpec = new DefaultCopySpec(fileResolver, instantiator)
 
@@ -133,12 +132,6 @@ public class DefaultCopySpecResolutionTest {
 
     @Test
     public void testResolvesSourceUsingOwnSourceFilteredByPatternset() {
-        fileResolver = context.mock(FileResolver)
-        context.checking {
-            allowing(fileResolver).getPatternSetFactory();
-            will(returnValue(TestFiles.getPatternSetFactory()));
-        }
-
         //Does not get source from root
         parentSpec.from 'x'
         parentSpec.from 'y'

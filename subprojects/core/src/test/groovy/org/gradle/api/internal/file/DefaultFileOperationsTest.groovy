@@ -45,9 +45,7 @@ import spock.lang.Specification
 
 @UsesNativeServices
 public class DefaultFileOperationsTest extends Specification {
-    private final FileResolver resolver = Mock() {
-        getPatternSetFactory() >> TestFiles.getPatternSetFactory()
-    }
+    private final FileResolver resolver = Mock()
     private final TaskResolver taskResolver = Mock()
     private final TemporaryFileProvider temporaryFileProvider = Mock()
     private final Instantiator instantiator = new ClassGeneratorBackedInstantiator(new AsmBackedClassGenerator(), DirectInstantiator.INSTANCE)
@@ -230,7 +228,7 @@ public class DefaultFileOperationsTest extends Specification {
         when:
         ExecResult result = fileOperations.javaexec {
             classpath(files as Object[])
-            main = SomeMain.name
+            main = 'org.gradle.api.internal.file.SomeMain'
             args testFile.absolutePath
         }
 
@@ -315,11 +313,10 @@ public class DefaultFileOperationsTest extends Specification {
     def resolver() {
         return TestFiles.resolver(tmpDir.testDirectory)
     }
-
-    class SomeMain {
-        static void main(String[] args) {
-            FileUtils.touch(new File(args[0]))
-        }
-    }
 }
 
+class SomeMain {
+    static void main(String[] args) {
+        FileUtils.touch(new File(args[0]))
+    }
+}

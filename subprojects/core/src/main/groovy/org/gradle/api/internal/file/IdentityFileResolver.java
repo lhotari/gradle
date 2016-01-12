@@ -15,9 +15,6 @@
  */
 package org.gradle.api.internal.file;
 
-import org.gradle.api.tasks.util.PatternSet;
-import org.gradle.api.tasks.util.internal.PatternSets;
-import org.gradle.internal.Factory;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 import org.gradle.internal.nativeintegration.services.FileSystems;
 
@@ -29,15 +26,11 @@ import java.io.File;
  */
 public class IdentityFileResolver extends AbstractFileResolver {
     public IdentityFileResolver() {
-        this(FileSystems.getDefault(), PatternSets.getNonCachingPatternSetFactory());
+        super(FileSystems.getDefault());
     }
 
-    public IdentityFileResolver(Factory<PatternSet> patternSetFactory) {
-        this(FileSystems.getDefault(), patternSetFactory);
-    }
-
-    public IdentityFileResolver(FileSystem fileSystem, Factory<PatternSet> patternSetFactory) {
-        super(fileSystem, patternSetFactory);
+    public IdentityFileResolver(FileSystem fileSystem) {
+        super(fileSystem);
     }
 
     @Override

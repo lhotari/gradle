@@ -39,7 +39,6 @@ import org.gradle.api.internal.project.ant.AntLoggingAdapter;
 import org.gradle.api.internal.project.taskfactory.ITaskFactory;
 import org.gradle.api.internal.tasks.DefaultTaskContainerFactory;
 import org.gradle.api.internal.tasks.TaskContainerInternal;
-import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.configuration.project.DefaultProjectConfigurationActionContainer;
 import org.gradle.configuration.project.ProjectConfigurationActionContainer;
 import org.gradle.initialization.ProjectAccessListener;
@@ -91,8 +90,8 @@ public class ProjectScopeServices extends DefaultServiceRegistry {
         return new DeferredProjectConfiguration(project);
     }
 
-    protected FileResolver createFileResolver(Factory<PatternSet> patternSetFactory) {
-        return new BaseDirFileResolver(get(FileSystem.class), project.getProjectDir(), patternSetFactory);
+    protected FileResolver createFileResolver() {
+        return new BaseDirFileResolver(get(FileSystem.class), project.getProjectDir());
     }
 
     protected LoggingManagerInternal createLoggingManager() {

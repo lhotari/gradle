@@ -21,7 +21,6 @@ import org.gradle.api.internal.SettingsInternal;
 import org.gradle.api.internal.file.BaseDirFileResolver;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.plugins.*;
-import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.initialization.DefaultProjectDescriptorRegistry;
 import org.gradle.initialization.ProjectDescriptorRegistry;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
@@ -38,7 +37,7 @@ public class SettingsScopeServices extends DefaultServiceRegistry {
     }
 
     protected FileResolver createFileResolver() {
-        return new BaseDirFileResolver(get(FileSystem.class), settings.getSettingsDir(), getFactory(PatternSet.class));
+        return new BaseDirFileResolver(get(FileSystem.class), settings.getSettingsDir());
     }
 
     protected PluginRegistry createPluginRegistry(PluginRegistry parentRegistry) {

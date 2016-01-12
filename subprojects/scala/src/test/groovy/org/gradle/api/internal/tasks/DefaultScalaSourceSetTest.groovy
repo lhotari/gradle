@@ -17,7 +17,6 @@ package org.gradle.api.internal.tasks
 
 import org.gradle.api.internal.file.DefaultSourceDirectorySet
 import org.gradle.api.internal.file.FileResolver
-import org.gradle.api.internal.file.TestFiles
 import org.gradle.testfixtures.internal.NativeServicesTestFixture
 import org.junit.Before
 import org.junit.Test
@@ -33,8 +32,7 @@ class DefaultScalaSourceSetTest {
         NativeServicesTestFixture.initialize()
     }
 
-    private final FileResolver fileResolver = [resolve: { it as File }, getPatternSetFactory: { TestFiles.getPatternSetFactory() }] as FileResolver
-    private final DefaultScalaSourceSet sourceSet = new DefaultScalaSourceSet("<set-display-name>", fileResolver)
+    private final DefaultScalaSourceSet sourceSet = new DefaultScalaSourceSet("<set-display-name>", [resolve: { it as File }] as FileResolver)
 
     @Test
     public void defaultValues() {

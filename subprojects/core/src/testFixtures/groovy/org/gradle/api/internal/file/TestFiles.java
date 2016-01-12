@@ -15,9 +15,6 @@
  */
 package org.gradle.api.internal.file;
 
-import org.gradle.api.tasks.util.PatternSet;
-import org.gradle.api.tasks.util.internal.PatternSets;
-import org.gradle.internal.Factory;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 import org.gradle.testfixtures.internal.NativeServicesTestFixture;
 
@@ -25,7 +22,7 @@ import java.io.File;
 
 public class TestFiles {
     private static final FileSystem FILE_SYSTEM = NativeServicesTestFixture.getInstance().get(FileSystem.class);
-    private static final DefaultFileLookup FILE_LOOKUP = new DefaultFileLookup(FILE_SYSTEM, PatternSets.getNonCachingPatternSetFactory());
+    private static final DefaultFileLookup FILE_LOOKUP = new DefaultFileLookup(FILE_SYSTEM);
 
     public static FileLookup fileLookup() {
         return FILE_LOOKUP;
@@ -47,10 +44,5 @@ public class TestFiles {
      */
     public static FileResolver resolver(File baseDir) {
         return FILE_LOOKUP.getFileResolver(baseDir);
-    }
-
-
-    public static Factory<PatternSet> getPatternSetFactory() {
-        return resolver().getPatternSetFactory();
     }
 }

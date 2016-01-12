@@ -29,7 +29,6 @@ import org.junit.Test
 
 import java.util.concurrent.Callable
 
-import static org.gradle.api.internal.file.TestFiles.resolver
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.*
 
@@ -46,7 +45,7 @@ class BaseDirFileResolverTest {
 
     @Before public void setUp() {
         baseDir = rootDir.testDirectory
-        baseDirConverter = new BaseDirFileResolver(TestFiles.fileSystem(), baseDir, resolver().getPatternSetFactory())
+        baseDirConverter = new BaseDirFileResolver(TestFiles.fileSystem(), baseDir)
         testFile = new File(baseDir, 'testfile')
         testDir = new File(baseDir, 'testdir')
     }
@@ -285,7 +284,7 @@ class BaseDirFileResolverTest {
     @Test public void testResolveUriStringWithEncodedCharsToUri() {
         assertEquals(new URI("http://www.gradle.org/white%20space"), baseDirConverter.resolveUri("http://www.gradle.org/white%20space"))
     }
-
+    
     @Test public void testResolveRelativePathToRelativePath() {
         assertEquals("relative", baseDirConverter.resolveAsRelativePath("relative"))
     }
@@ -321,7 +320,7 @@ class BaseDirFileResolverTest {
         src = 'file1'
         assertEquals(new File(baseDir, 'file1'), source.create())
     }
-
+    
     @Test public void testCreateFileResolver() {
         File newBaseDir = new File(baseDir, 'subdir')
         assertEquals(new File(newBaseDir, 'file'), baseDirConverter.withBaseDir('subdir').resolve('file'))

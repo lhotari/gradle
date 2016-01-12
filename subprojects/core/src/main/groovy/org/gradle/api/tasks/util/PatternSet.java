@@ -38,7 +38,7 @@ import java.util.Set;
 public class PatternSet implements AntBuilderAware, PatternFilterable {
 
     private static final NotationParser<Object, String> PARSER = NotationParserBuilder.toType(String.class).fromCharSequence().toComposite();
-    protected PatternSpecFactory patternSpecFactory;
+    private final PatternSpecFactory patternSpecFactory;
 
     private final Set<String> includes = Sets.newLinkedHashSet();
     private final Set<String> excludes = Sets.newLinkedHashSet();
@@ -52,13 +52,10 @@ public class PatternSet implements AntBuilderAware, PatternFilterable {
         this(PatternSpecFactory.INSTANCE);
     }
 
-    protected PatternSet(PatternSet patternSet) {
-        this(patternSet.patternSpecFactory);
-    }
-
-    protected PatternSet(PatternSpecFactory patternSpecFactory) {
+    public PatternSet(PatternSpecFactory patternSpecFactory) {
         this.patternSpecFactory = patternSpecFactory;
     }
+
 
     @Override
     public boolean equals(Object o) {
@@ -105,8 +102,6 @@ public class PatternSet implements AntBuilderAware, PatternFilterable {
     }
 
     protected PatternSet doCopyFrom(PatternSet from) {
-        patternSpecFactory = from.patternSpecFactory;
-
         includes.clear();
         excludes.clear();
         includeSpecs.clear();
@@ -115,7 +110,7 @@ public class PatternSet implements AntBuilderAware, PatternFilterable {
 
         if (from instanceof IntersectionPatternSet) {
             PatternSet other = ((IntersectionPatternSet) from).other;
-            PatternSet otherCopy = new PatternSet(other).copyFrom(other);
+            PatternSet otherCopy = new PatternSet().copyFrom(other);
             PatternSet intersectCopy = new IntersectionPatternSet(otherCopy);
             intersectCopy.includes.addAll(from.includes);
             intersectCopy.excludes.addAll(from.excludes);
@@ -141,7 +136,6 @@ public class PatternSet implements AntBuilderAware, PatternFilterable {
         private final PatternSet other;
 
         public IntersectionPatternSet(PatternSet other) {
-            super(other);
             this.other = other;
         }
 

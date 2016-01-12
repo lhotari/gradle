@@ -37,13 +37,7 @@ public class DefaultSourceDirectorySetTest extends Specification {
     private DefaultSourceDirectorySet set
 
     public void setup() {
-        resolver = Mock(FileResolver) {
-            resolve(_) >> { args ->
-                def src = args[0]
-                src instanceof File ? src : new File(testDir, src as String)
-            }
-            getPatternSetFactory() >> TestFiles.getPatternSetFactory()
-        }
+        resolver = {src -> src instanceof File ? src : new File(testDir, src as String)} as FileResolver
         set = new DefaultSourceDirectorySet('<display-name>', resolver)
     }
 

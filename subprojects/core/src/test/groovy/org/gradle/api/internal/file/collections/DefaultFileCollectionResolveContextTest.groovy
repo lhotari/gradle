@@ -19,7 +19,6 @@ import org.gradle.api.Task
 import org.gradle.api.internal.file.FileCollectionInternal
 import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.internal.file.FileTreeInternal
-import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.tasks.TaskDependency
 import org.gradle.api.tasks.TaskOutputs
 import org.gradle.util.UsesNativeServices
@@ -29,7 +28,7 @@ import java.util.concurrent.Callable
 
 @UsesNativeServices
 class DefaultFileCollectionResolveContextTest extends Specification {
-    final FileResolver resolver = Mock() { getPatternSetFactory() >> TestFiles.getPatternSetFactory() }
+    final FileResolver resolver = Mock()
     final DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(resolver)
 
     def resolveAsFileCollectionReturnsEmptyListWhenContextIsEmpty() {

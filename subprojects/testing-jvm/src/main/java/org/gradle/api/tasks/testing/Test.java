@@ -51,6 +51,7 @@ import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.testing.logging.TestLogging;
 import org.gradle.api.tasks.testing.logging.TestLoggingContainer;
 import org.gradle.api.tasks.util.PatternFilterable;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Factory;
 import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.event.ListenerBroadcast;
@@ -132,7 +133,7 @@ public class Test extends ConventionTask implements JavaForkOptions, PatternFilt
     private List<File> testSrcDirs = new ArrayList<File>();
     private File testClassesDir;
     private File binResultsDir;
-    private PatternFilterable patternSet;
+    private PatternFilterable patternSet = new PatternSet();
     private boolean ignoreFailures;
     private FileCollection classpath;
     private TestFramework testFramework;
@@ -145,7 +146,6 @@ public class Test extends ConventionTask implements JavaForkOptions, PatternFilt
     private final DefaultTestTaskReports reports;
 
     public Test() {
-        patternSet = getFileResolver().getPatternSetFactory().create();
         ListenerManager listenerManager = getListenerManager();
         testListenerInternalBroadcaster = listenerManager.createAnonymousBroadcaster(TestListenerInternal.class);
         testListenerBroadcaster = listenerManager.createAnonymousBroadcaster(TestListener.class);
