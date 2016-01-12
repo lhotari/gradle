@@ -26,9 +26,15 @@ import spock.lang.Specification
 
 
 class CachingPatternSpecFactoryTest extends Specification {
+    def "check that the PatternSpecFactory used in PatternSet class is the caching PatternSpecFactory"() {
+        expect:
+        PatternSet.PATTERN_SPEC_FACTORY.getClass() == CachingPatternSpecFactory
+    }
+
     def "check that Spec<FileTreeElement> instances added to include/exclude aren't cached"() {
         given:
-        def patternSet = new PatternSet(new CachingPatternSpecFactory())
+        assert PatternSet.PATTERN_SPEC_FACTORY.getClass() == CachingPatternSpecFactory
+        def patternSet = new PatternSet()
         boolean desiredResult = true
         def includeSpecClosure = { FileTreeElement e -> desiredResult } as Spec
         patternSet.include(includeSpecClosure)
@@ -63,7 +69,7 @@ class CachingPatternSpecFactoryTest extends Specification {
 
     def "check that patterns are cached"() {
         given:
-        def patternSet = new PatternSet(new CachingPatternSpecFactory())
+        def patternSet = new PatternSet()
         patternSet.include("pattern")
         def spec = patternSet.getAsSpec()
         expect:

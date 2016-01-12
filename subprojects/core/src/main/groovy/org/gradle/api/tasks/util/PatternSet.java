@@ -25,6 +25,8 @@ import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.AntBuilderAware;
 import org.gradle.api.tasks.util.internal.PatternSetAntBuilderDelegate;
 import org.gradle.api.tasks.util.internal.PatternSpecFactory;
+import org.gradle.internal.Cast;
+import org.gradle.internal.reflect.DirectInstantiator;
 import org.gradle.internal.typeconversion.NotationParser;
 import org.gradle.internal.typeconversion.NotationParserBuilder;
 import org.gradle.util.CollectionUtils;
@@ -38,7 +40,7 @@ import java.util.Set;
 public class PatternSet implements AntBuilderAware, PatternFilterable {
 
     private static final NotationParser<Object, String> PARSER = NotationParserBuilder.toType(String.class).fromCharSequence().toComposite();
-    private final PatternSpecFactory patternSpecFactory;
+    private static final PatternSpecFactory PATTERN_SPEC_FACTORY = createPatternSpecFactory();
 
     private final Set<String> includes = Sets.newLinkedHashSet();
     private final Set<String> excludes = Sets.newLinkedHashSet();
@@ -48,14 +50,16 @@ public class PatternSet implements AntBuilderAware, PatternFilterable {
 
     boolean caseSensitive = true;
 
-    public PatternSet() {
-        this(PatternSpecFactory.INSTANCE);
+    private static PatternSpecFactory createPatternSpecFactory() {
+        try {
+            // prevents adding CachingPatternSpecFactory and it's dependencies to the Tooling API jar
+            // Jarjar scans all String literals for class names and this prevents that scanning from finding the class name and adding it as a dependency
+            Class clazz = PatternSet.class.getClassLoader().loadClass(new StringBuilder("org.gradle.api.tasks.util.internal.").append("CachingPatternSpecFactory").toString());
+            return Cast.uncheckedCast(DirectInstantiator.instantiate(clazz));
+        } catch (ClassNotFoundException e) {
+            return new PatternSpecFactory();
+        }
     }
-
-    public PatternSet(PatternSpecFactory patternSpecFactory) {
-        this.patternSpecFactory = patternSpecFactory;
-    }
-
 
     @Override
     public boolean equals(Object o) {
@@ -154,15 +158,15 @@ public class PatternSet implements AntBuilderAware, PatternFilterable {
     }
 
     public Spec<FileTreeElement> getAsSpec() {
-        return patternSpecFactory.createSpec(this);
+        return PATTERN_SPEC_FACTORY.createSpec(this);
     }
 
     public Spec<FileTreeElement> getAsIncludeSpec() {
-        return patternSpecFactory.createIncludeSpec(this);
+        return PATTERN_SPEC_FACTORY.createIncludeSpec(this);
     }
 
     public Spec<FileTreeElement> getAsExcludeSpec() {
-        return patternSpecFactory.createExcludeSpec(this);
+        return PATTERN_SPEC_FACTORY.createExcludeSpec(this);
     }
 
     public Set<String> getIncludes() {
