@@ -262,12 +262,8 @@ public class GlobalScopeServices {
         return new StringInterner();
     }
 
-    PatternSpecFactory createPatternSpecFactory(GradleBuildEnvironment environment) {
-        if (environment.isLongLivingProcess()) {
-            return new CachingPatternSpecFactory();
-        } else {
-            return new PatternSpecFactory();
-        }
+    PatternSpecFactory createPatternSpecFactory() {
+        return new CachingPatternSpecFactory();
     }
 
     protected Factory<PatternSet> createPatternSetFactory(final PatternSpecFactory patternSpecFactory) {
