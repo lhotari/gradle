@@ -27,7 +27,6 @@ import static org.gradle.internal.filewatch.FileWatcherEvent.Type.*;
 public class ChangeReporter implements FileWatcherEventListener {
     public static final int SHOW_INDIVIDUAL_CHANGES_LIMIT = 3;
     private final Map<File, FileWatcherEvent.Type> aggregatedEvents = Maps.newLinkedHashMap();
-    private int moreChangesCount;
 
     private void logOutput(StyledTextOutput logger, String message, Object... objects) {
         logger.formatln(message, objects);
@@ -47,21 +46,20 @@ public class ChangeReporter implements FileWatcherEventListener {
             return;
         }
 
-        if (existingType != null || aggregatedEvents.size() < SHOW_INDIVIDUAL_CHANGES_LIMIT) {
-            aggregatedEvents.put(file, event.getType());
-        } else if (event.getType() != CREATE || event.getFile().isDirectory()) { // ignore file create events in change count calculation since creation also causes a modification event
-            moreChangesCount++;
-        }
+        aggregatedEvents.put(file, event.getType());
     }
 
     public void reportChanges(StyledTextOutput logger) {
+        int counter = 0;
         for (Map.Entry<File, FileWatcherEvent.Type> entry : aggregatedEvents.entrySet()) {
+            counter++;
+            if (counter > SHOW_INDIVIDUAL_CHANGES_LIMIT) {
+                logOutput(logger, "and %d more changes", aggregatedEvents.size() - SHOW_INDIVIDUAL_CHANGES_LIMIT);
+                break;
+            }
             FileWatcherEvent.Type changeType = entry.getValue();
             File file = entry.getKey();
             showIndividualChange(logger, file, changeType);
-        }
-        if (moreChangesCount > 0) {
-            logOutput(logger, "and %d more changes", moreChangesCount);
         }
     }
 
