@@ -16,45 +16,70 @@
 
 package org.gradle.tooling.internal.consumer;
 
-import org.gradle.tooling.CompositeBuildConnection;
-import org.gradle.tooling.CompositeBuildConnector;
-import org.gradle.tooling.CompositeParticipant;
+import org.gradle.tooling.*;
+import org.gradle.util.GradleVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URI;
 
 public class DefaultCompositeBuildConnector extends CompositeBuildConnector {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GradleConnector.class);
+    private final CompositeConnectionFactory connectionFactory;
+    private final DistributionFactory distributionFactory;
+    private Distribution distribution;
+
+    private final DefaultCompositeConnectionParameters.Builder connectionParamsBuilder = DefaultCompositeConnectionParameters.builder();
+
     public DefaultCompositeBuildConnector(CompositeConnectionFactory connectionFactory, DistributionFactory distributionFactory) {
-
+        this.connectionFactory = connectionFactory;
+        this.distributionFactory = distributionFactory;
     }
 
     @Override
-    protected CompositeBuildConnection useInstallation(File gradleHome) {
-        return null;
+    protected CompositeBuildConnector useInstallation(File gradleHome) {
+        distribution = distributionFactory.getDistribution(gradleHome);
+        return this;
     }
 
     @Override
-    protected CompositeBuildConnection useGradleVersion(String gradleVersion) {
-        return null;
+    protected CompositeBuildConnector useGradleVersion(String gradleVersion) {
+        distribution = distributionFactory.getDistribution(gradleVersion);
+        return this;
     }
 
     @Override
-    protected CompositeBuildConnection useDistribution(URI gradleDistribution) {
-        return null;
+    protected CompositeBuildConnector useDistribution(URI gradleDistribution) {
+        distribution = distributionFactory.getDistribution(gradleDistribution);
+        return this;
     }
 
     @Override
-    protected CompositeBuildConnection useGradleUserHomeDir(File gradleUserHomeDir) {
-        return null;
+    protected CompositeBuildConnector useGradleUserHomeDir(File gradleUserHomeDir) {
+        connectionParamsBuilder.setGradleUserHomeDir(gradleUserHomeDir);
+        return this;
     }
 
     @Override
     protected CompositeParticipant addParticipant(File rootProjectDirectory) {
-        return null;
+        // no-op
+        return new CompositeParticipant() {
+            @Override
+            public CompositeParticipant useBuildDistribution() {
+                return this;
+            }
+        };
     }
 
     @Override
-    protected CompositeBuildConnection connect() {
-        return null;
+    public CompositeBuildConnection connect() throws GradleConnectionException {
+        LOGGER.debug("Connecting from tooling API consumer version {}", GradleVersion.current().getVersion());
+
+        CompositeConnectionParameters connectionParameters = connectionParamsBuilder.build();
+        if (distribution == null) {
+            distribution = distributionFactory.getClasspathDistribution();
+        }
+        return connectionFactory.create(distribution, connectionParameters);
     }
 }

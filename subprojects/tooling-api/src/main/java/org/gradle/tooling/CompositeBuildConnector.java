@@ -16,33 +16,26 @@
 
 package org.gradle.tooling;
 
+import org.gradle.tooling.internal.consumer.ConnectorServices;
+
 import java.io.File;
 import java.net.URI;
 
 public abstract class CompositeBuildConnector {
     public static CompositeBuildConnector newComposite() {
-        return null;
+        return ConnectorServices.createCompositeConnector();
     }
     // Define the Gradle instance that coordinate the composite
-    protected abstract CompositeBuildConnection useInstallation(File gradleHome);
-    protected abstract CompositeBuildConnection useGradleVersion(String gradleVersion);
-    protected abstract CompositeBuildConnection useDistribution(URI gradleDistribution);
+    protected abstract CompositeBuildConnector useInstallation(File gradleHome);
+
+    protected abstract CompositeBuildConnector useGradleVersion(String gradleVersion);
+
+    protected abstract CompositeBuildConnector useDistribution(URI gradleDistribution);
 
     // Define the Gradle user home directory for the entire composite
-    protected abstract CompositeBuildConnection useGradleUserHomeDir(File gradleUserHomeDir);
+    protected abstract CompositeBuildConnector useGradleUserHomeDir(File gradleUserHomeDir);
 
     protected abstract CompositeParticipant addParticipant(File rootProjectDirectory);
 
     protected abstract CompositeBuildConnection connect();
-
-    /*
-    public static void main(String[] args) {
-        CompositeBuildConnector compositeBuildConnector = CompositeBuildConnector.newComposite();
-        compositeBuildConnector.addParticipant(new File("foo"));
-        compositeBuildConnector.addParticipant(new File("bar"));
-        CompositeBuildConnection compositeBuildConnection = compositeBuildConnector.connect();
-
-        Map<ProjectIdentity, EclipseProject> buildModels = compositeBuildConnection.getModels(EclipseProject.class);
-    }
-    */
 }

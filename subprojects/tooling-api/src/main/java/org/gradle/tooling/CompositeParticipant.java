@@ -16,16 +16,15 @@
 
 package org.gradle.tooling;
 
-import java.io.File;
-import java.net.URI;
-
 public interface CompositeParticipant {
     // Define the Gradle instance that should build this participant
     CompositeParticipant useBuildDistribution(); // default
 
+    /*
     CompositeParticipant useInstallation(File gradleHome);
 
     CompositeParticipant useGradleVersion(String gradleVersion);
 
     CompositeParticipant useDistribution(URI gradleDistribution);
+    */
 }
