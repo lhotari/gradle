@@ -23,6 +23,8 @@ import org.gradle.integtests.fixtures.executer.UnderDevelopmentGradleDistributio
 import org.gradle.test.fixtures.file.TestDistributionDirectoryProvider
 import org.gradle.test.fixtures.file.TestFile
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
+import org.gradle.tooling.CompositeBuildConnection
+import org.gradle.tooling.CompositeBuildConnector
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.internal.consumer.ConnectorServices
@@ -100,6 +102,18 @@ abstract class ToolingApiSpecification extends Specification {
 
     public <T> T withConnection(GradleConnector connector, @DelegatesTo(ProjectConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.ProjectConnection"]) Closure<T> cl) {
         toolingApi.withConnection(connector, cl)
+    }
+
+    public void withCompositeConnector(@DelegatesTo(CompositeBuildConnector) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.CompositeBuildConnector"]) Closure cl) {
+        toolingApi.withCompositeConnector(cl)
+    }
+
+    public <T> T withCompositeConnection(@DelegatesTo(ProjectConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.CompositeBuildConnection"]) Closure<T> cl) {
+        toolingApi.withCompositeConnection(cl)
+    }
+
+    public <T> T withCompositeConnection(CompositeBuildConnector connector, @DelegatesTo(CompositeBuildConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.CompositeBuildConnection"]) Closure<T> cl) {
+        toolingApi.withCompositeConnection(connector, cl)
     }
 
     public ConfigurableOperation withModel(Class modelType, Closure cl = {}) {

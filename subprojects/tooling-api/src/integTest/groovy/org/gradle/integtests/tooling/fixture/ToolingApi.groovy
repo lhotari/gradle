@@ -49,6 +49,7 @@ class ToolingApi implements TestRule {
     private boolean requireIsolatedDaemons
 
     private final List<Closure> connectorConfigurers = []
+    private final List<Closure> compositeConnectorConfigurers = []
     boolean verboseLogging = LOGGER.debugEnabled
 
     ToolingApi(GradleDistribution dist, TestDirectoryProvider testWorkDirProvider) {
@@ -177,7 +178,14 @@ class ToolingApi implements TestRule {
         } else {
             connector.useInstallation(dist.gradleHomeDir.absoluteFile)
         }
+        compositeConnectorConfigurers.each {
+            connector.with(it)
+        }
         return connector
+    }
+
+    void withCompositeConnector(Closure cl) {
+        compositeConnectorConfigurers << cl
     }
 
     public <T> T withCompositeConnection(Closure<T> cl) {

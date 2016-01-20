@@ -26,7 +26,7 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
 
     def "can create a composite connection"() {
         expect:
-        toolingApi.withCompositeConnection {
+        withCompositeConnection {
             assert it != null
             true
         }
