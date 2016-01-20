@@ -24,6 +24,7 @@ import org.gradle.tooling.events.ProgressListener;
 import org.gradle.tooling.internal.adapter.ProtocolToModelAdapter;
 import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
 import org.gradle.tooling.internal.consumer.ConnectionParameters;
+import org.gradle.tooling.internal.consumer.ProjectConnectionParameters;
 import org.gradle.tooling.internal.gradle.TaskListingLaunchable;
 import org.gradle.tooling.internal.protocol.*;
 import org.gradle.tooling.model.Launchable;
@@ -256,14 +257,14 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
      * @since 1.0-milestone-3
      */
     public File getProjectDir() {
-        return parameters.getProjectDir();
+        return parameters instanceof ProjectConnectionParameters ? ((ProjectConnectionParameters) parameters).getProjectDir() : null;
     }
 
     /**
      * @since 1.0-milestone-3
      */
     public Boolean isSearchUpwards() {
-        return parameters.isSearchUpwards();
+        return parameters instanceof ProjectConnectionParameters ? ((ProjectConnectionParameters) parameters).isSearchUpwards() : Boolean.FALSE;
     }
 
     /**
