@@ -78,8 +78,13 @@ public class DefaultCompositeBuildConnector extends CompositeBuildConnector {
 
         CompositeConnectionParameters connectionParameters = connectionParamsBuilder.build();
         if (distribution == null) {
-            distribution = distributionFactory.getClasspathDistribution();
+            useClasspathDistribution();
         }
         return connectionFactory.create(distribution, connectionParameters);
+    }
+
+    public CompositeBuildConnector useClasspathDistribution() {
+        distribution = distributionFactory.getClasspathDistribution();
+        return this;
     }
 }

@@ -22,8 +22,11 @@ import org.gradle.integtests.fixtures.executer.GradleDistribution
 import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext
 import org.gradle.test.fixtures.file.TestDirectoryProvider
 import org.gradle.test.fixtures.file.TestFile
+import org.gradle.tooling.CompositeBuildConnection
+import org.gradle.tooling.CompositeBuildConnector
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
+import org.gradle.tooling.internal.consumer.DefaultCompositeBuildConnector
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector
 import org.gradle.util.GradleVersion
 import org.junit.rules.TestRule
@@ -164,6 +167,38 @@ class ToolingApi implements TestRule {
             connector.with(it)
         }
         return connector
+    }
+
+    CompositeBuildConnector compositeConnector() {
+        DefaultCompositeBuildConnector connector = CompositeBuildConnector.newComposite()
+        connector.useGradleUserHomeDir(new File(gradleUserHomeDir.path))
+        if (useClasspathImplementation) {
+            connector.useClasspathDistribution()
+        } else {
+            connector.useInstallation(dist.gradleHomeDir.absoluteFile)
+        }
+        return connector
+    }
+
+    public <T> T withCompositeConnection(Closure<T> cl) {
+        CompositeBuildConnector connector = compositeConnector()
+        withCompositeConnection(connector, cl)
+    }
+
+    public <T> T withCompositeConnection(CompositeBuildConnector connector, Closure<T> cl) {
+        return withCompositeConnectionRaw(connector, cl)
+    }
+
+    private <T> T withCompositeConnectionRaw(CompositeBuildConnector connector, Closure<T> cl) {
+        CompositeBuildConnection connection = connector.connect()
+        try {
+            return connection.with(cl)
+        } catch (Throwable t) {
+            validate(t)
+            throw t
+        } finally {
+            connection.close()
+        }
     }
 
     boolean isUseClasspathImplementation() {
