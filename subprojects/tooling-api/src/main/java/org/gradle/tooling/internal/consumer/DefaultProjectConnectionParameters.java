@@ -20,7 +20,7 @@ import org.gradle.util.GradleVersion;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-public class DefaultConnectionParameters implements ConnectionParameters {
+public class DefaultProjectConnectionParameters implements ProjectConnectionParameters {
     private final File gradleUserHomeDir;
     private final File projectDir;
     private final Boolean searchUpwards;
@@ -34,7 +34,7 @@ public class DefaultConnectionParameters implements ConnectionParameters {
         return new Builder();
     }
 
-    public static Builder builder(ConnectionParameters connectionParameters) {
+    public static Builder builder(ProjectConnectionParameters connectionParameters) {
         return new Builder().setDaemonMaxIdleTimeUnits(connectionParameters.getDaemonMaxIdleTimeUnits()).
                 setDaemonMaxIdleTimeValue(connectionParameters.getDaemonMaxIdleTimeValue()).
                 setEmbedded(connectionParameters.isEmbedded()).
@@ -92,8 +92,8 @@ public class DefaultConnectionParameters implements ConnectionParameters {
             return this;
         }
 
-        public DefaultConnectionParameters build() {
-            return new DefaultConnectionParameters(gradleUserHomeDir, projectDir, searchUpwards, embedded,
+        public DefaultProjectConnectionParameters build() {
+            return new DefaultProjectConnectionParameters(gradleUserHomeDir, projectDir, searchUpwards, embedded,
                     daemonMaxIdleTimeValue, daemonMaxIdleTimeUnits, daemonBaseDir, verboseLogging);
         }
 
@@ -102,9 +102,9 @@ public class DefaultConnectionParameters implements ConnectionParameters {
         }
     }
 
-    private DefaultConnectionParameters(File gradleUserHomeDir, File projectDir, Boolean searchUpwards, Boolean embedded,
-                                        Integer daemonMaxIdleTimeValue, TimeUnit daemonMaxIdleTimeUnits, File daemonBaseDir,
-                                        boolean verboseLogging) {
+    private DefaultProjectConnectionParameters(File gradleUserHomeDir, File projectDir, Boolean searchUpwards, Boolean embedded,
+                                               Integer daemonMaxIdleTimeValue, TimeUnit daemonMaxIdleTimeUnits, File daemonBaseDir,
+                                               boolean verboseLogging) {
         this.gradleUserHomeDir = gradleUserHomeDir;
         this.projectDir = projectDir;
         this.searchUpwards = searchUpwards;

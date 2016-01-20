@@ -36,6 +36,11 @@ public class ConnectorServices {
         return singletonRegistry.getFactory(DefaultGradleConnector.class).create();
     }
 
+    public static DefaultCompositeBuildConnector createCompositeConnector() {
+        assertJava6();
+        return singletonRegistry.getFactory(DefaultCompositeBuildConnector.class).create();
+    }
+
     public static CancellationTokenSource createCancellationTokenSource() {
         assertJava6();
         return new DefaultCancellationTokenSource();
@@ -70,6 +75,14 @@ public class ConnectorServices {
             };
         }
 
+        protected Factory<DefaultCompositeBuildConnector> createCompositeConnectorFactory(final CompositeConnectionFactory connectionFactory, final DistributionFactory distributionFactory) {
+            return new Factory<DefaultCompositeBuildConnector>() {
+                public DefaultCompositeBuildConnector create() {
+                    return new DefaultCompositeBuildConnector(connectionFactory, distributionFactory);
+                }
+            };
+        }
+
         protected ExecutorFactory createExecutorFactory() {
             return new DefaultExecutorFactory();
         }
@@ -92,6 +105,10 @@ public class ConnectorServices {
 
         protected ConnectionFactory createConnectionFactory(ToolingImplementationLoader toolingImplementationLoader, ExecutorFactory executorFactory, LoggingProvider loggingProvider) {
             return new ConnectionFactory(toolingImplementationLoader, executorFactory, loggingProvider);
+        }
+
+        protected CompositeConnectionFactory createCompositeConnectionFactory(ToolingImplementationLoader toolingImplementationLoader, ExecutorFactory executorFactory, LoggingProvider loggingProvider) {
+            return new CompositeConnectionFactory(toolingImplementationLoader, executorFactory, loggingProvider);
         }
     }
 }
