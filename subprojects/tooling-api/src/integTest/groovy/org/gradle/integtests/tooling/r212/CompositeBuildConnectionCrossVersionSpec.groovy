@@ -19,6 +19,9 @@ package org.gradle.integtests.tooling.r212
 import org.gradle.integtests.tooling.fixture.TargetGradleVersion
 import org.gradle.integtests.tooling.fixture.ToolingApiSpecification
 import org.gradle.integtests.tooling.fixture.ToolingApiVersion
+import org.gradle.tooling.CompositeBuildConnection
+import org.gradle.tooling.CompositeBuildConnector
+import org.gradle.tooling.model.eclipse.EclipseProject
 
 @ToolingApiVersion("current")
 @TargetGradleVersion("current")
@@ -31,4 +34,26 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
             true
         }
     }
+
+    def "can request model for a single project"() {
+        given:
+        def projectDir1 = temporaryFolder.createDir("project1")
+        def projectDir2 = temporaryFolder.createDir("project2")
+        [projectDir1, projectDir2].each {
+            it.file("build.gradle") << "apply plugin: 'java'"
+        }
+        when:
+        withCompositeConnector { CompositeBuildConnector connector ->
+            connector.addParticipant(projectDir1)
+            connector.addParticipant(projectDir2)
+        }
+        def models = withCompositeConnection { CompositeBuildConnection connection ->
+            connection.getModels(EclipseProject)
+        }
+
+        then:
+        models != null
+        models.size() == 2
+    }
+
 }

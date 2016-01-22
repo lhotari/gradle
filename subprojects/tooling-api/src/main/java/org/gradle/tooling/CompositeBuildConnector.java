@@ -26,16 +26,16 @@ public abstract class CompositeBuildConnector {
         return ConnectorServices.createCompositeConnector();
     }
     // Define the Gradle instance that coordinate the composite
-    protected abstract CompositeBuildConnector useInstallation(File gradleHome);
+    public abstract CompositeBuildConnector useInstallation(File gradleHome);
 
-    protected abstract CompositeBuildConnector useGradleVersion(String gradleVersion);
+    public abstract CompositeBuildConnector useGradleVersion(String gradleVersion);
 
-    protected abstract CompositeBuildConnector useDistribution(URI gradleDistribution);
+    public abstract CompositeBuildConnector useDistribution(URI gradleDistribution);
 
     // Define the Gradle user home directory for the entire composite
-    protected abstract CompositeBuildConnector useGradleUserHomeDir(File gradleUserHomeDir);
+    public abstract CompositeBuildConnector useGradleUserHomeDir(File gradleUserHomeDir);
 
-    protected abstract CompositeParticipant addParticipant(File rootProjectDirectory);
+    public abstract CompositeParticipant addParticipant(File rootProjectDirectory);
 
-    protected abstract CompositeBuildConnection connect();
+    public abstract CompositeBuildConnection connect();
 }

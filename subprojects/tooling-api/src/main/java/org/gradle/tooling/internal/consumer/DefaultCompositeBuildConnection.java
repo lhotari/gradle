@@ -16,7 +16,10 @@
 package org.gradle.tooling.internal.consumer;
 
 import org.gradle.tooling.CompositeBuildConnection;
+import org.gradle.tooling.ProjectIdentity;
 import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
+
+import java.util.Map;
 
 class DefaultCompositeBuildConnection implements CompositeBuildConnection {
     private final AsyncConsumerActionExecutor connection;
@@ -29,5 +32,10 @@ class DefaultCompositeBuildConnection implements CompositeBuildConnection {
 
     public void close() {
         connection.stop();
+    }
+
+    @Override
+    public <T> Map<ProjectIdentity, T> getModels(Class<T> modelType) {
+        return null;
     }
 }

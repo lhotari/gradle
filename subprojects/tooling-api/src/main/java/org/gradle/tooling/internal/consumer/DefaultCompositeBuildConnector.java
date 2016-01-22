@@ -38,31 +38,32 @@ public class DefaultCompositeBuildConnector extends CompositeBuildConnector {
     }
 
     @Override
-    protected CompositeBuildConnector useInstallation(File gradleHome) {
+    public CompositeBuildConnector useInstallation(File gradleHome) {
         distribution = distributionFactory.getDistribution(gradleHome);
         return this;
     }
 
     @Override
-    protected CompositeBuildConnector useGradleVersion(String gradleVersion) {
+    public CompositeBuildConnector useGradleVersion(String gradleVersion) {
         distribution = distributionFactory.getDistribution(gradleVersion);
         return this;
     }
 
     @Override
-    protected CompositeBuildConnector useDistribution(URI gradleDistribution) {
+    public CompositeBuildConnector useDistribution(URI gradleDistribution) {
         distribution = distributionFactory.getDistribution(gradleDistribution);
         return this;
     }
 
     @Override
-    protected CompositeBuildConnector useGradleUserHomeDir(File gradleUserHomeDir) {
+    public CompositeBuildConnector useGradleUserHomeDir(File gradleUserHomeDir) {
         connectionParamsBuilder.setGradleUserHomeDir(gradleUserHomeDir);
         return this;
     }
 
     @Override
-    protected CompositeParticipant addParticipant(File rootProjectDirectory) {
+    public CompositeParticipant addParticipant(File rootProjectDirectory) {
+        connectionParamsBuilder.addParticipant(rootProjectDirectory);
         // no-op
         return new CompositeParticipant() {
             @Override

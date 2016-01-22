@@ -16,9 +16,13 @@
 package org.gradle.tooling.internal.consumer;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultCompositeConnectionParameters extends AbstractConnectionParameters implements CompositeConnectionParameters {
+    private final List<File> participantRootDirs;
     public static Builder builder() {
         return new Builder();
     }
@@ -31,20 +35,32 @@ public class DefaultCompositeConnectionParameters extends AbstractConnectionPara
             setVerboseLogging(connectionParameters.getVerboseLogging());
     }
 
+    @Override
+    public List<File> getParticipantRootDirs() {
+        return participantRootDirs;
+    }
+
     public static class Builder extends AbstractConnectionParameters.Builder {
+        private final List<File> participantRootDirs = new ArrayList<File>();
+
         private Builder() {
             super();
         }
 
         public DefaultCompositeConnectionParameters build() {
             return new DefaultCompositeConnectionParameters(gradleUserHomeDir, embedded,
-                daemonMaxIdleTimeValue, daemonMaxIdleTimeUnits, daemonBaseDir, verboseLogging);
+                daemonMaxIdleTimeValue, daemonMaxIdleTimeUnits, daemonBaseDir, verboseLogging, participantRootDirs);
+        }
+
+        public void addParticipant(File rootProjectDirectory) {
+            participantRootDirs.add(rootProjectDirectory);
         }
     }
 
     private DefaultCompositeConnectionParameters(File gradleUserHomeDir, Boolean embedded,
                                                  Integer daemonMaxIdleTimeValue, TimeUnit daemonMaxIdleTimeUnits, File daemonBaseDir,
-                                                 boolean verboseLogging) {
+                                                 boolean verboseLogging, List<File> participantRootDirs) {
         super(gradleUserHomeDir, embedded, daemonMaxIdleTimeValue, daemonMaxIdleTimeUnits, daemonBaseDir, verboseLogging);
+        this.participantRootDirs = Collections.unmodifiableList(participantRootDirs);
     }
 }

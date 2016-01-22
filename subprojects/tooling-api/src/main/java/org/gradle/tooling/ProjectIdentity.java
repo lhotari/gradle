@@ -13,11 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.tooling.internal.consumer;
 
-import java.io.File;
-import java.util.List;
+package org.gradle.tooling;
 
-public interface CompositeConnectionParameters extends ConnectionParameters {
-    public List<File> getParticipantRootDirs();
+import org.gradle.tooling.model.DomainObjectSet;
+
+import java.io.Serializable;
+
+// Lightweight reference to a Gradle project
+public interface ProjectIdentity  {
+    Serializable getToken();
+
+    ProjectIdentity getRoot();
+
+    ProjectIdentity getParent();
+    DomainObjectSet<? extends ProjectIdentity> getChildren();
+
+    // Some other stuff..
 }

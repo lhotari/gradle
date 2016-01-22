@@ -20,6 +20,7 @@ import java.util.Map;
 
 public interface CompositeBuildConnection {
     // Model methods to get model for all projects
+    <T> Map<ProjectIdentity, T> getModels(Class<T> modelType);
 /*
     <T> Map<ProjectIdentity, T> getModels(Class<T> modelType);
     <T> void getModels(Class<T> modelType, CompositeResultHandler<T> handler) throws IllegalStateException;
