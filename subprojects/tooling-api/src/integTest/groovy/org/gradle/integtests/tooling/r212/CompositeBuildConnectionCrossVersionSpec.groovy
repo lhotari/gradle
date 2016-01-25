@@ -21,7 +21,7 @@ import org.gradle.integtests.tooling.fixture.ToolingApiSpecification
 import org.gradle.integtests.tooling.fixture.ToolingApiVersion
 import org.gradle.tooling.CompositeBuildConnection
 import org.gradle.tooling.CompositeBuildConnector
-import org.gradle.tooling.model.eclipse.EclipseProject
+import org.gradle.tooling.model.eclipse.EclipseWorkspace
 
 @ToolingApiVersion("current")
 @TargetGradleVersion("current")
@@ -47,13 +47,13 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
             connector.addParticipant(projectDir1)
             connector.addParticipant(projectDir2)
         }
-        def models = withCompositeConnection { CompositeBuildConnection connection ->
-            connection.getModels(EclipseProject)
+        def workspace = withCompositeConnection { CompositeBuildConnection connection ->
+            connection.getModel(EclipseWorkspace)
         }
 
         then:
-        models != null
-        models.size() == 2
+        workspace != null
+        workspace.openProjects.size() == 2
     }
 
 }

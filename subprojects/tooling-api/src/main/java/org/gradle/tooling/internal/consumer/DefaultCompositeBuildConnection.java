@@ -16,6 +16,8 @@
 package org.gradle.tooling.internal.consumer;
 
 import org.gradle.tooling.CompositeBuildConnection;
+import org.gradle.tooling.GradleConnectionException;
+import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ProjectIdentity;
 import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
 
@@ -34,8 +36,15 @@ class DefaultCompositeBuildConnection implements CompositeBuildConnection {
         connection.stop();
     }
 
+    private <T> ModelBuilder<T> model(Class<T> modelType) {
+        if (!modelType.isInterface()) {
+            throw new IllegalArgumentException(String.format("Cannot fetch a model of type '%s' as this type is not an interface.", modelType.getName()));
+        }
+        return new DefaultModelBuilder<T>(modelType, connection, parameters);
+    }
+
     @Override
-    public <T> Map<ProjectIdentity, T> getModels(Class<T> modelType) {
-        return null;
+    public <T> T getModel(Class<T> modelType) throws GradleConnectionException, IllegalStateException {
+        return model(modelType).get();
     }
 }

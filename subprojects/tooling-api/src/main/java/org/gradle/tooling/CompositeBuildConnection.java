@@ -16,11 +16,13 @@
 
 package org.gradle.tooling;
 
-import java.util.Map;
-
 public interface CompositeBuildConnection {
+
+    <T> T getModel(Class<T> modelType) throws GradleConnectionException, IllegalStateException;
+
+
     // Model methods to get model for all projects
-    <T> Map<ProjectIdentity, T> getModels(Class<T> modelType);
+    //<T> Map<ProjectIdentity, T> getModels(Class<T> modelType);
 /*
     <T> Map<ProjectIdentity, T> getModels(Class<T> modelType);
     <T> void getModels(Class<T> modelType, CompositeResultHandler<T> handler) throws IllegalStateException;
