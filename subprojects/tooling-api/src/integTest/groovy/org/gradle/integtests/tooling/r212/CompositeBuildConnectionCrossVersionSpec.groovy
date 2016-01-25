@@ -37,6 +37,22 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
 
     def "can request model for a single project"() {
         given:
+        buildFile << "apply plugin: 'java'"
+        when:
+        withCompositeConnector { CompositeBuildConnector connector ->
+            connector.addParticipant(projectDir)
+        }
+        def workspace = withCompositeConnection { CompositeBuildConnection connection ->
+            connection.getModel(EclipseWorkspace)
+        }
+
+        then:
+        workspace != null
+        workspace.openProjects.size() == 1
+    }
+
+    def "can request model for two projects"() {
+        given:
         def projectDir1 = temporaryFolder.createDir("project1")
         def projectDir2 = temporaryFolder.createDir("project2")
         [projectDir1, projectDir2].each {
@@ -55,5 +71,4 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
         workspace != null
         workspace.openProjects.size() == 2
     }
-
 }
