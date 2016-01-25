@@ -38,6 +38,9 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
     def "can request model for a single project"() {
         given:
         buildFile << "apply plugin: 'java'"
+        toolingApi.requireDaemons()
+
+
         when:
         withCompositeConnector { CompositeBuildConnector connector ->
             connector.addParticipant(projectDir)
