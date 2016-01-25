@@ -122,7 +122,7 @@ class ToolingApi implements TestRule {
 
         // Verify that the exception carries the calling thread's stack information
         def currentThreadStack = Thread.currentThread().stackTrace as List
-        while (!currentThreadStack.empty && (currentThreadStack[0].className != ToolingApi.name || currentThreadStack[0].methodName != 'withConnectionRaw')) {
+        while (!currentThreadStack.empty && (currentThreadStack[0].className != ToolingApi.name || currentThreadStack[0].methodName != 'withConnectionRaw' || currentThreadStack[0].methodName != 'withCompositeConnectionRaw')) {
             currentThreadStack.remove(0)
         }
         assert currentThreadStack.size() > 1
