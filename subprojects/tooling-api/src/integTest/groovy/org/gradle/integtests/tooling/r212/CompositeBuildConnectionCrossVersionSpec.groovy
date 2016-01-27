@@ -19,9 +19,8 @@ package org.gradle.integtests.tooling.r212
 import org.gradle.integtests.tooling.fixture.TargetGradleVersion
 import org.gradle.integtests.tooling.fixture.ToolingApiSpecification
 import org.gradle.integtests.tooling.fixture.ToolingApiVersion
-import org.gradle.tooling.CompositeBuildConnection
-import org.gradle.tooling.CompositeBuildConnector
 import org.gradle.tooling.model.eclipse.EclipseWorkspace
+import spock.lang.IgnoreRest
 
 @ToolingApiVersion("current")
 @TargetGradleVersion("current")
@@ -42,10 +41,10 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
 
 
         when:
-        withCompositeConnector { CompositeBuildConnector connector ->
+        withCompositeConnector { connector ->
             connector.addParticipant(projectDir)
         }
-        def workspace = withCompositeConnection { CompositeBuildConnection connection ->
+        def workspace = withCompositeConnection { connection ->
             connection.getModel(EclipseWorkspace)
         }
 
@@ -54,6 +53,7 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
         workspace.openProjects.size() == 1
     }
 
+    @IgnoreRest
     def "can request model for two projects"() {
         given:
         def projectDir1 = temporaryFolder.createDir("project1")
@@ -62,11 +62,11 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
             it.file("build.gradle") << "apply plugin: 'java'"
         }
         when:
-        withCompositeConnector { CompositeBuildConnector connector ->
+        withCompositeConnector { connector ->
             connector.addParticipant(projectDir1)
             connector.addParticipant(projectDir2)
         }
-        def workspace = withCompositeConnection { CompositeBuildConnection connection ->
+        def workspace = withCompositeConnection { connection ->
             connection.getModel(EclipseWorkspace)
         }
 

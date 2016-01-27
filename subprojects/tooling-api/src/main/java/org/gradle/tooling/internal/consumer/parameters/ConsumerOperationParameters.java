@@ -23,6 +23,7 @@ import org.gradle.tooling.CancellationToken;
 import org.gradle.tooling.events.ProgressListener;
 import org.gradle.tooling.internal.adapter.ProtocolToModelAdapter;
 import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
+import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
 import org.gradle.tooling.internal.consumer.ConnectionParameters;
 import org.gradle.tooling.internal.consumer.ProjectConnectionParameters;
 import org.gradle.tooling.internal.gradle.TaskListingLaunchable;
@@ -366,5 +367,9 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
 
     public BuildCancellationToken getCancellationToken() {
         return ((CancellationTokenInternal) cancellationToken).getToken();
+    }
+
+    public List<File> getParticipantRootDirs() {
+        return parameters instanceof CompositeConnectionParameters ? ((CompositeConnectionParameters) parameters).getParticipantRootDirs() : null;
     }
 }

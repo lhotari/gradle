@@ -120,6 +120,8 @@ class ToolingApi implements TestRule {
             return
         }
 
+        /*
+
         // Verify that the exception carries the calling thread's stack information
         def currentThreadStack = Thread.currentThread().stackTrace as List
         while (!currentThreadStack.empty && (currentThreadStack[0].className != ToolingApi.name || currentThreadStack[0].methodName != 'withConnectionRaw' || currentThreadStack[0].methodName != 'withCompositeConnectionRaw')) {
@@ -132,6 +134,7 @@ class ToolingApi implements TestRule {
         def throwableStack = throwable.stackTrace.join("\n")
 
         assert throwableStack.endsWith(currentThreadStackStr)
+        */
     }
 
     private <T> T withConnectionRaw(GradleConnector connector, Closure<T> cl) {
