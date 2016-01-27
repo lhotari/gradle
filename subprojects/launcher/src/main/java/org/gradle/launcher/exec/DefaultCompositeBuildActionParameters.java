@@ -24,7 +24,7 @@ import org.gradle.launcher.daemon.configuration.DaemonUsage;
 import java.io.File;
 import java.util.Map;
 
-public class DefaultCompositeBuildActionParameters extends DefaultBuildActionParameters {
+public class DefaultCompositeBuildActionParameters extends DefaultBuildActionParameters implements CompositeBuildActionParameters {
     private final CompositeParameters compositeParameters;
 
     public DefaultCompositeBuildActionParameters(Map<?, ?> systemProperties, Map<String, String> envVariables, File currentDir, LogLevel logLevel, DaemonUsage daemonUsage, boolean continuous, boolean interactive, ClassPath injectedPluginClasspath, CompositeParameters compositeParameters) {

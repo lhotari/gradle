@@ -19,7 +19,7 @@ package org.gradle.tooling;
 public interface CompositeBuildConnection {
 
     <T> T getModel(Class<T> modelType) throws GradleConnectionException, IllegalStateException;
-
+    <T> ModelBuilder<T> model(Class<T> modelType);
 
     // Model methods to get model for all projects
     //<T> Map<ProjectIdentity, T> getModels(Class<T> modelType);

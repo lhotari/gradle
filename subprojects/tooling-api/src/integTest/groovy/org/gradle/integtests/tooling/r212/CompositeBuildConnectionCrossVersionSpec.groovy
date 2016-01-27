@@ -67,7 +67,9 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
             connector.addParticipant(projectDir2)
         }
         def workspace = withCompositeConnection { connection ->
-            connection.getModel(EclipseWorkspace)
+            connection.model(EclipseWorkspace)
+                //.setJvmArguments('-Xmx1G', '-Xdebug', '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005')
+                .get()
         }
 
         then:
