@@ -23,11 +23,12 @@ import org.gradle.integtests.fixtures.executer.UnderDevelopmentGradleDistributio
 import org.gradle.test.fixtures.file.TestDistributionDirectoryProvider
 import org.gradle.test.fixtures.file.TestFile
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
+import org.gradle.testing.internal.util.RetryRule
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
+import org.gradle.tooling.composite.GradleConnection
 import org.gradle.tooling.internal.consumer.ConnectorServices
 import org.gradle.util.GradleVersion
-import org.gradle.testing.internal.util.RetryRule
 import org.gradle.util.SetSystemProperties
 import org.junit.Rule
 import org.junit.rules.RuleChain
@@ -100,6 +101,19 @@ abstract class ToolingApiSpecification extends Specification {
 
     public <T> T withConnection(GradleConnector connector, @DelegatesTo(ProjectConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.ProjectConnection"]) Closure<T> cl) {
         toolingApi.withConnection(connector, cl)
+    }
+
+    public void withGradleConnectionBuilder(@DelegatesTo(GradleConnection.Builder) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.composite.GradleConnection.Builder"]) Closure cl) {
+        toolingApi.withGradleConnectionBuilder(cl)
+    }
+
+    public <T> T withGradleConnection(@DelegatesTo(ProjectConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.composite.GradleConnection"]) Closure<T> cl) {
+        toolingApi.withGradleConnection(cl)
+    }
+
+    public <T> T withGradleConnection(GradleConnection.Builder connector,
+                                      @DelegatesTo(GradleConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.composite.GradleConnection"]) Closure<T> cl) {
+        toolingApi.withGradleConnection(connector, cl)
     }
 
     public ConfigurableOperation withModel(Class modelType, Closure cl = {}) {
