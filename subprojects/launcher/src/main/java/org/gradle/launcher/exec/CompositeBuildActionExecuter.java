@@ -19,9 +19,16 @@ package org.gradle.launcher.exec;
 import org.gradle.initialization.BuildRequestContext;
 import org.gradle.internal.invocation.BuildAction;
 import org.gradle.internal.service.ServiceRegistry;
+import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
+import org.gradle.tooling.model.eclipse.EclipseProject;
+
+import java.io.File;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class CompositeBuildActionExecuter implements BuildActionExecuter<CompositeBuildActionParameters> {
 
@@ -32,12 +39,21 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
     @Override
     public Object execute(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, ServiceRegistry contextServices) {
         if (action instanceof BuildModelAction) {
-            // TODO add implementation
-            Object result = null;
+            Set<EclipseProject> result = getEclipseProjects(actionParameters);
             PayloadSerializer payloadSerializer = contextServices.get(PayloadSerializer.class);
             return new BuildActionResult(payloadSerializer.serialize(result), null);
         } else {
             throw new RuntimeException("Not implemented yet.");
         }
+    }
+
+    private Set<EclipseProject> getEclipseProjects(CompositeBuildActionParameters actionParameters) {
+        Set<EclipseProject> result = new LinkedHashSet<EclipseProject>();
+        for (File projectRoot : actionParameters.getCompositeParameters().getBuildRoots()) {
+            ProjectConnection projectConnection = GradleConnector.newConnector().forProjectDirectory(projectRoot).connect();
+            result.add(projectConnection.getModel(EclipseProject.class));
+            projectConnection.close();
+        }
+        return result;
     }
 }
