@@ -75,10 +75,6 @@ public class DefaultGradleConnection implements GradleConnection {
             if (participants.isEmpty()) {
                 throw new IllegalStateException("At least one participant must be specified before creating a connection.");
             }
-            // TODO:
-            if (participants.size() > 1) {
-                throw new IllegalStateException("Temporary -- Gradle only supports a single project in a composite");
-            }
 
             DefaultCompositeConnectionParameters.Builder compositeConnectionParametersBuilder = DefaultCompositeConnectionParameters.builder();
             for(GradleParticipantBuild build : participants) {
