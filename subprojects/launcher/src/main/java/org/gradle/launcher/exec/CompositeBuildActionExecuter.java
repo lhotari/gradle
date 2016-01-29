@@ -24,7 +24,9 @@ import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
+import org.gradle.tooling.model.eclipse.DefaultEclipseWorkspace;
 import org.gradle.tooling.model.eclipse.EclipseProject;
+import org.gradle.tooling.model.eclipse.EclipseWorkspace;
 
 import java.io.File;
 import java.util.LinkedHashSet;
@@ -39,9 +41,10 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
     @Override
     public Object execute(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, ServiceRegistry contextServices) {
         if (action instanceof BuildModelAction) {
-            Set<EclipseProject> result = getEclipseProjects(actionParameters);
+            Set<EclipseProject> projects = getEclipseProjects(actionParameters);
+            EclipseWorkspace workspace = new DefaultEclipseWorkspace(projects);
             PayloadSerializer payloadSerializer = contextServices.get(PayloadSerializer.class);
-            return new BuildActionResult(payloadSerializer.serialize(result), null);
+            return new BuildActionResult(payloadSerializer.serialize(workspace), null);
         } else {
             throw new RuntimeException("Not implemented yet.");
         }

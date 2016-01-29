@@ -21,7 +21,7 @@ import org.gradle.tooling.events.OperationType;
 import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
 import org.gradle.tooling.internal.consumer.DefaultModelBuilder;
 import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
-import org.gradle.tooling.internal.model.SetOfEclipseProjects;
+import org.gradle.tooling.model.eclipse.EclipseWorkspace;
 
 import java.io.File;
 import java.io.InputStream;
@@ -29,10 +29,10 @@ import java.io.OutputStream;
 import java.util.Set;
 
 public class CompositeModelBuilder<T> implements ModelBuilder<Set<T>> {
-    private final ModelBuilder<SetOfEclipseProjects> delegate;
+    private final ModelBuilder<EclipseWorkspace> delegate;
 
     protected CompositeModelBuilder(Class<T> modelType, AsyncConsumerActionExecutor asyncConnection, CompositeConnectionParameters parameters) {
-        delegate = new DefaultModelBuilder<SetOfEclipseProjects>(SetOfEclipseProjects.class, asyncConnection, parameters);
+        delegate = new DefaultModelBuilder<EclipseWorkspace>(EclipseWorkspace.class, asyncConnection, parameters);
     }
 
     @Override
@@ -48,15 +48,15 @@ public class CompositeModelBuilder<T> implements ModelBuilder<Set<T>> {
 
     @Override
     public Set<T> get() throws GradleConnectionException, IllegalStateException {
-        return (Set<T>) delegate.get().getProjects();
+        return (Set<T>) delegate.get().getEclipseProjects();
     }
 
     @Override
     public void get(final ResultHandler<? super Set<T>> handler) throws IllegalStateException {
-        delegate.get(new ResultHandler<SetOfEclipseProjects>() {
+        delegate.get(new ResultHandler<EclipseWorkspace>() {
                          @Override
-                         public void onComplete(SetOfEclipseProjects result) {
-                             handler.onComplete((Set<T>) result.getProjects());
+                         public void onComplete(EclipseWorkspace result) {
+                             handler.onComplete((Set<T>) result.getEclipseProjects());
                          }
 
                          @Override
