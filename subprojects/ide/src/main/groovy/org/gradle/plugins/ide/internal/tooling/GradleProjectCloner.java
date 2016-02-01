@@ -16,7 +16,16 @@
 
 package org.gradle.plugins.ide.internal.tooling;
 
+import org.gradle.plugins.ide.internal.tooling.model.LaunchableGradleProjectTask;
+import org.gradle.plugins.ide.internal.tooling.model.LaunchableGradleTask;
+import org.gradle.tooling.internal.gradle.DefaultGradleProject;
+import org.gradle.tooling.model.DomainObjectSet;
+import org.gradle.tooling.model.GradleProject;
+import org.gradle.tooling.model.GradleTask;
 import org.gradle.tooling.provider.model.ToolingModelCloner;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GradleProjectCloner implements ToolingModelCloner {
     @Override
@@ -28,4 +37,44 @@ public class GradleProjectCloner implements ToolingModelCloner {
     public Object cloneModel(String modelName, Object source) {
         return null;
     }
+
+    private DefaultGradleProject<LaunchableGradleTask> buildHierarchy(GradleProject source) {
+        List<DefaultGradleProject<LaunchableGradleTask>> children = new ArrayList<DefaultGradleProject<LaunchableGradleTask>>();
+        for (GradleProject child : source.getChildren()) {
+            children.add(buildHierarchy(child));
+        }
+
+        DefaultGradleProject<LaunchableGradleTask> gradleProject = new DefaultGradleProject<LaunchableGradleTask>()
+            .setPath(source.getPath())
+            .setName(source.getName())
+            .setDescription(source.getDescription())
+            .setBuildDirectory(source.getBuildDirectory())
+            .setProjectDirectory(source.getProjectDirectory())
+            .setChildren(children);
+
+        gradleProject.getBuildScript().setSourceFile(source.getBuildScript().getSourceFile());
+        gradleProject.setTasks(cloneTasks(gradleProject, source.getTasks()));
+
+        for (DefaultGradleProject child : children) {
+            child.setParent(gradleProject);
+        }
+
+        return gradleProject;
+    }
+
+    private static List<LaunchableGradleTask> cloneTasks(DefaultGradleProject owner, DomainObjectSet<? extends GradleTask> sourceTasks) {
+        List<LaunchableGradleTask> tasks = new ArrayList<LaunchableGradleTask>();
+        for (GradleTask sourceTask : sourceTasks) {
+            LaunchableGradleProjectTask target = new LaunchableGradleProjectTask();
+            target.setProject(owner);
+            target.setPath(sourceTask.getPath())
+                .setName(sourceTask.getName())
+                .setGroup(sourceTask.getGroup())
+                .setDisplayName(sourceTask.getDisplayName())
+                .setDescription(sourceTask.getDescription())
+                .setPublic(sourceTask.isPublic());
+        }
+        return tasks;
+    }
+
 }
