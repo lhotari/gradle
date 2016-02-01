@@ -16,22 +16,18 @@
 
 package org.gradle.tooling.provider.model.internal;
 
+import com.google.common.collect.ImmutableList;
 import org.gradle.tooling.provider.model.ToolingModelCloner;
 import org.gradle.tooling.provider.model.ToolingModelClonerRegistry;
 import org.gradle.tooling.provider.model.UnknownModelException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultToolingModelClonerRegistry implements ToolingModelClonerRegistry {
-    private final List<ToolingModelCloner> cloners = new ArrayList<ToolingModelCloner>();
+    private final List<ToolingModelCloner> cloners;
 
-    public DefaultToolingModelClonerRegistry() {
-
-    }
-
-    public void register(ToolingModelCloner builder) {
-        cloners.add(builder);
+    public DefaultToolingModelClonerRegistry(List<ToolingModelCloner> cloners) {
+        this.cloners = ImmutableList.copyOf(cloners);
     }
 
     public ToolingModelCloner getCloner(String modelName) throws UnsupportedOperationException {

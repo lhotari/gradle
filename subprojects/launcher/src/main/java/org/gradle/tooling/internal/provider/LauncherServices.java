@@ -28,6 +28,9 @@ import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.scopes.PluginServiceRegistry;
 import org.gradle.launcher.exec.*;
 import org.gradle.logging.StyledTextOutputFactory;
+import org.gradle.tooling.provider.model.ToolingModelCloner;
+import org.gradle.tooling.provider.model.ToolingModelClonerRegistry;
+import org.gradle.tooling.provider.model.internal.DefaultToolingModelClonerRegistry;
 
 import java.util.List;
 
@@ -87,6 +90,10 @@ public class LauncherServices implements PluginServiceRegistry {
                     classLoaderCache,
                     classLoaderFactory)
             );
+        }
+
+        ToolingModelClonerRegistry createToolingModelClonerRegistry(ServiceRegistry buildSessionScopeServices) {
+            return new DefaultToolingModelClonerRegistry(buildSessionScopeServices.getAll(ToolingModelCloner.class));
         }
     }
 }

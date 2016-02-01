@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package org.gradle.tooling.provider.model;
+package org.gradle.plugins.ide.internal.tooling;
 
-import org.gradle.api.Incubating;
+import org.gradle.tooling.provider.model.ToolingModelCloner;
 
-/**
- * A registry of tooling model cloner.
- */
-@Incubating
-public interface ToolingModelClonerRegistry {
-    ToolingModelCloner getCloner(String modelName) throws UnknownModelException;
+public class GradleProjectCloner implements ToolingModelCloner {
+    @Override
+    public boolean canClone(String modelName) {
+        return modelName.equals("org.gradle.tooling.model.GradleProject");
+    }
+
+    @Override
+    public Object cloneModel(String modelName, Object source) {
+        return null;
+    }
 }
