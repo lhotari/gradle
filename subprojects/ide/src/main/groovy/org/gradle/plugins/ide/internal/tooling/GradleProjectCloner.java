@@ -35,7 +35,7 @@ public class GradleProjectCloner implements ToolingModelCloner {
 
     @Override
     public Object cloneModel(String modelName, Object source) {
-        return null;
+        return buildHierarchy((GradleProject) source);
     }
 
     private DefaultGradleProject<LaunchableGradleTask> buildHierarchy(GradleProject source) {
