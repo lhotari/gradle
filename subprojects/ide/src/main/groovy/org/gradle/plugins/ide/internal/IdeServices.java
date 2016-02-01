@@ -53,7 +53,7 @@ public class IdeServices implements PluginServiceRegistry {
             return new EclipseModelCloner(gradleProjectCloner);
         }
 
-        ToolingModelCloner createGradleProjectCloner() {
+        GradleProjectCloner createGradleProjectCloner() {
             return new GradleProjectCloner();
         }
     }

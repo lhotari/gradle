@@ -43,8 +43,8 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
     @Override
     public Object execute(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, ServiceRegistry contextServices) {
         if (action instanceof BuildModelAction) {
-            String modelName = ((BuildModelAction) action).getModelName();
-            Set<EclipseProject> projects = getEclipseProjects(actionParameters, modelName, contextServices.get(ToolingModelClonerRegistry.class));
+            ToolingModelCloner cloner = contextServices.get(ToolingModelClonerRegistry.class).getCloner(EclipseProject.class.getName());
+            Set<EclipseProject> projects = getEclipseProjects(actionParameters, cloner);
             EclipseWorkspace workspace = new DefaultEclipseWorkspace(projects);
             PayloadSerializer payloadSerializer = contextServices.get(PayloadSerializer.class);
             return new BuildActionResult(payloadSerializer.serialize(workspace), null);
@@ -53,13 +53,11 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
         }
     }
 
-    private Set<EclipseProject> getEclipseProjects(CompositeBuildActionParameters actionParameters, String modelName, ToolingModelClonerRegistry toolingModelCloneRegistry) {
-        ToolingModelCloner cloner = toolingModelCloneRegistry.getCloner(modelName);
-
+    private Set<EclipseProject> getEclipseProjects(CompositeBuildActionParameters actionParameters, ToolingModelCloner cloner) {
         Set<EclipseProject> result = new LinkedHashSet<EclipseProject>();
         for (File projectRoot : actionParameters.getCompositeParameters().getBuildRoots()) {
             ProjectConnection projectConnection = GradleConnector.newConnector().forProjectDirectory(projectRoot).connect();
-            result.add((EclipseProject) cloner.cloneModel(modelName, projectConnection.getModel(EclipseProject.class)));
+            result.add((EclipseProject) cloner.cloneModel(EclipseProject.class.getName(), projectConnection.getModel(EclipseProject.class)));
             projectConnection.close();
         }
         return result;
