@@ -75,5 +75,12 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
         then:
         eclipseProjects != null
         eclipseProjects.size() == 2
+
+        eclipseProjects.find {
+            it.name == 'project1'
+        }.projectDirectory.absolutePath == projectDir1.absolutePath
+        eclipseProjects.find {
+            it.name == 'project2'
+        }.projectDirectory.absolutePath == projectDir2.absolutePath
     }
 }
