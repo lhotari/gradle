@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package org.gradle.tooling.model.eclipse;
+package org.gradle.tooling.internal.protocol.eclipse;
 
+import java.io.Serializable;
 import java.util.Set;
 
-public interface SetOfEclipseProjects {
+public class DefaultSetOfEclipseProjects implements Serializable {
+    private final Set<?> eclipseProjects;
 
-    /**
-     * A flattened set of all projects in the Eclipse workspace.
-     * These project models are fully configured, and may be expensive to calculate.
-     * Note that not all projects necessarily share the same root.
-     */
-    Set<EclipseProject> getEclipseProjects();
+    public DefaultSetOfEclipseProjects(Set<?> eclipseProjects) {
+        this.eclipseProjects = eclipseProjects;
+    }
+
+    public Set<?> getEclipseProjects() {
+        return eclipseProjects;
+    }
 }

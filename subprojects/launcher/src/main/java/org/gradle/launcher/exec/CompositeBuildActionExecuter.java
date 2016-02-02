@@ -24,7 +24,7 @@ import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
-import org.gradle.tooling.model.eclipse.DefaultSetOfEclipseProjects;
+import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 import org.gradle.tooling.provider.model.ToolingModelCloner;
 import org.gradle.tooling.provider.model.ToolingModelClonerRegistry;

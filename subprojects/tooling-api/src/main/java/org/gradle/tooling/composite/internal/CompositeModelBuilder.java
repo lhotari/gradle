@@ -21,7 +21,7 @@ import org.gradle.tooling.events.OperationType;
 import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
 import org.gradle.tooling.internal.consumer.DefaultModelBuilder;
 import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
-import org.gradle.tooling.model.eclipse.SetOfEclipseProjects;
+import org.gradle.tooling.internal.protocol.eclipse.SetOfEclipseProjects;
 
 import java.io.File;
 import java.io.InputStream;
