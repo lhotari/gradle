@@ -21,13 +21,11 @@ import org.gradle.internal.invocation.BuildAction;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
+import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
-import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.model.eclipse.EclipseProject;
-import org.gradle.tooling.provider.model.ToolingModelCloner;
-import org.gradle.tooling.provider.model.ToolingModelClonerRegistry;
 
 import java.io.File;
 import java.util.LinkedHashSet;
@@ -42,8 +40,7 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
     @Override
     public Object execute(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, ServiceRegistry contextServices) {
         if (action instanceof BuildModelAction) {
-            ToolingModelCloner cloner = contextServices.get(ToolingModelClonerRegistry.class).getCloner(EclipseProject.class.getName());
-            Set<Object> projects = getEclipseProjects(actionParameters, cloner);
+            Set<Object> projects = getEclipseProjects(actionParameters);
             DefaultSetOfEclipseProjects workspace = new DefaultSetOfEclipseProjects(projects);
             PayloadSerializer payloadSerializer = contextServices.get(PayloadSerializer.class);
             return new BuildActionResult(payloadSerializer.serialize(workspace), null);
@@ -52,11 +49,11 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
         }
     }
 
-    private Set<Object> getEclipseProjects(CompositeBuildActionParameters actionParameters, ToolingModelCloner cloner) {
+    private Set<Object> getEclipseProjects(CompositeBuildActionParameters actionParameters) {
         Set<Object> result = new LinkedHashSet<Object>();
         for (File projectRoot : actionParameters.getCompositeParameters().getBuildRoots()) {
             ProjectConnection projectConnection = GradleConnector.newConnector().forProjectDirectory(projectRoot).connect();
-            result.add(cloner.cloneModel(EclipseProject.class.getName(), projectConnection.getModel(EclipseProject.class)));
+            result.add(projectConnection.getModel(EclipseProject.class));
             projectConnection.close();
         }
         return result;
