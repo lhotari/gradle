@@ -19,10 +19,10 @@ package org.gradle.tooling.model.eclipse;
 import java.io.Serializable;
 import java.util.Set;
 
-public class DefaultEclipseWorkspace implements Serializable {
+public class DefaultSetOfEclipseProjects implements Serializable {
     private final Set<?> eclipseProjects;
 
-    public DefaultEclipseWorkspace(Set<?> eclipseProjects) {
+    public DefaultSetOfEclipseProjects(Set<?> eclipseProjects) {
         this.eclipseProjects = eclipseProjects;
     }
 

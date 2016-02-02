@@ -18,7 +18,7 @@ package org.gradle.tooling.model.eclipse;
 
 import java.util.Set;
 
-public interface EclipseWorkspace {
+public interface SetOfEclipseProjects {
 
     /**
      * A flattened set of all projects in the Eclipse workspace.

@@ -24,7 +24,7 @@ import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
-import org.gradle.tooling.model.eclipse.DefaultEclipseWorkspace;
+import org.gradle.tooling.model.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 import org.gradle.tooling.provider.model.ToolingModelCloner;
 import org.gradle.tooling.provider.model.ToolingModelClonerRegistry;
@@ -44,7 +44,7 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
         if (action instanceof BuildModelAction) {
             ToolingModelCloner cloner = contextServices.get(ToolingModelClonerRegistry.class).getCloner(EclipseProject.class.getName());
             Set<Object> projects = getEclipseProjects(actionParameters, cloner);
-            DefaultEclipseWorkspace workspace = new DefaultEclipseWorkspace(projects);
+            DefaultSetOfEclipseProjects workspace = new DefaultSetOfEclipseProjects(projects);
             PayloadSerializer payloadSerializer = contextServices.get(PayloadSerializer.class);
             return new BuildActionResult(payloadSerializer.serialize(workspace), null);
         } else {
