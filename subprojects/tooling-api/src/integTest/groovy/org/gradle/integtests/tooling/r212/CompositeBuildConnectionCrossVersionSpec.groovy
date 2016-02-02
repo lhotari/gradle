@@ -20,6 +20,7 @@ import org.gradle.integtests.tooling.fixture.TargetGradleVersion
 import org.gradle.integtests.tooling.fixture.ToolingApiSpecification
 import org.gradle.integtests.tooling.fixture.ToolingApiVersion
 import org.gradle.tooling.model.eclipse.EclipseProject
+import spock.lang.Ignore
 import spock.lang.IgnoreRest
 
 @ToolingApiVersion("current")
@@ -51,6 +52,22 @@ class CompositeBuildConnectionCrossVersionSpec extends ToolingApiSpecification {
         then:
         eclipseProjects != null
         eclipseProjects.size() == 1
+    }
+
+    @Ignore
+    def "using project connection"() {
+        given:
+        buildFile << "apply plugin: 'java'"
+
+
+        when:
+        def eclipseProject = withConnection { connection ->
+            connection.getModel(EclipseProject)
+        }
+
+        then:
+        eclipseProject != null
+        eclipseProject.name != null
     }
 
     @IgnoreRest
