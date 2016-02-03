@@ -162,4 +162,6 @@ public interface ProviderOperationParameters {
      * @since 2.8-rc-1
      */
     List<File> getInjectedPluginClasspath(List<File> defaultClasspath);
+
+    List<File> getParticipantRootDirs();
 }
