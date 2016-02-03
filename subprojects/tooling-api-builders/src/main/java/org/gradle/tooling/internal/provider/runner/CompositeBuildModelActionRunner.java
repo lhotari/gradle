@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.gradle.launcher.exec;
+package org.gradle.tooling.internal.provider.runner;
 
-import org.gradle.initialization.BuildRequestContext;
 import org.gradle.internal.invocation.BuildAction;
-import org.gradle.internal.service.ServiceRegistry;
+import org.gradle.launcher.exec.composite.CompositeBuildActionRunner;
+import org.gradle.launcher.exec.composite.CompositeBuildController;
+import org.gradle.launcher.exec.CompositeBuildActionParameters;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.internal.protocol.GradleParticipantBuild;
@@ -31,22 +32,17 @@ import org.gradle.tooling.model.eclipse.EclipseProject;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class CompositeBuildActionExecuter implements BuildActionExecuter<CompositeBuildActionParameters> {
-
-    public CompositeBuildActionExecuter() {
-
-    }
-
+public class CompositeBuildModelActionRunner implements CompositeBuildActionRunner {
     @Override
-    public Object execute(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, ServiceRegistry contextServices) {
-        if (action instanceof BuildModelAction) {
-            Set<Object> projects = getEclipseProjects(actionParameters);
-            DefaultSetOfEclipseProjects workspace = new DefaultSetOfEclipseProjects(projects);
-            PayloadSerializer payloadSerializer = contextServices.get(PayloadSerializer.class);
-            return new BuildActionResult(payloadSerializer.serialize(workspace), null);
-        } else {
-            throw new RuntimeException("Not implemented yet.");
+    public void run(BuildAction action, CompositeBuildActionParameters actionParameters, CompositeBuildController buildController) {
+        if (!(action instanceof BuildModelAction)) {
+            return;
         }
+
+        Set<Object> projects = getEclipseProjects(actionParameters);
+        DefaultSetOfEclipseProjects workspace = new DefaultSetOfEclipseProjects(projects);
+        PayloadSerializer payloadSerializer = buildController.getBuildScopeServices().get(PayloadSerializer.class);
+        buildController.setResult(new BuildActionResult(payloadSerializer.serialize(workspace), null));
     }
 
     private Set<Object> getEclipseProjects(CompositeBuildActionParameters actionParameters) {

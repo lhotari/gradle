@@ -27,6 +27,7 @@ import org.gradle.internal.service.ServiceRegistration;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.scopes.PluginServiceRegistry;
 import org.gradle.launcher.exec.*;
+import org.gradle.launcher.exec.composite.CompositeBuildActionRunner;
 import org.gradle.logging.StyledTextOutputFactory;
 
 import java.util.List;
@@ -51,10 +52,11 @@ public class LauncherServices implements PluginServiceRegistry {
     }
 
     static class ToolingGlobalScopeServices {
-        BuildExecuter createBuildExecuter(GradleLauncherFactory gradleLauncherFactory, ServiceRegistry globalServices, ListenerManager listenerManager, FileWatcherFactory fileWatcherFactory, ExecutorFactory executorFactory, StyledTextOutputFactory styledTextOutputFactory) {
+        BuildExecuter createBuildExecuter(GradleLauncherFactory gradleLauncherFactory, ServiceRegistry globalServices, ListenerManager listenerManager, FileWatcherFactory fileWatcherFactory, ExecutorFactory executorFactory, StyledTextOutputFactory styledTextOutputFactory,
+                                          CompositeBuildActionRunner compositeBuildActionRunner) {
             List<BuildActionRunner> buildActionRunners = globalServices.getAll(BuildActionRunner.class);
             BuildActionExecuter<BuildActionParameters> delegate = new InProcessBuildActionExecuter(gradleLauncherFactory, new ChainingBuildActionRunner(buildActionRunners));
-            BuildActionExecuter<CompositeBuildActionParameters> compositeDelegate = new CompositeBuildActionExecuter();
+            BuildActionExecuter<CompositeBuildActionParameters> compositeDelegate = new CompositeBuildActionExecuter(compositeBuildActionRunner);
             return new ContinuousBuildActionExecuter(delegate, fileWatcherFactory, listenerManager, styledTextOutputFactory, executorFactory, compositeDelegate);
         }
 
