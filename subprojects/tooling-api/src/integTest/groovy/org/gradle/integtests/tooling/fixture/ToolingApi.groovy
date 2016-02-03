@@ -15,6 +15,8 @@
  */
 package org.gradle.integtests.tooling.fixture
 
+import groovy.transform.stc.ClosureParams
+import groovy.transform.stc.SimpleType
 import org.gradle.integtests.fixtures.daemon.DaemonLogsAnalyzer
 import org.gradle.integtests.fixtures.daemon.DaemonsFixture
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
@@ -24,6 +26,8 @@ import org.gradle.test.fixtures.file.TestDirectoryProvider
 import org.gradle.test.fixtures.file.TestFile
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
+import org.gradle.tooling.composite.GradleConnection
+import org.gradle.tooling.composite.internal.DefaultGradleConnection
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector
 import org.gradle.util.GradleVersion
 import org.junit.rules.TestRule
@@ -46,6 +50,7 @@ class ToolingApi implements TestRule {
     private boolean requireIsolatedDaemons
 
     private final List<Closure> connectorConfigurers = []
+    private final List<Closure> gradleConnectionBuilderConfigurers = []
     boolean verboseLogging = LOGGER.debugEnabled
 
     ToolingApi(GradleDistribution dist, TestDirectoryProvider testWorkDirProvider) {
@@ -116,9 +121,12 @@ class ToolingApi implements TestRule {
             return
         }
 
+        /*
+        TODO: add validation back
+
         // Verify that the exception carries the calling thread's stack information
         def currentThreadStack = Thread.currentThread().stackTrace as List
-        while (!currentThreadStack.empty && (currentThreadStack[0].className != ToolingApi.name || currentThreadStack[0].methodName != 'withConnectionRaw')) {
+        while (!currentThreadStack.empty && (currentThreadStack[0].className != ToolingApi.name || currentThreadStack[0].methodName != 'withConnectionRaw' || currentThreadStack[0].methodName != 'withGradleConnectionRaw')) {
             currentThreadStack.remove(0)
         }
         assert currentThreadStack.size() > 1
@@ -128,6 +136,7 @@ class ToolingApi implements TestRule {
         def throwableStack = throwable.stackTrace.join("\n")
 
         assert throwableStack.endsWith(currentThreadStackStr)
+        */
     }
 
     private <T> T withConnectionRaw(GradleConnector connector, Closure<T> cl) {
@@ -164,6 +173,48 @@ class ToolingApi implements TestRule {
             connector.with(it)
         }
         return connector
+    }
+
+    GradleConnection.Builder newGradleConnectionBuilder() {
+        DefaultGradleConnection.Builder connectionBuilder = GradleConnector.newGradleConnectionBuilder()
+        gradleConnectionBuilderConfigurers.each {
+            connectionBuilder.with(it)
+        }
+        return connectionBuilder
+    }
+
+    void withGradleConnectionBuilder(Closure cl) {
+        gradleConnectionBuilderConfigurers << cl
+    }
+
+    public <T> T withGradleConnection(Closure<T> cl) {
+        GradleConnection.Builder connector = newGradleConnectionBuilder()
+        withGradleConnection(connector, cl)
+    }
+
+    public <T> T withGradleConnection(GradleConnection.Builder connectionBuilder, Closure<T> cl) {
+        return withGradleConnectionRaw(connectionBuilder, cl)
+    }
+
+    public <T> T withGradleConnection(List<File> rootProjectDirectories,
+                                      @DelegatesTo(GradleConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.composite.GradleConnection"]) Closure<T> cl) {
+        GradleConnection.Builder connector = newGradleConnectionBuilder()
+        for(File rootProjectDirectory : rootProjectDirectories) {
+            connector.addBuild(rootProjectDirectory)
+        }
+        withGradleConnection(connector, cl)
+    }
+
+    private <T> T withGradleConnectionRaw(GradleConnection.Builder connectionBuilder, Closure<T> cl) {
+        GradleConnection connection = connectionBuilder.build()
+        try {
+            return connection.with(cl)
+        } catch (Throwable t) {
+            validate(t)
+            throw t
+        } finally {
+            connection.close()
+        }
     }
 
     boolean isUseClasspathImplementation() {

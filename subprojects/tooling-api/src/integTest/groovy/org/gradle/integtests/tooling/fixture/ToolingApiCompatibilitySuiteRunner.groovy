@@ -146,6 +146,7 @@ class ToolingApiCompatibilitySuiteRunner extends AbstractCompatibilityTestRunner
             sharedClassLoader.allowPackage('org.gradle.play.integtest.fixtures')
             sharedClassLoader.allowPackage('org.gradle.test.fixtures')
             sharedClassLoader.allowPackage('org.gradle.launcher.daemon.testing')
+            sharedClassLoader.allowPackage('org.gradle.tooling')
             sharedClassLoader.allowClass(OperatingSystem)
             sharedClassLoader.allowClass(Requires)
             sharedClassLoader.allowClass(TestPrecondition)
