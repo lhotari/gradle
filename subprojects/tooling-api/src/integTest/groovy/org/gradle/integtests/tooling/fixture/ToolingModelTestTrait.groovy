@@ -25,9 +25,6 @@ import org.gradle.util.GradleVersion
 
 @CompileStatic
 trait ToolingModelTestTrait {
-    // Only check serialization with 2.12+ since Tooling Model proxy serialization is broken in previous TAPI clients
-    private boolean shouldCheckSerialization = GradleVersion.current().getBaseVersion() >= GradleVersion.version("2.12")
-
     abstract <T> T withConnection(@DelegatesTo(ProjectConnection) @ClosureParams(value = SimpleType, options = ["org.gradle.tooling.ProjectConnection"]) Closure<T> cl);
 
     EclipseProject loadEclipseProjectModel() {
@@ -41,7 +38,8 @@ trait ToolingModelTestTrait {
     }
 
     void assertToolingModelIsSerializable(object) {
-        if (shouldCheckSerialization) {
+        // Only check serialization with 2.12+ since Tooling Model proxy serialization is broken in previous TAPI clients
+        if (GradleVersion.current().getBaseVersion() >= GradleVersion.version("2.12")) {
             // only check that no exceptions are thrown during serialization
             // cross-version deserialization would require using PayloadSerializer
             ObjectOutputStream oos = new ObjectOutputStream(new NullOutputStream());
