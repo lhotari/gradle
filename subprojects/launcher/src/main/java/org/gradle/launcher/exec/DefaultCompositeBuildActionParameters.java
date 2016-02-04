@@ -38,9 +38,9 @@ public class DefaultCompositeBuildActionParameters extends DefaultBuildActionPar
 
     @Override
     public String toString() {
-        return "DefaultCompositeBuildActionParameters{" +
-            "super=" + super.toString() +
-            "compositeParameters=" + compositeParameters +
-            '}';
+        return "DefaultCompositeBuildActionParameters{"
+            + "super=" + super.toString()
+            + "compositeParameters=" + compositeParameters
+            + '}';
     }
 }

@@ -17,11 +17,14 @@
 package org.gradle.tooling.composite.internal;
 
 import com.google.common.collect.Sets;
-import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.tooling.GradleConnectionException;
 import org.gradle.tooling.ResultHandler;
 import org.gradle.tooling.composite.CompositeModelBuilder;
 import org.gradle.tooling.composite.GradleConnection;
+import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
+import org.gradle.tooling.internal.consumer.DefaultCompositeConnectionParameters;
+import org.gradle.tooling.internal.consumer.DistributionFactory;
+import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 
 import java.io.File;
@@ -30,9 +33,15 @@ import java.util.Set;
 
 public class DefaultGradleConnection implements GradleConnection {
     public static final class Builder implements GradleConnection.Builder {
-
-        private File gradleUserHomeDir;
         private final Set<GradleParticipantBuild> participants = Sets.newHashSet();
+        private final GradleConnectionFactory gradleConnectionFactory;
+        private final DistributionFactory distributionFactory;
+        private File gradleUserHomeDir;
+
+        public Builder(GradleConnectionFactory gradleConnectionFactory, DistributionFactory distributionFactory) {
+            this.gradleConnectionFactory = gradleConnectionFactory;
+            this.distributionFactory = distributionFactory;
+        }
 
         @Override
         public GradleConnection.Builder useGradleUserHomeDir(File gradleUserHomeDir) {
@@ -42,25 +51,25 @@ public class DefaultGradleConnection implements GradleConnection {
 
         @Override
         public GradleConnection.Builder addBuild(File rootProjectDirectory) {
-            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory));
+            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory, gradleUserHomeDir));
             return this;
         }
 
         @Override
         public GradleConnection.Builder addBuild(File rootProjectDirectory, File gradleHome) {
-            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory, gradleHome));
+            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory, gradleUserHomeDir, gradleHome));
             return this;
         }
 
         @Override
         public GradleConnection.Builder addBuild(File rootProjectDirectory, String gradleVersion) {
-            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory, gradleVersion));
+            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory, gradleUserHomeDir, gradleVersion));
             return this;
         }
 
         @Override
         public GradleConnection.Builder addBuild(File rootProjectDirectory, URI gradleDistribution) {
-            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory, gradleDistribution));
+            participants.add(new DefaultGradleParticipantBuild(rootProjectDirectory, gradleUserHomeDir, gradleDistribution));
             return this;
         }
 
@@ -69,22 +78,22 @@ public class DefaultGradleConnection implements GradleConnection {
             if (participants.isEmpty()) {
                 throw new IllegalStateException("At least one participant must be specified before creating a connection.");
             }
+            // TODO:
 
-            // Set Gradle user home for each participant build
-            for (GradleParticipantBuild participant : participants) {
-                participant.setGradleUserHomeDir(gradleUserHomeDir);
-            }
+            DefaultCompositeConnectionParameters.Builder compositeConnectionParametersBuilder = DefaultCompositeConnectionParameters.builder();
+            compositeConnectionParametersBuilder.setBuilds(participants);
 
-            return new DefaultGradleConnection(gradleUserHomeDir, participants);
+            DefaultCompositeConnectionParameters connectionParameters = compositeConnectionParametersBuilder.build();
+            return gradleConnectionFactory.create(distributionFactory.getClasspathDistribution(), connectionParameters);
         }
     }
 
-    private File gradleUserHomeDir;
-    private final Set<GradleParticipantBuild> participants;
+    private final AsyncConsumerActionExecutor asyncConnection;
+    private final CompositeConnectionParameters parameters;
 
-    private DefaultGradleConnection(File gradleUserHomeDir, Set<GradleParticipantBuild> participants) {
-        this.gradleUserHomeDir = gradleUserHomeDir;
-        this.participants = participants;
+    DefaultGradleConnection(AsyncConsumerActionExecutor asyncConnection, CompositeConnectionParameters parameters) {
+        this.asyncConnection = asyncConnection;
+        this.parameters = parameters;
     }
 
     @Override
@@ -100,12 +109,7 @@ public class DefaultGradleConnection implements GradleConnection {
     @Override
     public <T> CompositeModelBuilder<T> models(Class<T> modelType) {
         checkSupportedModelType(modelType);
-        checkValidComposite();
-        return createCompositeModelBuilder(modelType);
-    }
-
-    private <T> CompositeModelBuilder<T> createCompositeModelBuilder(Class<T> modelType) {
-        return new DefaultCompositeModelBuilder<T>(modelType, participants);
+        return new DefaultCompositeModelBuilder<T>(modelType, asyncConnection, parameters);
     }
 
     private <T> void checkSupportedModelType(Class<T> modelType) {
@@ -119,54 +123,8 @@ public class DefaultGradleConnection implements GradleConnection {
         }
     }
 
-    private void checkValidComposite() {
-        // TODO: Should we bother doing this validation all client-side?
-        /*
-        Set<BuildEnvironment> buildEnvironments = createCompositeModelBuilder(BuildEnvironment.class).get();
-
-        final VersionNumber minimumVersion = VersionNumber.parse("1.0");
-        CollectionUtils.every(buildEnvironments, new Spec<BuildEnvironment>() {
-            @Override
-            public boolean isSatisfiedBy(BuildEnvironment buildEnvironment) {
-                // TODO: Need project name information
-                String projectName = "unknown project";
-                VersionNumber participantVersion = VersionNumber.parse(buildEnvironment.getGradle().getGradleVersion());
-                if (participantVersion.compareTo(minimumVersion) >= 0) {
-                    return true;
-                }
-                throw new IllegalArgumentException(String.format("'%s' is using Gradle %s.  This does not meet the minimum Gradle version (%s) required for composite builds.", projectName, participantVersion, minimumVersion));
-            }
-        });
-        */
-
-        // TODO: Need to skip checking root projects and their subprojects
-        /*
-        Set<GradleProject> gradleProjects = createCompositeModelBuilder(GradleProject.class).get();
-        List<String> projectDirectories = CollectionUtils.collect((Iterable<GradleProject>)gradleProjects, new Transformer<String, GradleProject>() {
-            @Override
-            public String transform(GradleProject gradleProject) {
-                return gradleProject.getProjectDirectory().getAbsolutePath();
-            }
-        });
-
-        for (int i=0; i<projectDirectories.size(); i++) {
-            String first = projectDirectories.get(i);
-            for (int j=i; j<projectDirectories.size(); j++) {
-                String second = projectDirectories.get(j);
-                try {
-                    if (FilenameUtils.directoryContains(first, second) ||
-                        FilenameUtils.directoryContains(second, first)) {
-                        throw new IllegalArgumentException(String.format("%s and %s have overlapping project directories. Composite builds must not overlap.", first, second));
-                    }
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
-        }*/
-    }
-
     @Override
     public void close() {
-        CompositeStoppable.stoppable(participants).stop();
+        asyncConnection.stop();
     }
 }
