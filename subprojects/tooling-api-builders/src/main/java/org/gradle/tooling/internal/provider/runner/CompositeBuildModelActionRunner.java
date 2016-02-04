@@ -17,12 +17,12 @@
 package org.gradle.tooling.internal.provider.runner;
 
 import org.gradle.internal.invocation.BuildAction;
-import org.gradle.launcher.exec.composite.CompositeBuildActionRunner;
-import org.gradle.launcher.exec.composite.CompositeBuildController;
+import org.gradle.launcher.exec.CompositeBuildActionRunner;
+import org.gradle.launcher.exec.CompositeBuildController;
 import org.gradle.launcher.exec.CompositeBuildActionParameters;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
-import org.gradle.tooling.internal.protocol.GradleParticipantBuild;
+import org.gradle.tooling.internal.provider.connection.GradleParticipantBuild;
 import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;

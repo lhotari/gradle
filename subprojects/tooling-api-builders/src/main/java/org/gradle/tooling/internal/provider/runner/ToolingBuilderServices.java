@@ -17,7 +17,7 @@
 package org.gradle.tooling.internal.provider.runner;
 
 import org.gradle.internal.invocation.BuildActionRunner;
-import org.gradle.launcher.exec.composite.CompositeBuildActionRunner;
+import org.gradle.launcher.exec.CompositeBuildActionRunner;
 import org.gradle.internal.service.ServiceRegistration;
 import org.gradle.internal.service.scopes.PluginServiceRegistry;
 import org.gradle.launcher.exec.ChainingBuildActionRunner;

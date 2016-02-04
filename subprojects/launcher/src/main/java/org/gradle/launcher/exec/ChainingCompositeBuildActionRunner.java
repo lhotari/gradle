@@ -17,8 +17,6 @@
 package org.gradle.launcher.exec;
 
 import org.gradle.internal.invocation.BuildAction;
-import org.gradle.launcher.exec.composite.CompositeBuildActionRunner;
-import org.gradle.launcher.exec.composite.CompositeBuildController;
 
 import java.util.List;
 

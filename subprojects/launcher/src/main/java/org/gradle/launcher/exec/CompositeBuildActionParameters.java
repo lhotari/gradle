@@ -16,7 +16,7 @@
 
 package org.gradle.launcher.exec;
 
-import org.gradle.launcher.composite.CompositeParameters;
+import org.gradle.tooling.internal.provider.connection.CompositeParameters;
 
 public interface CompositeBuildActionParameters extends BuildActionParameters {
     CompositeParameters getCompositeParameters();

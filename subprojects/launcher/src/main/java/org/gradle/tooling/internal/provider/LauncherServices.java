@@ -27,7 +27,6 @@ import org.gradle.internal.service.ServiceRegistration;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.scopes.PluginServiceRegistry;
 import org.gradle.launcher.exec.*;
-import org.gradle.launcher.exec.composite.CompositeBuildActionRunner;
 import org.gradle.logging.StyledTextOutputFactory;
 
 import java.util.List;
