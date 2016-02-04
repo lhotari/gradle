@@ -32,8 +32,6 @@ public class ModelClassLoaderFactory implements PayloadClassLoaderFactory {
         ClassLoader parent = getClass().getClassLoader();
         FilteringClassLoader filter = new FilteringClassLoader(parent);
         filter.allowPackage("org.gradle.tooling.internal.protocol");
-        filter.allowPackage("org.gradle.tooling.internal.provider.connection");
-        filter.allowPackage("org.gradle.launcher.exec");
         filter.allowClass(TaskExecutionRequest.class);
         rootClassLoader = filter;
     }
