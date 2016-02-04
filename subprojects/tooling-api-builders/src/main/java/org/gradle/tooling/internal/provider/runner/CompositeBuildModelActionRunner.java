@@ -17,16 +17,16 @@
 package org.gradle.tooling.internal.provider.runner;
 
 import org.gradle.internal.invocation.BuildAction;
+import org.gradle.launcher.exec.CompositeBuildActionParameters;
 import org.gradle.launcher.exec.CompositeBuildActionRunner;
 import org.gradle.launcher.exec.CompositeBuildController;
-import org.gradle.launcher.exec.CompositeBuildActionParameters;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
-import org.gradle.tooling.internal.provider.connection.GradleParticipantBuild;
 import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
+import org.gradle.tooling.internal.provider.connection.GradleParticipantBuild;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 
 import java.util.LinkedHashSet;
@@ -50,7 +50,7 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
         for (GradleParticipantBuild build : actionParameters.getCompositeParameters().getBuilds()) {
             ProjectConnection projectConnection = connect(build);
             try {
-                result.add(projectConnection.getModel(EclipseProject.class));
+                result.add(projectConnection.model(EclipseProject.class).withArguments("--no-search-upward").get());
             } finally {
                 projectConnection.close();
             }
@@ -59,7 +59,9 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
     }
 
     private ProjectConnection connect(GradleParticipantBuild build) {
-        return configureDistribution(GradleConnector.newConnector().forProjectDirectory(build.getProjectDir()), build).connect();
+        GradleConnector connector = GradleConnector.newConnector().forProjectDirectory(build.getProjectDir());
+        configureDistribution(connector, build);
+        return connector.connect();
     }
 
     private GradleConnector configureDistribution(GradleConnector connector, GradleParticipantBuild build) {
