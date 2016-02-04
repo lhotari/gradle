@@ -16,13 +16,17 @@
 
 package org.gradle.tooling.composite.internal;
 
-import org.gradle.internal.concurrent.Stoppable;
-import org.gradle.tooling.ProjectConnection;
-
 import java.io.File;
+import java.net.URI;
 
-public interface GradleParticipantBuild extends Stoppable {
+public interface GradleParticipantBuild {
     File getProjectDir();
-    ProjectConnection getConnection();
+
     String getDisplayName();
+
+    File getGradleHome();
+
+    URI getGradleDistribution();
+
+    String getGradleVersion();
 }

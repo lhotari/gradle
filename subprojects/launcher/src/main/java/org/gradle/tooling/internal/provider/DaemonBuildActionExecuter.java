@@ -30,13 +30,11 @@ import org.gradle.launcher.exec.BuildActionParameters;
 import org.gradle.launcher.exec.DefaultBuildActionParameters;
 import org.gradle.launcher.exec.DefaultCompositeBuildActionParameters;
 import org.gradle.tooling.UnsupportedVersionException;
-import org.gradle.tooling.internal.protocol.BuildExceptionVersion1;
-import org.gradle.tooling.internal.protocol.InternalBuildCancelledException;
-import org.gradle.tooling.internal.protocol.InternalCancellationToken;
-import org.gradle.tooling.internal.protocol.ModelIdentifier;
+import org.gradle.tooling.internal.protocol.*;
 import org.gradle.tooling.internal.provider.connection.ProviderOperationParameters;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -57,9 +55,13 @@ public class DaemonBuildActionExecuter implements BuildActionExecuter<ProviderOp
         ClassPath classPath = DefaultClassPath.of(parameters.getInjectedPluginClasspath(Collections.<File>emptyList()));
 
         BuildActionParameters actionParameters;
-        List<File> compositeParticipants = parameters.getParticipantRootDirs();
+        List<GradleParticipantBuild> compositeParticipants = parameters.getBuilds();
         if (compositeParticipants != null) {
-            CompositeParameters compositeParameters = new CompositeParameters(compositeParticipants);
+            List<GradleParticipantBuild> clonedCompositeParticipants = new ArrayList<GradleParticipantBuild>();
+            for (GradleParticipantBuild build : compositeParticipants) {
+                clonedCompositeParticipants.add(new DefaultGradleParticipantBuild(build));
+            }
+            CompositeParameters compositeParameters = new CompositeParameters(clonedCompositeParticipants);
             actionParameters = new DefaultCompositeBuildActionParameters(daemonParameters.getEffectiveSystemProperties(),
                 System.getenv(), SystemProperties.getInstance().getCurrentDir(), parameters.getBuildLogLevel(), daemonParameters.getDaemonUsage(), continuous, false, classPath, compositeParameters);
         } else {

@@ -17,11 +17,14 @@
 package org.gradle.tooling.composite.internal;
 
 import com.google.common.collect.Sets;
-import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.tooling.GradleConnectionException;
 import org.gradle.tooling.ResultHandler;
 import org.gradle.tooling.composite.CompositeModelBuilder;
 import org.gradle.tooling.composite.GradleConnection;
+import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
+import org.gradle.tooling.internal.consumer.DefaultCompositeConnectionParameters;
+import org.gradle.tooling.internal.consumer.DistributionFactory;
+import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 
 import java.io.File;
@@ -30,9 +33,15 @@ import java.util.Set;
 
 public class DefaultGradleConnection implements GradleConnection {
     public static final class Builder implements GradleConnection.Builder {
-
-        private File gradleUserHomeDir;
         private final Set<GradleParticipantBuild> participants = Sets.newHashSet();
+        private final GradleConnectionFactory gradleConnectionFactory;
+        private final DistributionFactory distributionFactory;
+        private File gradleUserHomeDir;
+
+        public Builder(GradleConnectionFactory gradleConnectionFactory, DistributionFactory distributionFactory) {
+            this.gradleConnectionFactory = gradleConnectionFactory;
+            this.distributionFactory = distributionFactory;
+        }
 
         @Override
         public GradleConnection.Builder useGradleUserHomeDir(File gradleUserHomeDir) {
@@ -69,16 +78,21 @@ public class DefaultGradleConnection implements GradleConnection {
             if (participants.isEmpty()) {
                 throw new IllegalStateException("At least one participant must be specified before creating a connection.");
             }
-            return new DefaultGradleConnection(gradleUserHomeDir, participants);
+
+            DefaultCompositeConnectionParameters.Builder compositeConnectionParametersBuilder = DefaultCompositeConnectionParameters.builder();
+            compositeConnectionParametersBuilder.setBuilds(participants);
+
+            DefaultCompositeConnectionParameters connectionParameters = compositeConnectionParametersBuilder.build();
+            return gradleConnectionFactory.create(distributionFactory.getClasspathDistribution(), connectionParameters);
         }
     }
 
-    private File gradleUserHomeDir;
-    private final Set<GradleParticipantBuild> participants;
+    private final AsyncConsumerActionExecutor asyncConnection;
+    private final CompositeConnectionParameters parameters;
 
-    private DefaultGradleConnection(File gradleUserHomeDir, Set<GradleParticipantBuild> participants) {
-        this.gradleUserHomeDir = gradleUserHomeDir;
-        this.participants = participants;
+    DefaultGradleConnection(AsyncConsumerActionExecutor asyncConnection, CompositeConnectionParameters parameters) {
+        this.asyncConnection = asyncConnection;
+        this.parameters = parameters;
     }
 
     @Override
@@ -94,7 +108,7 @@ public class DefaultGradleConnection implements GradleConnection {
     @Override
     public <T> CompositeModelBuilder<T> models(Class<T> modelType) {
         checkSupportedModelType(modelType);
-        return new DefaultCompositeModelBuilder<T>(modelType, participants);
+        return new DefaultCompositeModelBuilder<T>(modelType, asyncConnection, parameters);
     }
 
     private <T> void checkSupportedModelType(Class<T> modelType) {
@@ -110,6 +124,6 @@ public class DefaultGradleConnection implements GradleConnection {
 
     @Override
     public void close() {
-        CompositeStoppable.stoppable(participants).stop();
+        asyncConnection.stop();
     }
 }

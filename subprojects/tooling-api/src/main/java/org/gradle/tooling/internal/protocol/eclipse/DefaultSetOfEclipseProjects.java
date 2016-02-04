@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.tooling.internal.consumer;
 
-import org.gradle.tooling.composite.internal.GradleParticipantBuild;
+package org.gradle.tooling.internal.protocol.eclipse;
 
-import java.util.List;
+import java.io.Serializable;
+import java.util.Set;
 
-public interface CompositeConnectionParameters extends ConnectionParameters {
-    List<GradleParticipantBuild> getBuilds();
+public class DefaultSetOfEclipseProjects implements Serializable {
+    private final Set<?> eclipseProjects;
+
+    public DefaultSetOfEclipseProjects(Set<?> eclipseProjects) {
+        this.eclipseProjects = eclipseProjects;
+    }
+
+    public Set<?> getEclipseProjects() {
+        return eclipseProjects;
+    }
 }

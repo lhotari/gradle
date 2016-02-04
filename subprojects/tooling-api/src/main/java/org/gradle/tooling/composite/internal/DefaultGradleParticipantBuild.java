@@ -16,17 +16,13 @@
 
 package org.gradle.tooling.composite.internal;
 
-import org.gradle.tooling.GradleConnector;
-import org.gradle.tooling.ProjectConnection;
-
 import java.io.File;
+import java.io.Serializable;
 import java.net.URI;
 
-class DefaultGradleParticipantBuild implements GradleParticipantBuild {
+class DefaultGradleParticipantBuild implements GradleParticipantBuild, Serializable {
     private final File gradleUserHomeDir;
     private final File projectDir;
-    private ProjectConnection projectConnection;
-
     private File gradleHome;
     private URI gradleDistribution;
     private String gradleVersion;
@@ -45,6 +41,7 @@ class DefaultGradleParticipantBuild implements GradleParticipantBuild {
         this(projectDir, gradleUserHomeDir);
         this.gradleVersion = gradleVersion;
     }
+
     DefaultGradleParticipantBuild(File projectDir, File gradleUserHomeDir, URI gradleDistribution) {
         this(projectDir, gradleUserHomeDir);
         this.gradleDistribution = gradleDistribution;
@@ -56,11 +53,8 @@ class DefaultGradleParticipantBuild implements GradleParticipantBuild {
     }
 
     @Override
-    public ProjectConnection getConnection() {
-        if (projectConnection==null) {
-            projectConnection = connect();
-        }
-        return projectConnection;
+    public File getGradleHome() {
+        return gradleHome;
     }
 
     @Override
@@ -68,35 +62,12 @@ class DefaultGradleParticipantBuild implements GradleParticipantBuild {
         return "build " + projectDir.getAbsolutePath();
     }
 
+    public URI getGradleDistribution() {
+        return gradleDistribution;
+    }
+
     @Override
-    public void stop() {
-        if (projectConnection!=null) {
-            projectConnection.close();
-        }
-    }
-
-    private ProjectConnection connect() {
-        return configureDistribution(GradleConnector.newConnector().
-            useGradleUserHomeDir(gradleUserHomeDir).
-            forProjectDirectory(getProjectDir())).
-            connect();
-    }
-
-    private GradleConnector configureDistribution(GradleConnector connector) {
-        if (gradleDistribution==null) {
-            if (gradleHome==null) {
-                if (gradleVersion==null) {
-                    connector.useBuildDistribution();
-                } else {
-                    connector.useGradleVersion(gradleVersion);
-                }
-            } else {
-                connector.useInstallation(gradleHome);
-            }
-        } else {
-            connector.useDistribution(gradleDistribution);
-        }
-
-        return connector;
+    public String getGradleVersion() {
+        return gradleVersion;
     }
 }
