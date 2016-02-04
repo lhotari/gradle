@@ -17,7 +17,7 @@
 package org.gradle.tooling.internal.provider;
 
 import org.gradle.internal.service.ServiceRegistry;
-import org.gradle.launcher.exec.composite.CompositeBuildController;
+import org.gradle.launcher.exec.CompositeBuildController;
 
 public class DefaultCompositeBuildController implements CompositeBuildController {
     private final ServiceRegistry buildScopeServices;
