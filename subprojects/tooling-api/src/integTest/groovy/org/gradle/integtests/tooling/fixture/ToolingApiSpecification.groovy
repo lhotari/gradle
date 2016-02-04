@@ -69,11 +69,10 @@ abstract class ToolingApiSpecification extends Specification {
     final GradleDistribution dist = new UnderDevelopmentGradleDistribution()
     final IntegrationTestBuildContext buildContext = new IntegrationTestBuildContext()
     private static final ThreadLocal<GradleDistribution> VERSION = new ThreadLocal<GradleDistribution>()
+    private static final ThreadLocal<GradleVersion> TAPI_VERSION = new ThreadLocal<GradleVersion>()
 
     TestDistributionDirectoryProvider temporaryDistributionFolder = new TestDistributionDirectoryProvider();
     final ToolingApi toolingApi = new ToolingApi(targetDist, temporaryFolder)
-
-    final GradleVersion toolingApiVersion = GradleVersion.current() // works due to classloading arrangement by ToolingApiCompatibilitySuiteRunner
 
     @Rule
     public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(temporaryDistributionFolder).around(toolingApi);
@@ -84,6 +83,18 @@ abstract class ToolingApiSpecification extends Specification {
 
     static GradleDistribution getTargetDist() {
         VERSION.get()
+    }
+
+    static void selectTapiVersion(GradleVersion version) {
+        TAPI_VERSION.set(version)
+    }
+
+    static String getTapiVersion() {
+        TAPI_VERSION.get()
+    }
+
+    public GradleVersion getToolingApiVersion() {
+        getTapiVersion()
     }
 
     void reset() {
@@ -228,7 +239,7 @@ abstract class ToolingApiSpecification extends Specification {
 
     void assertToolingModelIsSerializable(object) {
         // Only check serialization with 2.12+ since Tooling Model proxy serialization is broken in previous TAPI clients
-        if (GradleVersion.current().getBaseVersion() >= GradleVersion.version("2.12")) {
+        if (toolingApiVersion.getBaseVersion() >= GradleVersion.version("2.12")) {
             // only check that no exceptions are thrown during serialization
             // cross-version deserialization would require using PayloadSerializer
             ObjectOutputStream oos = new ObjectOutputStream(new NullOutputStream());
