@@ -27,7 +27,7 @@ public class DefaultGradleParticipantBuild implements GradleParticipantBuild, Se
     private final String gradleVersion;
 
     public DefaultGradleParticipantBuild(GradleParticipantBuild build) {
-        this(build.getProjectDir(), build.getGradleHome(), build.getGradleDistribution(), build.getGradleVersion());
+        this(build.getProjectDir() != null ? new File(build.getProjectDir().getAbsolutePath()) : null, build.getGradleHome() != null ? new File(build.getGradleHome().getAbsolutePath()) : null, build.getGradleDistribution(), build.getGradleVersion());
     }
 
     public DefaultGradleParticipantBuild(File projectDir, File gradleHome, URI gradleDistribution, String gradleVersion) {
