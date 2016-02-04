@@ -51,11 +51,17 @@ public class LauncherServices implements PluginServiceRegistry {
     }
 
     static class ToolingGlobalScopeServices {
-        BuildExecuter createBuildExecuter(GradleLauncherFactory gradleLauncherFactory, ServiceRegistry globalServices, ListenerManager listenerManager, FileWatcherFactory fileWatcherFactory, ExecutorFactory executorFactory, StyledTextOutputFactory styledTextOutputFactory,
-                                          CompositeBuildActionRunner compositeBuildActionRunner) {
+        BuildExecuter createBuildExecuter(GradleLauncherFactory gradleLauncherFactory, ServiceRegistry globalServices, ListenerManager listenerManager, FileWatcherFactory fileWatcherFactory, ExecutorFactory executorFactory, StyledTextOutputFactory styledTextOutputFactory) {
             List<BuildActionRunner> buildActionRunners = globalServices.getAll(BuildActionRunner.class);
             BuildActionExecuter<BuildActionParameters> delegate = new InProcessBuildActionExecuter(gradleLauncherFactory, new ChainingBuildActionRunner(buildActionRunners));
-            BuildActionExecuter<CompositeBuildActionParameters> compositeDelegate = new CompositeBuildActionExecuter(compositeBuildActionRunner);
+
+            BuildActionExecuter<CompositeBuildActionParameters> compositeDelegate;
+            List<CompositeBuildActionRunner> compositeBuildActionRunners = globalServices.getAll(CompositeBuildActionRunner.class);
+            if (compositeBuildActionRunners.size() > 0) {
+                compositeDelegate = new CompositeBuildActionExecuter(compositeBuildActionRunners.get(0));
+            } else {
+                compositeDelegate = null;
+            }
             return new ContinuousBuildActionExecuter(delegate, fileWatcherFactory, listenerManager, styledTextOutputFactory, executorFactory, compositeDelegate);
         }
 
