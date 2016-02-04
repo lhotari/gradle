@@ -14,21 +14,10 @@
  * limitations under the License.
  */
 
-package org.gradle.launcher.composite;
+package org.gradle.launcher.exec;
 
-import org.gradle.tooling.internal.protocol.GradleParticipantBuild;
+import org.gradle.internal.invocation.BuildAction;
 
-import java.io.Serializable;
-import java.util.List;
-
-public class CompositeParameters implements Serializable {
-    private final List<GradleParticipantBuild> builds;
-
-    public CompositeParameters(List<GradleParticipantBuild> builds) {
-        this.builds = builds;
-    }
-
-    public List<GradleParticipantBuild> getBuilds() {
-        return builds;
-    }
+public interface CompositeBuildActionRunner {
+    void run(BuildAction action, CompositeBuildActionParameters actionParameters, CompositeBuildController buildController);
 }

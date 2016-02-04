@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package org.gradle.tooling.internal.protocol;
+package org.gradle.tooling.internal.provider.connection;
 
-import java.io.File;
-import java.net.URI;
+import java.io.Serializable;
+import java.util.List;
 
-public interface GradleParticipantBuild {
-    File getProjectDir();
+public class CompositeParameters implements Serializable {
+    private final List<GradleParticipantBuild> builds;
 
-    File getGradleHome();
+    public CompositeParameters(List<GradleParticipantBuild> builds) {
+        this.builds = builds;
+    }
 
-    URI getGradleDistribution();
-
-    String getGradleVersion();
+    public List<GradleParticipantBuild> getBuilds() {
+        return builds;
+    }
 }
