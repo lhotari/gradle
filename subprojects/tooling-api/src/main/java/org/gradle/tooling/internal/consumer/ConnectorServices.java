@@ -24,6 +24,7 @@ import org.gradle.internal.jvm.UnsupportedJavaRuntimeException;
 import org.gradle.internal.service.DefaultServiceRegistry;
 import org.gradle.tooling.CancellationTokenSource;
 import org.gradle.tooling.composite.internal.DefaultGradleConnection;
+import org.gradle.tooling.composite.internal.GradleConnectionFactory;
 import org.gradle.tooling.internal.consumer.loader.CachingToolingImplementationLoader;
 import org.gradle.tooling.internal.consumer.loader.DefaultToolingImplementationLoader;
 import org.gradle.tooling.internal.consumer.loader.SynchronizedToolingImplementationLoader;
@@ -76,11 +77,11 @@ public class ConnectorServices {
             };
         }
 
-        protected Factory<DefaultGradleConnection.Builder> createConnectionBuilderFactory() {
+        protected Factory<DefaultGradleConnection.Builder> createConnectionBuilderFactory(final GradleConnectionFactory gradleConnectionFactory, final DistributionFactory distributionFactory) {
             return new Factory<DefaultGradleConnection.Builder>() {
                 @Override
                 public DefaultGradleConnection.Builder create() {
-                    return new DefaultGradleConnection.Builder();
+                    return new DefaultGradleConnection.Builder(gradleConnectionFactory, distributionFactory);
                 }
             };
         }
@@ -107,6 +108,10 @@ public class ConnectorServices {
 
         protected ConnectionFactory createConnectionFactory(ToolingImplementationLoader toolingImplementationLoader, ExecutorFactory executorFactory, LoggingProvider loggingProvider) {
             return new ConnectionFactory(toolingImplementationLoader, executorFactory, loggingProvider);
+        }
+
+        protected GradleConnectionFactory createGradleConnectionFactory(ToolingImplementationLoader toolingImplementationLoader, ExecutorFactory executorFactory, LoggingProvider loggingProvider) {
+            return new GradleConnectionFactory(toolingImplementationLoader, executorFactory, loggingProvider);
         }
     }
 }
