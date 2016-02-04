@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.gradle.tooling.internal.protocol;
+package org.gradle.tooling.internal.provider.connection;
 
 import java.io.File;
 import java.io.Serializable;

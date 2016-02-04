@@ -20,7 +20,6 @@ import org.gradle.api.logging.LogLevel;
 import org.gradle.tooling.internal.protocol.InternalBuildProgressListener;
 import org.gradle.tooling.internal.protocol.InternalLaunchable;
 import org.gradle.tooling.internal.protocol.ProgressListenerVersion1;
-import org.gradle.tooling.internal.protocol.GradleParticipantBuild;
 
 import java.io.File;
 import java.io.InputStream;

@@ -21,7 +21,7 @@ import org.gradle.internal.invocation.BuildAction;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.launcher.exec.BuildActionExecuter;
 import org.gradle.launcher.exec.CompositeBuildActionParameters;
-import org.gradle.launcher.exec.composite.CompositeBuildActionRunner;
+import org.gradle.launcher.exec.CompositeBuildActionRunner;
 
 public class CompositeBuildActionExecuter implements BuildActionExecuter<CompositeBuildActionParameters> {
     private final CompositeBuildActionRunner compositeBuildActionRunner;
