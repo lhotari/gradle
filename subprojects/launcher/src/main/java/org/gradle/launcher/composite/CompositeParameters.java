@@ -16,18 +16,19 @@
 
 package org.gradle.launcher.composite;
 
-import java.io.File;
+import org.gradle.tooling.internal.protocol.GradleParticipantBuild;
+
 import java.io.Serializable;
 import java.util.List;
 
 public class CompositeParameters implements Serializable {
-    private final List<File> buildRoots;
+    private final List<GradleParticipantBuild> builds;
 
-    public CompositeParameters(List<File> buildRoots) {
-        this.buildRoots = buildRoots;
+    public CompositeParameters(List<GradleParticipantBuild> builds) {
+        this.builds = builds;
     }
 
-    public List<File> getBuildRoots() {
-        return buildRoots;
+    public List<GradleParticipantBuild> getBuilds() {
+        return builds;
     }
 }

@@ -19,9 +19,17 @@ package org.gradle.launcher.exec;
 import org.gradle.initialization.BuildRequestContext;
 import org.gradle.internal.invocation.BuildAction;
 import org.gradle.internal.service.ServiceRegistry;
+import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProjectConnection;
+import org.gradle.tooling.internal.protocol.GradleParticipantBuild;
+import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
+import org.gradle.tooling.model.eclipse.EclipseProject;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class CompositeBuildActionExecuter implements BuildActionExecuter<CompositeBuildActionParameters> {
 
@@ -32,12 +40,48 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
     @Override
     public Object execute(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, ServiceRegistry contextServices) {
         if (action instanceof BuildModelAction) {
-            // TODO add implementation
-            Object result = null;
+            Set<Object> projects = getEclipseProjects(actionParameters);
+            DefaultSetOfEclipseProjects workspace = new DefaultSetOfEclipseProjects(projects);
             PayloadSerializer payloadSerializer = contextServices.get(PayloadSerializer.class);
-            return new BuildActionResult(payloadSerializer.serialize(result), null);
+            return new BuildActionResult(payloadSerializer.serialize(workspace), null);
         } else {
             throw new RuntimeException("Not implemented yet.");
         }
     }
+
+    private Set<Object> getEclipseProjects(CompositeBuildActionParameters actionParameters) {
+        Set<Object> result = new LinkedHashSet<Object>();
+        for (GradleParticipantBuild build : actionParameters.getCompositeParameters().getBuilds()) {
+            ProjectConnection projectConnection = connect(build);
+            try {
+                result.add(projectConnection.getModel(EclipseProject.class));
+            } finally {
+                projectConnection.close();
+            }
+        }
+        return result;
+    }
+
+    private ProjectConnection connect(GradleParticipantBuild build) {
+        return configureDistribution(GradleConnector.newConnector().forProjectDirectory(build.getProjectDir()), build).connect();
+    }
+
+    private GradleConnector configureDistribution(GradleConnector connector, GradleParticipantBuild build) {
+        if (build.getGradleDistribution() == null) {
+            if (build.getGradleHome() == null) {
+                if (build.getGradleVersion() == null) {
+                    connector.useBuildDistribution();
+                } else {
+                    connector.useGradleVersion(build.getGradleVersion());
+                }
+            } else {
+                connector.useInstallation(build.getGradleHome());
+            }
+        } else {
+            connector.useDistribution(build.getGradleDistribution());
+        }
+
+        return connector;
+    }
+
 }

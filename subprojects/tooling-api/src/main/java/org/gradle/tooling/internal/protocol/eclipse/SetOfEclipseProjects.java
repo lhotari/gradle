@@ -13,12 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gradle.tooling.internal.consumer;
 
-import org.gradle.tooling.composite.internal.GradleParticipantBuild;
+package org.gradle.tooling.internal.protocol.eclipse;
 
-import java.util.List;
+import org.gradle.tooling.model.eclipse.EclipseProject;
 
-public interface CompositeConnectionParameters extends ConnectionParameters {
-    List<GradleParticipantBuild> getBuilds();
+import java.util.Set;
+
+public interface SetOfEclipseProjects {
+
+    /**
+     * A flattened set of all projects in the Eclipse workspace.
+     * These project models are fully configured, and may be expensive to calculate.
+     * Note that not all projects necessarily share the same root.
+     */
+    Set<EclipseProject> getEclipseProjects();
 }

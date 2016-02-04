@@ -15,14 +15,17 @@
  */
 package org.gradle.tooling.internal.consumer;
 
+import org.gradle.tooling.composite.internal.GradleParticipantBuild;
+
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultCompositeConnectionParameters extends AbstractConnectionParameters implements CompositeConnectionParameters {
-    private final List<File> participantRootDirs;
+    private final List<GradleParticipantBuild> builds;
     public static Builder builder() {
         return new Builder();
     }
@@ -36,12 +39,12 @@ public class DefaultCompositeConnectionParameters extends AbstractConnectionPara
     }
 
     @Override
-    public List<File> getParticipantRootDirs() {
-        return participantRootDirs;
+    public List<GradleParticipantBuild> getBuilds() {
+        return builds;
     }
 
     public static class Builder extends AbstractConnectionParameters.Builder {
-        private final List<File> participantRootDirs = new ArrayList<File>();
+        private final List<GradleParticipantBuild> builds = new ArrayList<GradleParticipantBuild>();
 
         private Builder() {
             super();
@@ -49,18 +52,23 @@ public class DefaultCompositeConnectionParameters extends AbstractConnectionPara
 
         public DefaultCompositeConnectionParameters build() {
             return new DefaultCompositeConnectionParameters(gradleUserHomeDir, embedded,
-                daemonMaxIdleTimeValue, daemonMaxIdleTimeUnits, daemonBaseDir, verboseLogging, participantRootDirs);
+                daemonMaxIdleTimeValue, daemonMaxIdleTimeUnits, daemonBaseDir, verboseLogging, builds);
         }
 
-        public void addParticipant(File rootProjectDirectory) {
-            participantRootDirs.add(rootProjectDirectory);
+        public void addBuild(GradleParticipantBuild rootProjectDirectory) {
+            builds.add(rootProjectDirectory);
+        }
+
+        public void setBuilds(Collection<GradleParticipantBuild> builds) {
+            this.builds.clear();
+            this.builds.addAll(builds);
         }
     }
 
     private DefaultCompositeConnectionParameters(File gradleUserHomeDir, Boolean embedded,
                                                  Integer daemonMaxIdleTimeValue, TimeUnit daemonMaxIdleTimeUnits, File daemonBaseDir,
-                                                 boolean verboseLogging, List<File> participantRootDirs) {
+                                                 boolean verboseLogging, List<GradleParticipantBuild> builds) {
         super(gradleUserHomeDir, embedded, daemonMaxIdleTimeValue, daemonMaxIdleTimeUnits, daemonBaseDir, verboseLogging);
-        this.participantRootDirs = Collections.unmodifiableList(participantRootDirs);
+        this.builds = Collections.unmodifiableList(builds);
     }
 }

@@ -16,211 +16,49 @@
 
 package org.gradle.tooling.composite.internal;
 
-import com.google.common.collect.Sets;
-import org.gradle.internal.UncheckedException;
 import org.gradle.tooling.CancellationToken;
 import org.gradle.tooling.GradleConnectionException;
 import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ResultHandler;
 import org.gradle.tooling.composite.CompositeModelBuilder;
-import org.gradle.tooling.internal.protocol.ResultHandlerVersion1;
-import org.gradle.tooling.model.HierarchicalElement;
-import org.gradle.tooling.model.UnsupportedMethodException;
-import org.gradle.tooling.model.internal.Exceptions;
-import org.gradle.util.CollectionUtils;
+import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
+import org.gradle.tooling.internal.consumer.DefaultModelBuilder;
+import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
+import org.gradle.tooling.internal.protocol.eclipse.SetOfEclipseProjects;
 
-import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
 
 public class DefaultCompositeModelBuilder<T> implements CompositeModelBuilder<T> {
+    private final ModelBuilder<SetOfEclipseProjects> delegate;
 
-    private final Class<T> modelType;
-    private final Set<GradleParticipantBuild> participants;
-    private CancellationToken cancellationToken;
-
-    protected DefaultCompositeModelBuilder(Class<T> modelType, Set<GradleParticipantBuild> participants) {
-        this.modelType = modelType;
-        this.participants = participants;
+    protected DefaultCompositeModelBuilder(Class<T> modelType, AsyncConsumerActionExecutor asyncConnection, CompositeConnectionParameters parameters) {
+        delegate = new DefaultModelBuilder<SetOfEclipseProjects>(SetOfEclipseProjects.class, asyncConnection, parameters);
     }
-
-    // TODO: Make all configuration methods configure underlying model builders
 
     @Override
     public Set<T> get() throws GradleConnectionException, IllegalStateException {
-        BlockingResultHandler<T> handler = new BlockingResultHandler();
-        get(handler);
-        return handler.getResult();
+        return (Set<T>) delegate.get().getEclipseProjects();
     }
 
     @Override
-    public void get(ResultHandler<? super Set<T>> handler) throws IllegalStateException {
-        final Set<T> results = Sets.newConcurrentHashSet();
-        final AtomicReference<Throwable> firstFailure = new AtomicReference<Throwable>();
-        final ResultHandlerVersion1<Set<T>> adaptedHandler = new HierarchicalResultAdapter(new ResultHandlerAdapter(handler));
-        final CyclicBarrier barrier = new CyclicBarrier(participants.size(), new ResultsCollected(results, firstFailure, adaptedHandler));
-        for (GradleParticipantBuild participant : participants) {
-            ModelBuilder<T> modelBuilder = participant.getConnection().model(modelType);
-            if (cancellationToken!=null) {
-                modelBuilder.withCancellationToken(cancellationToken);
-            }
-            modelBuilder.get(new ProjectResultHandler<T>(participant, barrier, results, firstFailure));
-        }
+    public void get(final ResultHandler<? super Set<T>> handler) throws IllegalStateException {
+        delegate.get(new ResultHandler<SetOfEclipseProjects>() {
+                         @Override
+                         public void onComplete(SetOfEclipseProjects result) {
+                             handler.onComplete((Set<T>) result.getEclipseProjects());
+                         }
+
+                         @Override
+                         public void onFailure(GradleConnectionException failure) {
+                             handler.onFailure(failure);
+                         }
+                     }
+        );
     }
 
     @Override
     public CompositeModelBuilder<T> withCancellationToken(CancellationToken cancellationToken) {
-        this.cancellationToken = cancellationToken;
+        delegate.withCancellationToken(cancellationToken);
         return this;
-    }
-
-    private final static class ResultsCollected<T> implements Runnable {
-        private final Set<T> results;
-        private final AtomicReference<Throwable> firstFailure;
-        private final ResultHandlerVersion1<Set<T>> adaptedHandler;
-
-        private ResultsCollected(Set<T> results, AtomicReference<Throwable> firstFailure, ResultHandlerVersion1<Set<T>> adaptedHandler) {
-            this.results = results;
-            this.firstFailure = firstFailure;
-            this.adaptedHandler = adaptedHandler;
-        }
-
-        @Override
-        public void run() {
-            Throwable failure = firstFailure.get();
-            if (failure==null) {
-                adaptedHandler.onComplete(results);
-            } else {
-                adaptedHandler.onFailure(failure);
-            }
-        }
-    }
-
-    private final static class ProjectResultHandler<T> implements ResultHandler<T> {
-        private final GradleParticipantBuild participant;
-        private final Set<T> results;
-        private final CyclicBarrier barrier;
-        private final AtomicReference<Throwable> firstFailure;
-
-        private ProjectResultHandler(GradleParticipantBuild participant, CyclicBarrier barrier, Set<T> results, AtomicReference<Throwable> firstFailure) {
-            this.participant = participant;
-            this.barrier = barrier;
-            this.results = results;
-            this.firstFailure = firstFailure;
-        }
-
-        @Override
-        public void onComplete(T result) {
-            results.add(result);
-            waitForFinish();
-        }
-
-        private void waitForFinish() {
-            try {
-                barrier.await();
-            } catch (InterruptedException e) {
-                UncheckedException.throwAsUncheckedException(e);
-            } catch (BrokenBarrierException e) {
-                UncheckedException.throwAsUncheckedException(e);
-            }
-        }
-
-        @Override
-        public void onFailure(GradleConnectionException failure) {
-            firstFailure.compareAndSet(null, failure);
-            waitForFinish();
-        }
-    }
-
-    private class HierarchicalResultAdapter<T> implements ResultHandlerVersion1<Set<T>> {
-        private final ResultHandlerVersion1<Set<T>> delegate;
-
-        private HierarchicalResultAdapter(ResultHandlerVersion1<Set<T>> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void onComplete(Set<T> results) {
-            if (HierarchicalElement.class.isAssignableFrom(modelType)) {
-                Set<T> fullSet = Sets.newLinkedHashSet();
-                Collection<? extends HierarchicalElement> hierarchicalSet =
-                    CollectionUtils.checkedCast(HierarchicalElement.class, results);
-
-                for (HierarchicalElement element : hierarchicalSet) {
-                    accumulate(element, fullSet);
-                }
-                delegate.onComplete(fullSet);
-            } else {
-                delegate.onComplete(results);
-            }
-        }
-
-        @Override
-        public void onFailure(Throwable failure) {
-            delegate.onFailure(failure);
-        }
-
-        private void accumulate(HierarchicalElement element, Set acc) {
-            acc.add(element);
-            for (HierarchicalElement child : element.getChildren().getAll()) {
-                accumulate(child, acc);
-            }
-        }
-    }
-    private class ResultHandlerAdapter<T> extends org.gradle.tooling.internal.consumer.ResultHandlerAdapter<Set<T>> {
-        public ResultHandlerAdapter(ResultHandler<Set<T>> handler) {
-            super(handler);
-        }
-
-        @Override
-        protected String connectionFailureMessage(Throwable failure) {
-            // TODO: Supply some composite connection info
-            String connectionDisplayName = "composite connection";
-            String message = String.format("Could not fetch model of type '%s' using %s.", modelType.getSimpleName(), connectionDisplayName);
-            if (!(failure instanceof UnsupportedMethodException) && failure instanceof UnsupportedOperationException) {
-                message += "\n" + Exceptions.INCOMPATIBLE_VERSION_HINT;
-            }
-            return message;
-        }
-    }
-
-    private class BlockingResultHandler<T> implements ResultHandler<Set<T>> {
-        private final BlockingQueue<Object> queue = new ArrayBlockingQueue<Object>(1);
-
-        public Set<T> getResult() {
-            Object result;
-            try {
-                result = queue.take();
-            } catch (InterruptedException e) {
-                throw UncheckedException.throwAsUncheckedException(e);
-            }
-
-            if (result instanceof Throwable) {
-                throw UncheckedException.throwAsUncheckedException(attachCallerThreadStackTrace((Throwable) result));
-            }
-            return (Set<T>)result;
-        }
-
-        private Throwable attachCallerThreadStackTrace(Throwable failure) {
-            List<StackTraceElement> adjusted = new ArrayList<StackTraceElement>();
-            adjusted.addAll(Arrays.asList(failure.getStackTrace()));
-            List<StackTraceElement> currentThreadStack = Arrays.asList(Thread.currentThread().getStackTrace());
-            if (!currentThreadStack.isEmpty()) {
-                adjusted.addAll(currentThreadStack.subList(2, currentThreadStack.size()));
-            }
-            failure.setStackTrace(adjusted.toArray(new StackTraceElement[0]));
-            return failure;
-        }
-
-        public void onComplete(Set<T> result) {
-            queue.add(result);
-        }
-
-        public void onFailure(GradleConnectionException failure) {
-            queue.add(failure);
-        }
     }
 }
