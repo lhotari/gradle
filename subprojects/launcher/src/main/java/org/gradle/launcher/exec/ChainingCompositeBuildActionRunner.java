@@ -16,6 +16,7 @@
 
 package org.gradle.launcher.exec;
 
+import org.gradle.initialization.BuildRequestContext;
 import org.gradle.internal.invocation.BuildAction;
 
 import java.util.List;
@@ -28,9 +29,9 @@ public class ChainingCompositeBuildActionRunner implements CompositeBuildActionR
     }
 
     @Override
-    public void run(BuildAction action, CompositeBuildActionParameters actionParameters, CompositeBuildController buildController) {
+    public void run(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, CompositeBuildController buildController) {
         for (CompositeBuildActionRunner runner : runners) {
-            runner.run(action, actionParameters, buildController);
+            runner.run(action, requestContext, actionParameters, buildController);
             if (buildController.hasResult()) {
                 return;
             }

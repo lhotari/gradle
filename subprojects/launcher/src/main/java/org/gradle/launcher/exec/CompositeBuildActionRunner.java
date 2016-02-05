@@ -16,8 +16,9 @@
 
 package org.gradle.launcher.exec;
 
+import org.gradle.initialization.BuildRequestContext;
 import org.gradle.internal.invocation.BuildAction;
 
 public interface CompositeBuildActionRunner {
-    void run(BuildAction action, CompositeBuildActionParameters actionParameters, CompositeBuildController buildController);
+    void run(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, CompositeBuildController buildController);
 }
