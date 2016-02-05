@@ -165,8 +165,6 @@ public interface ProviderOperationParameters {
 
     /**
      * @since 2.12-rc-1
-     *
      */
-    @Nullable
     List<GradleParticipantBuild> getBuilds(List<GradleParticipantBuild> defaultBuilds);
 }
