@@ -18,7 +18,7 @@ package org.gradle.integtests.tooling.r212
 
 import groovy.transform.NotYetImplemented
 import org.gradle.integtests.tooling.fixture.CompositeToolingApiSpecification
-import org.gradle.tooling.BuildException
+import org.gradle.tooling.GradleConnectionException
 import org.gradle.tooling.model.eclipse.EclipseProject
 
 class MultiProjectCompositeBuildCrossVersionSpec extends CompositeToolingApiSpecification {
@@ -266,9 +266,9 @@ class MultiProjectCompositeBuildCrossVersionSpec extends CompositeToolingApiSpec
         def fourthRetrieval = composite.getModels(EclipseProject)
 
         then:
-        def e = thrown(BuildException)
-        e.getMessage().contains("Could not fetch model of type 'EclipseProject'")
-        def underlyingCause = e.getCause().getCause()
+        def e = thrown(GradleConnectionException)
+        e.getMessage().contains("Could not fetch model of type 'SetOfEclipseProjects'")
+        def underlyingCause = e.getCause().getCause().getCause()
         // TODO: Should get a GradleCompositeException
         underlyingCause.getMessage().contains("single-build' does not exist")
 
