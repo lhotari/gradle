@@ -77,13 +77,12 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
         final AtomicReference<Throwable> firstFailure = new AtomicReference<Throwable>();
         final CountDownLatch countDownLatch = new CountDownLatch(participantBuilds.size());
         for (GradleParticipantBuild participant : participantBuilds) {
-            // TODO: connection doesn't get closed
             ProjectConnection projectConnection = connect(participant);
             ModelBuilder<T> modelBuilder = projectConnection.model(modelType);
             if (cancellationToken != null) {
                 modelBuilder.withCancellationToken(new CancellationTokenAdapter(cancellationToken));
             }
-            modelBuilder.get(new MultiResultHandler<T>(countDownLatch, firstFailure, new HierarchicalResultAdapter<T>(results)));
+            modelBuilder.get(new MultiResultHandler<T>(projectConnection, countDownLatch, firstFailure, new HierarchicalResultAdapter<T>(results)));
         }
         try {
             countDownLatch.await();
@@ -144,11 +143,13 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
     }
 
     private final static class MultiResultHandler<T> implements ResultHandler<T> {
+        private final ProjectConnection projectConnection;
         private final CountDownLatch countDownLatch;
         private final AtomicReference<Throwable> firstFailure;
         private final ResultHandler<T> delegate;
 
-        private MultiResultHandler(CountDownLatch countDownLatch, AtomicReference<Throwable> firstFailure, ResultHandler<T> delegate) {
+        private MultiResultHandler(ProjectConnection projectConnection, CountDownLatch countDownLatch, AtomicReference<Throwable> firstFailure, ResultHandler<T> delegate) {
+            this.projectConnection = projectConnection;
             this.countDownLatch = countDownLatch;
             this.firstFailure = firstFailure;
             this.delegate = delegate;
@@ -158,6 +159,14 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
         public void onComplete(T result) {
             try {
                 delegate.onComplete(result);
+            } finally {
+                finishUsage();
+            }
+        }
+
+        private void finishUsage() {
+            try {
+                projectConnection.close();
             } finally {
                 countDownLatch.countDown();
             }
@@ -169,7 +178,7 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
                 firstFailure.compareAndSet(null, failure);
                 delegate.onFailure(failure);
             } finally {
-                countDownLatch.countDown();
+                finishUsage();
             }
         }
     }
