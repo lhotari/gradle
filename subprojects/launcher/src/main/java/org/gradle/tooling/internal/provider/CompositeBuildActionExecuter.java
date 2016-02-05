@@ -33,7 +33,7 @@ public class CompositeBuildActionExecuter implements BuildActionExecuter<Composi
     @Override
     public Object execute(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, ServiceRegistry contextServices) {
         DefaultCompositeBuildController buildController = new DefaultCompositeBuildController(contextServices);
-        compositeBuildActionRunner.run(action, actionParameters, buildController);
+        compositeBuildActionRunner.run(action, requestContext, actionParameters, buildController);
         return buildController.getResult();
     }
 
