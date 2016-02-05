@@ -60,7 +60,7 @@ public class DaemonBuildActionExecuter implements BuildActionExecuter<ProviderOp
         ClassPath classPath = DefaultClassPath.of(parameters.getInjectedPluginClasspath(Collections.<File>emptyList()));
 
         BuildActionParameters actionParameters;
-        List<GradleParticipantBuild> compositeParticipants = parameters.getBuilds();
+        List<GradleParticipantBuild> compositeParticipants = parameters.getBuilds(null);
         if (compositeParticipants != null) {
             List<GradleParticipantBuild> clonedCompositeParticipants = new ArrayList<GradleParticipantBuild>();
             for (GradleParticipantBuild build : compositeParticipants) {
