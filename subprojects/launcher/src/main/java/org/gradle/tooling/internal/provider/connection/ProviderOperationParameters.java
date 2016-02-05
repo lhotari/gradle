@@ -163,5 +163,8 @@ public interface ProviderOperationParameters {
      */
     List<File> getInjectedPluginClasspath(List<File> defaultClasspath);
 
-    List<GradleParticipantBuild> getBuilds();
+    /**
+     * @since 2.12-rc-1
+     */
+    List<GradleParticipantBuild> getBuilds(List<GradleParticipantBuild> defaultBuilds);
 }
