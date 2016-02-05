@@ -27,5 +27,5 @@ public interface SetOfEclipseProjects {
      * These project models are fully configured, and may be expensive to calculate.
      * Note that not all projects necessarily share the same root.
      */
-    Set<EclipseProject> getEclipseProjects();
+    Set<EclipseProject> getResult();
 }
