@@ -27,6 +27,7 @@ import org.gradle.launcher.exec.CompositeBuildController;
 import org.gradle.tooling.*;
 import org.gradle.tooling.composite.GradleCompositeException;
 import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
+import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
@@ -70,7 +71,6 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
             if (cancellationToken != null) {
                 modelBuilder.withCancellationToken(new CancellationTokenAdapter(cancellationToken));
             }
-            modelBuilder.withArguments("--no-search-upward");
             modelBuilder.get(new ProjectResultHandler<T>(countDownLatch, results, firstFailure));
         }
         try {
@@ -85,9 +85,14 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
     }
 
     private ProjectConnection connect(GradleParticipantBuild build) {
-        GradleConnector connector = GradleConnector.newConnector().forProjectDirectory(build.getProjectDir());
-        configureDistribution(connector, build);
-        return connector.connect();
+        DefaultGradleConnector connector = getInternalConnector();
+        connector.searchUpwards(false);
+        connector.forProjectDirectory(build.getProjectDir());
+        return configureDistribution(connector, build).connect();
+    }
+
+    private DefaultGradleConnector getInternalConnector() {
+        return (DefaultGradleConnector)GradleConnector.newConnector();
     }
 
     private GradleConnector configureDistribution(GradleConnector connector, GradleParticipantBuild build) {
