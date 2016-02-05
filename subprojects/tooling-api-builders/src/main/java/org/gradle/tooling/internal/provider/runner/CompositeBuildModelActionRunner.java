@@ -70,6 +70,7 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
             if (cancellationToken != null) {
                 modelBuilder.withCancellationToken(new CancellationTokenAdapter(cancellationToken));
             }
+            modelBuilder.withArguments("--no-search-upward");
             modelBuilder.get(new ProjectResultHandler<T>(countDownLatch, results, firstFailure));
         }
         try {
