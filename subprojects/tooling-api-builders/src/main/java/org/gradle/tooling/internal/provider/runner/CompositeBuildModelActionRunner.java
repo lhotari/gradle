@@ -29,7 +29,8 @@ import org.gradle.tooling.*;
 import org.gradle.tooling.composite.GradleCompositeException;
 import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
-import org.gradle.tooling.internal.protocol.eclipse.DefaultSetOfEclipseProjects;
+import org.gradle.tooling.internal.protocol.eclipse.SetContainer;
+import org.gradle.tooling.internal.protocol.eclipse.SetOfEclipseProjects;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
@@ -37,28 +38,37 @@ import org.gradle.tooling.internal.provider.connection.GradleParticipantBuild;
 import org.gradle.tooling.model.HierarchicalElement;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CompositeBuildModelActionRunner implements CompositeBuildActionRunner {
+    private Map<String, Class<?>> modelRequestTypeToModelTypeMapping = new HashMap<String, Class<?>>() {{
+        this.put(SetOfEclipseProjects.class.getName(), EclipseProject.class);
+    }};
+
+
     @Override
     public void run(BuildAction action, BuildRequestContext requestContext, CompositeBuildActionParameters actionParameters, CompositeBuildController buildController) {
         if (!(action instanceof BuildModelAction)) {
             return;
         }
-
-        Set<Object> projects = getEclipseProjects(actionParameters, requestContext.getCancellationToken());
-        DefaultSetOfEclipseProjects workspace = new DefaultSetOfEclipseProjects(projects);
-        PayloadSerializer payloadSerializer = buildController.getBuildScopeServices().get(PayloadSerializer.class);
-        buildController.setResult(new BuildActionResult(payloadSerializer.serialize(workspace), null));
+        final String requestedModelName = ((BuildModelAction) action).getModelName();
+        Class<?> modelType = modelRequestTypeToModelTypeMapping.get(requestedModelName);
+        if (modelType != null) {
+            assert HierarchicalElement.class.isAssignableFrom(modelType) : "No handling implemented for non-hierarchical types";
+            Set<Object> projects = aggregateModels(Cast.<Class<? extends HierarchicalElement>>uncheckedCast(modelType), actionParameters, requestContext.getCancellationToken());
+            SetContainer setContainer = new SetContainer(projects);
+            PayloadSerializer payloadSerializer = buildController.getBuildScopeServices().get(PayloadSerializer.class);
+            buildController.setResult(new BuildActionResult(payloadSerializer.serialize(setContainer), null));
+        } else {
+            throw new GradleCompositeException("Unknown model " + requestedModelName);
+        }
     }
 
-    private Set<Object> getEclipseProjects(CompositeBuildActionParameters actionParameters, BuildCancellationToken cancellationToken) {
+    private Set<Object> aggregateModels(Class<? extends HierarchicalElement> modelType, CompositeBuildActionParameters actionParameters, BuildCancellationToken cancellationToken) {
         Set<Object> results = new LinkedHashSet<Object>();
-        results.addAll(fetchModels(actionParameters.getCompositeParameters().getBuilds(), EclipseProject.class, cancellationToken));
+        results.addAll(fetchModels(actionParameters.getCompositeParameters().getBuilds(), modelType, cancellationToken));
         return results;
     }
 
@@ -83,7 +93,7 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
         if (firstFailure.get() != null) {
             throw new GradleCompositeException("Error retrieving model", firstFailure.get());
         }
-        return results;
+        return new HashSet<T>(results);
     }
 
     private ProjectConnection connect(GradleParticipantBuild build) {

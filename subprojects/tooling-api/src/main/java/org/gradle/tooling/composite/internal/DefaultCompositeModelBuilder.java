@@ -38,7 +38,7 @@ public class DefaultCompositeModelBuilder<T> implements CompositeModelBuilder<T>
 
     @Override
     public Set<T> get() throws GradleConnectionException, IllegalStateException {
-        return (Set<T>) delegate.get().getEclipseProjects();
+        return (Set<T>) delegate.get().getResult();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class DefaultCompositeModelBuilder<T> implements CompositeModelBuilder<T>
         delegate.get(new ResultHandler<SetOfEclipseProjects>() {
                          @Override
                          public void onComplete(SetOfEclipseProjects result) {
-                             handler.onComplete((Set<T>) result.getEclipseProjects());
+                             handler.onComplete((Set<T>) result.getResult());
                          }
 
                          @Override

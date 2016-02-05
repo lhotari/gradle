@@ -19,14 +19,14 @@ package org.gradle.tooling.internal.protocol.eclipse;
 import java.io.Serializable;
 import java.util.Set;
 
-public class DefaultSetOfEclipseProjects implements Serializable {
-    private final Set<?> eclipseProjects;
+public class SetContainer implements Serializable {
+    private final Set<?> containedSet;
 
-    public DefaultSetOfEclipseProjects(Set<?> eclipseProjects) {
-        this.eclipseProjects = eclipseProjects;
+    public SetContainer(Set<?> containedSet) {
+        this.containedSet = containedSet;
     }
 
-    public Set<?> getEclipseProjects() {
-        return eclipseProjects;
+    public Set<?> getResult() {
+        return containedSet;
     }
 }
