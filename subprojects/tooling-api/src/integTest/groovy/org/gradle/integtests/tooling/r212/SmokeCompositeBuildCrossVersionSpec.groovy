@@ -18,6 +18,7 @@ package org.gradle.integtests.tooling.r212
 import groovy.transform.NotYetImplemented
 import org.gradle.integtests.tooling.fixture.CompositeToolingApiSpecification
 import org.gradle.tooling.BuildException
+import org.gradle.tooling.GradleConnectionException
 import org.gradle.tooling.model.eclipse.EclipseProject
 import org.gradle.tooling.model.idea.IdeaProject
 
@@ -88,9 +89,9 @@ class SmokeCompositeBuildCrossVersionSpec extends CompositeToolingApiSpecificati
             connection.close()
         }
         then:
-        def e = thrown(BuildException)
-        e.getMessage().contains("Could not fetch model of type 'EclipseProject'")
-        e.getCause().getCause().getCause() instanceof RuntimeException
+        def e = thrown(GradleConnectionException)
+        e.getMessage().contains("Could not fetch model of type 'SetOfEclipseProjects'")
+        e.getCause().getCause().getCause().getCause() instanceof RuntimeException
     }
 
     def "fails to retrieve model when participant is not a Gradle project"() {
@@ -99,9 +100,9 @@ class SmokeCompositeBuildCrossVersionSpec extends CompositeToolingApiSpecificati
             connection.getModels(EclipseProject)
         }
         then:
-        def e = thrown(BuildException)
-        e.getMessage().contains("Could not fetch model of type 'EclipseProject'")
-        def underlyingCause = e.getCause().getCause()
+        def e = thrown(GradleConnectionException)
+        e.getMessage().contains("Could not fetch model of type 'SetOfEclipseProjects'")
+        def underlyingCause = e.getCause().getCause().getCause()
         underlyingCause.getMessage().contains("project-does-not-exist' does not exist")
     }
 
