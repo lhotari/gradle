@@ -49,7 +49,9 @@ class ProgressListenerCompositeBuildCrossVersionSpec extends CompositeToolingApi
 
         then:
         progressListenerForComposite.eventDescriptions.size() > 0
-        progressListenerForComposite.eventDescriptions == progressListenerForRegularBuild.eventDescriptions
+        progressListenerForRegularBuild.eventDescriptions.each {
+            assert progressListenerForComposite.eventDescriptions.contains(it)
+        }
     }
 
     static class CapturingProgressListener implements ProgressListener {
