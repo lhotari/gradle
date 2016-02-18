@@ -18,14 +18,15 @@ package org.gradle.tooling.internal.provider.runner
 
 import groovy.transform.TupleConstructor
 import org.gradle.logging.ProgressLogger
+import org.gradle.logging.ProgressLoggerFactory
 import org.gradle.tooling.ProgressEvent
 import spock.lang.Specification
 import spock.lang.Subject
 
 class ProgressListenerToProgressLoggerAdapterTest extends Specification {
-    ProgressLogger progressLogger = Mock()
+    ProgressLoggerFactory progressLoggerFactory = Mock()
     @Subject
-    ProgressListenerToProgressLoggerAdapter adapter = new ProgressListenerToProgressLoggerAdapter(progressLogger)
+    ProgressListenerToProgressLoggerAdapter adapter = new ProgressListenerToProgressLoggerAdapter(progressLoggerFactory)
 
     @TupleConstructor
     static class SimpleProgressEvent implements ProgressEvent {
@@ -33,11 +34,15 @@ class ProgressListenerToProgressLoggerAdapterTest extends Specification {
     }
 
     def "can adapt a single status"() {
+        given:
+        ProgressLogger progressLogger = Mock()
+
         when:
         adapter.statusChanged(new SimpleProgressEvent('A'))
         adapter.statusChanged(new SimpleProgressEvent(''))
 
         then:
+        1 * progressLoggerFactory.newOperation(_) >> progressLogger
         1 * progressLogger.start('A', 'A')
         then:
         1 * progressLogger.completed()
@@ -46,6 +51,10 @@ class ProgressListenerToProgressLoggerAdapterTest extends Specification {
     }
 
     def "can adapt a hierarchical callstack"() {
+        given:
+        ProgressLogger progressLoggerA = Mock()
+        ProgressLogger progressLoggerB = Mock()
+
         when:
         adapter.statusChanged(new SimpleProgressEvent('A'))
         adapter.statusChanged(new SimpleProgressEvent('B'))
@@ -53,18 +62,27 @@ class ProgressListenerToProgressLoggerAdapterTest extends Specification {
         adapter.statusChanged(new SimpleProgressEvent(''))
 
         then:
-        1 * progressLogger.start('A', 'A')
+        1 * progressLoggerFactory.newOperation(_) >> progressLoggerA
+        1 * progressLoggerA.start('A', 'A')
         then:
-        1 * progressLogger.start('B', 'B')
+        1 * progressLoggerFactory.newOperation(_) >> progressLoggerB
+        1 * progressLoggerB.start('B', 'B')
         then:
-        1 * progressLogger.completed()
+        1 * progressLoggerB.completed()
         then:
-        1 * progressLogger.completed()
+        1 * progressLoggerA.completed()
         then:
         0 * _._
     }
 
     def "can adapt a looping call stack"() {
+        given:
+        ProgressLogger progressLoggerA = Mock()
+        ProgressLogger progressLoggerB = Mock()
+        ProgressLogger progressLoggerC1 = Mock()
+        ProgressLogger progressLoggerC2 = Mock()
+        ProgressLogger progressLoggerC3 = Mock()
+
         when:
         adapter.statusChanged(new SimpleProgressEvent('A'))
         adapter.statusChanged(new SimpleProgressEvent('B'))
@@ -78,25 +96,30 @@ class ProgressListenerToProgressLoggerAdapterTest extends Specification {
         adapter.statusChanged(new SimpleProgressEvent(''))
 
         then:
-        1 * progressLogger.start('A', 'A')
+        1 * progressLoggerFactory.newOperation(_) >> progressLoggerA
+        1 * progressLoggerA.start('A', 'A')
         then:
-        1 * progressLogger.start('B', 'B')
+        1 * progressLoggerFactory.newOperation(_) >> progressLoggerB
+        1 * progressLoggerB.start('B', 'B')
         then:
-        1 * progressLogger.start('C', 'C')
+        1 * progressLoggerFactory.newOperation(_) >> progressLoggerC1
+        1 * progressLoggerC1.start('C', 'C')
         then:
-        1 * progressLogger.completed()
+        1 * progressLoggerC1.completed()
         then:
-        1 * progressLogger.start('C', 'C')
+        1 * progressLoggerFactory.newOperation(_) >> progressLoggerC2
+        1 * progressLoggerC2.start('C', 'C')
         then:
-        1 * progressLogger.completed()
+        1 * progressLoggerC2.completed()
         then:
-        1 * progressLogger.start('C', 'C')
+        1 * progressLoggerFactory.newOperation(_) >> progressLoggerC3
+        1 * progressLoggerC3.start('C', 'C')
         then:
-        1 * progressLogger.completed()
+        1 * progressLoggerC3.completed()
         then:
-        1 * progressLogger.completed()
+        1 * progressLoggerB.completed()
         then:
-        1 * progressLogger.completed()
+        1 * progressLoggerA.completed()
         then:
         0 * _._
     }

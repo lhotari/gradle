@@ -17,6 +17,7 @@
 package org.gradle.tooling.internal.provider.runner;
 
 import org.gradle.logging.ProgressLogger;
+import org.gradle.logging.ProgressLoggerFactory;
 import org.gradle.tooling.ProgressEvent;
 import org.gradle.tooling.ProgressListener;
 
@@ -24,27 +25,31 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 class ProgressListenerToProgressLoggerAdapter implements ProgressListener {
-    private final ProgressLogger progressLogger;
+    private final ProgressLoggerFactory progressLoggerFactory;
     Deque<String> stack;
+    Deque<ProgressLogger> loggerStack;
 
-    public ProgressListenerToProgressLoggerAdapter(ProgressLogger progressLogger) {
-        this.progressLogger = progressLogger;
+    public ProgressListenerToProgressLoggerAdapter(ProgressLoggerFactory progressLoggerFactory) {
+        this.progressLoggerFactory = progressLoggerFactory;
         stack = new ArrayDeque<String>();
+        loggerStack = new ArrayDeque<ProgressLogger>();
     }
 
     @Override
     public void statusChanged(ProgressEvent event) {
         String description = event.getDescription();
         if(description.equals("")) {
-            progressLogger.completed();
+            loggerStack.pop().completed();
             return;
         }
         if (stack.contains(description)) {
-            progressLogger.completed();
+            loggerStack.pop().completed();
             stack.pop();
             return;
         }
         stack.push(description);
+        ProgressLogger progressLogger = progressLoggerFactory.newOperation(ProgressListenerToProgressLoggerAdapter.class);
         progressLogger.start(description, description);
+        loggerStack.push(progressLogger);
     }
 }
