@@ -37,7 +37,9 @@ public class DefaultCompositeModelBuilder<T> implements ModelBuilder<Set<T>> {
 
     protected DefaultCompositeModelBuilder(Class<T> modelType, AsyncConsumerActionExecutor asyncConnection, CompositeConnectionParameters parameters) {
         this.modelType = modelType;
-        delegate = new DefaultModelBuilder<SetOfModels>(SetOfModels.class, asyncConnection, parameters);
+        DefaultModelBuilder<SetOfModels> modelBuilder = new DefaultModelBuilder<SetOfModels>(SetOfModels.class, asyncConnection, parameters);
+        modelBuilder.getOperationParamsBuilder().setCompositeModelName(modelType.getName());
+        this.delegate = modelBuilder;
         //delegate.setJvmArguments("-Xmx1G", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
     }
 

@@ -65,6 +65,7 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
         private List<String> tasks;
         private List<InternalLaunchable> launchables;
         private ClassPath injectedPluginClasspath = ClassPath.EMPTY;
+        private String compositeModelName;
 
         private Builder() {
         }
@@ -117,6 +118,11 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
 
         public Builder setTasks(List<String> tasks) {
             this.tasks = tasks;
+            return this;
+        }
+
+        public Builder setCompositeModelName(String compositeModelName) {
+            this.compositeModelName = compositeModelName;
             return this;
         }
 
@@ -181,7 +187,7 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
             FailsafeBuildProgressListenerAdapter buildProgressListenerAdapter = new FailsafeBuildProgressListenerAdapter(
                 new BuildProgressListenerAdapter(this.testProgressListeners, this.taskProgressListeners, this.buildOperationProgressListeners));
             return new ConsumerOperationParameters(entryPoint, parameters, stdout, stderr, colorOutput, stdin, javaHome, jvmArguments, arguments, tasks, launchables, injectedPluginClasspath,
-                progressListenerAdapter, buildProgressListenerAdapter, cancellationToken);
+                progressListenerAdapter, buildProgressListenerAdapter, cancellationToken, compositeModelName);
         }
     }
 
@@ -204,9 +210,11 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
     private final List<InternalLaunchable> launchables;
     private final ClassPath injectedPluginClasspath;
 
+    private final String compositeModelName;
+
     private ConsumerOperationParameters(String entryPointName, ConnectionParameters parameters, OutputStream stdout, OutputStream stderr, Boolean colorOutput, InputStream stdin,
                                         File javaHome, List<String> jvmArguments, List<String> arguments, List<String> tasks, List<InternalLaunchable> launchables, ClassPath injectedPluginClasspath,
-                                        ProgressListenerAdapter progressListener, FailsafeBuildProgressListenerAdapter buildProgressListener, CancellationToken cancellationToken) {
+                                        ProgressListenerAdapter progressListener, FailsafeBuildProgressListenerAdapter buildProgressListener, CancellationToken cancellationToken, String compositeModelName) {
         this.entryPointName = entryPointName;
         this.parameters = parameters;
         this.stdout = stdout;
@@ -222,6 +230,7 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
         this.progressListener = progressListener;
         this.buildProgressListener = buildProgressListener;
         this.cancellationToken = cancellationToken;
+        this.compositeModelName = compositeModelName;
     }
 
     private static void validateJavaHome(File javaHome) {
@@ -372,5 +381,9 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
 
     public List<GradleParticipantBuild> getBuilds() {
         return parameters instanceof CompositeConnectionParameters ? ((CompositeConnectionParameters) parameters).getBuilds() : null;
+    }
+
+    public String getCompositeModelName() {
+        return compositeModelName;
     }
 }

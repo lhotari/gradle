@@ -169,4 +169,10 @@ public interface ProviderOperationParameters {
      */
     @Nullable
     List<GradleParticipantBuild> getBuilds(List<GradleParticipantBuild> defaultBuilds);
+
+    /**
+     * @since 2.12-rc-1
+     */
+    @Nullable
+    String getCompositeModelName(String defaultCompositeModelName);
 }

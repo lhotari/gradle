@@ -38,6 +38,10 @@ public class DefaultModelBuilder<T> extends AbstractLongRunningOperation<Default
         operationParamsBuilder.setEntryPoint("ModelBuilder API");
     }
 
+    public ConsumerOperationParameters.Builder getOperationParamsBuilder() {
+        return operationParamsBuilder;
+    }
+
     @Override
     protected DefaultModelBuilder<T> getThis() {
         return this;

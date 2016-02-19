@@ -104,7 +104,8 @@ public class ProviderConnection {
 
         StartParameter startParameter = new ProviderStartParameterConverter().toStartParameter(providerParameters, params.properties);
         ProgressListenerConfiguration listenerConfig = ProgressListenerConfiguration.from(providerParameters);
-        BuildAction action = new BuildModelAction(startParameter, modelName, tasks != null, listenerConfig.clientSubscriptions);
+        String compositeModelName = providerParameters.getCompositeModelName(null);
+        BuildAction action = new BuildModelAction(startParameter, compositeModelName != null ? compositeModelName : modelName, tasks != null, listenerConfig.clientSubscriptions);
         return run(action, cancellationToken, listenerConfig, providerParameters, params);
     }
 
