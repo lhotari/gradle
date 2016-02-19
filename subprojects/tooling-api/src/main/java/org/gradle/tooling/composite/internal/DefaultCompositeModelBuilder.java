@@ -23,7 +23,7 @@ import org.gradle.tooling.events.OperationType;
 import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
 import org.gradle.tooling.internal.consumer.DefaultModelBuilder;
 import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
-import org.gradle.tooling.internal.protocol.eclipse.SetOfEclipseProjects;
+import org.gradle.tooling.internal.protocol.eclipse.SetOfModels;
 import org.gradle.tooling.model.UnsupportedMethodException;
 
 import java.io.File;
@@ -32,24 +32,26 @@ import java.io.OutputStream;
 import java.util.Set;
 
 public class DefaultCompositeModelBuilder<T> implements ModelBuilder<Set<T>> {
-    private final ModelBuilder<SetOfEclipseProjects> delegate;
+    private final ModelBuilder<SetOfModels> delegate;
+    private final Class<T> modelType;
 
     protected DefaultCompositeModelBuilder(Class<T> modelType, AsyncConsumerActionExecutor asyncConnection, CompositeConnectionParameters parameters) {
-        delegate = new DefaultModelBuilder<SetOfEclipseProjects>(SetOfEclipseProjects.class, asyncConnection, parameters);
+        this.modelType = modelType;
+        delegate = new DefaultModelBuilder<SetOfModels>(SetOfModels.class, asyncConnection, parameters);
         //delegate.setJvmArguments("-Xmx1G", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
     }
 
     @Override
     public Set<T> get() throws GradleConnectionException, IllegalStateException {
-        return (Set<T>) delegate.get().getResult();
+        return delegate.get().getResult(modelType);
     }
 
     @Override
     public void get(final ResultHandler<? super Set<T>> handler) throws IllegalStateException {
-        delegate.get(new ResultHandler<SetOfEclipseProjects>() {
+        delegate.get(new ResultHandler<SetOfModels>() {
                          @Override
-                         public void onComplete(SetOfEclipseProjects result) {
-                             handler.onComplete((Set<T>) result.getResult());
+                         public void onComplete(SetOfModels result) {
+                             handler.onComplete(result.getResult(modelType));
                          }
 
                          @Override

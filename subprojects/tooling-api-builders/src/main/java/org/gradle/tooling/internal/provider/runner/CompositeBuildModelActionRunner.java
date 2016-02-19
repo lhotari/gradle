@@ -29,7 +29,7 @@ import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.tooling.internal.protocol.CompositeBuildExceptionVersion1;
 import org.gradle.tooling.internal.protocol.eclipse.SetContainer;
-import org.gradle.tooling.internal.protocol.eclipse.SetOfEclipseProjects;
+import org.gradle.tooling.internal.protocol.eclipse.SetOfModels;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CompositeBuildModelActionRunner implements CompositeBuildActionRunner {
     private Map<String, Class<? extends HierarchicalElement>> modelRequestTypeToModelTypeMapping = new HashMap<String, Class<? extends HierarchicalElement>>() {{
-        this.put(SetOfEclipseProjects.class.getName(), EclipseProject.class);
+        this.put(SetOfModels.class.getName(), EclipseProject.class);
     }};
 
 

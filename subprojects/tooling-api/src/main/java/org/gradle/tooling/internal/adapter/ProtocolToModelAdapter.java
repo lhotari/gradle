@@ -22,6 +22,7 @@ import org.gradle.internal.typeconversion.EnumFromCharSequenceNotationParser;
 import org.gradle.internal.typeconversion.NotationConverterToNotationParserAdapter;
 import org.gradle.internal.typeconversion.NotationParser;
 import org.gradle.internal.typeconversion.TypeConversionException;
+import org.gradle.tooling.internal.protocol.eclipse.SetOfModels;
 import org.gradle.tooling.model.DomainObjectSet;
 import org.gradle.tooling.model.internal.Exceptions;
 import org.gradle.tooling.model.internal.ImmutableDomainObjectSet;
@@ -107,7 +108,7 @@ public class ProtocolToModelAdapter implements Serializable {
         if (targetType.isEnum()) {
             return adaptToEnum(targetType, sourceObject);
         }
-        Object proxy = Proxy.newProxyInstance(wrapperType.getClassLoader(), new Class<?>[]{wrapperType}, new InvocationHandlerImpl(sourceObject, overrideMethodInvoker, mapper));
+        Object proxy = Proxy.newProxyInstance(wrapperType.getClassLoader(), new Class<?>[]{wrapperType}, new InvocationHandlerImpl(sourceObject, overrideMethodInvoker, mapper, wrapperType));
         if (mixInMethodInvoker != null) {
             mixInMethodInvoker.setProxy(proxy);
         }
@@ -257,14 +258,16 @@ public class ProtocolToModelAdapter implements Serializable {
         private final Object delegate;
         private final MethodInvoker overrideMethodInvoker;
         private final Action<? super SourceObjectMapping> mapper;
+        private final Class<?> wrapperType;
         private transient Method equalsMethod;
         private transient Method hashCodeMethod;
         private transient MethodInvoker invoker;
 
-        public InvocationHandlerImpl(Object delegate, MethodInvoker overrideMethodInvoker, Action<? super SourceObjectMapping> mapper) {
+        public InvocationHandlerImpl(Object delegate, MethodInvoker overrideMethodInvoker, Action<? super SourceObjectMapping> mapper, Class<?> wrapperType) {
             this.delegate = delegate;
             this.overrideMethodInvoker = overrideMethodInvoker;
             this.mapper = mapper;
+            this.wrapperType = wrapperType;
             setup();
         }
 
@@ -276,12 +279,13 @@ public class ProtocolToModelAdapter implements Serializable {
 
         private void setup() {
             invoker = new SupportedPropertyInvoker(
+                new SetOfModelsMethodInvoker(mapper, wrapperType,
                     new SafeMethodInvoker(
                             new PropertyCachingMethodInvoker(
                                     new AdaptingMethodInvoker(mapper,
                                             new ChainedMethodInvoker(
                                                     overrideMethodInvoker,
-                                                    new ReflectionMethodInvoker())))));
+                                                new ReflectionMethodInvoker()))))));
             try {
                 equalsMethod = Object.class.getMethod("equals", Object.class);
                 hashCodeMethod = Object.class.getMethod("hashCode");
@@ -467,6 +471,34 @@ public class ProtocolToModelAdapter implements Serializable {
                 invocation.setResult(getterInvocation.getResult());
             } else {
                 invocation.setResult(invocation.getParameters()[0]);
+            }
+        }
+    }
+
+    private class SetOfModelsMethodInvoker implements MethodInvoker {
+        private final Action<? super SourceObjectMapping> mapping;
+        private final MethodInvoker next;
+        private final Class<?> wrapperType;
+
+        private SetOfModelsMethodInvoker(Action<? super SourceObjectMapping> mapping, Class<?> wrapperType, MethodInvoker next) {
+            this.mapping = mapping;
+            this.next = next;
+            this.wrapperType = wrapperType;
+        }
+
+        public void invoke(MethodInvocation invocation) throws Throwable {
+            if (wrapperType != SetOfModels.class) {
+                next.invoke(invocation);
+            } else {
+                MethodInvocation noParametersRawReturnTypeMethodInvocation = new MethodInvocation(invocation.getName(), invocation.getReturnType(), invocation.getReturnType(), new Class[0], invocation.getDelegate(), EMPTY);
+                next.invoke(noParametersRawReturnTypeMethodInvocation);
+                if (noParametersRawReturnTypeMethodInvocation.found()) {
+                    final Iterable<?> sourceCollection = (Iterable<?>) noParametersRawReturnTypeMethodInvocation.getResult();
+                    final Type targetElementType = (Type) invocation.getParameters()[0];
+                    invocation.setResult(convertCollection(sourceCollection.getClass(), targetElementType, sourceCollection, mapping));
+                } else {
+                    next.invoke(invocation);
+                }
             }
         }
     }

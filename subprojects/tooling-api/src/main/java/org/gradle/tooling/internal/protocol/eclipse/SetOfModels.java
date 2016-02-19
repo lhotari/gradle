@@ -16,8 +16,6 @@
 
 package org.gradle.tooling.internal.protocol.eclipse;
 
-import org.gradle.tooling.model.eclipse.EclipseProject;
-
 import java.util.Set;
 
 /**
@@ -25,12 +23,6 @@ import java.util.Set;
  *
  * @since 2.12
  */
-public interface SetOfEclipseProjects {
-
-    /**
-     * A flattened set of all projects in the Eclipse workspace.
-     * These project models are fully configured, and may be expensive to calculate.
-     * Note that not all projects necessarily share the same root.
-     */
-    Set<EclipseProject> getResult();
+public interface SetOfModels {
+    <T> Set<T> getResult(Class<T> elementType);
 }
