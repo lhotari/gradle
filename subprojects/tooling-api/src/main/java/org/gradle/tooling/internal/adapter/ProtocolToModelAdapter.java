@@ -132,31 +132,19 @@ public class ProtocolToModelAdapter implements Serializable {
         }
     }
 
-    public Object convert(Type targetType, Object sourceObject, Action<? super SourceObjectMapping> mapping) {
+    protected Object convert(Type targetType, Object sourceObject, Action<? super SourceObjectMapping> mapping) {
         if (targetType instanceof ParameterizedType) {
             ParameterizedType parameterizedTargetType = (ParameterizedType) targetType;
             if (parameterizedTargetType.getRawType() instanceof Class) {
                 Class<?> rawClass = (Class<?>) parameterizedTargetType.getRawType();
                 if (Iterable.class.isAssignableFrom(rawClass)) {
                     Type targetElementType = getElementType(parameterizedTargetType, 0);
-                    Collection<Object> convertedElements = collectionMapper.createEmptyCollection(rawClass);
-                    for (Object element : (Iterable<?>) sourceObject) {
-                        convertedElements.add(convert(targetElementType, element, mapping));
-                    }
-                    if (rawClass.equals(DomainObjectSet.class)) {
-                        return new ImmutableDomainObjectSet(convertedElements);
-                    } else {
-                        return convertedElements;
-                    }
+                    return convertCollection(rawClass, targetElementType, (Iterable<?>) sourceObject, mapping);
                 }
                 if (Map.class.isAssignableFrom(rawClass)) {
                     Type targetKeyType = getElementType(parameterizedTargetType, 0);
                     Type targetValueType = getElementType(parameterizedTargetType, 1);
-                    Map<Object, Object> convertedElements = collectionMapper.createEmptyMap(rawClass);
-                    for (Map.Entry<?, ?> entry : ((Map<?, ?>) sourceObject).entrySet()) {
-                        convertedElements.put(convert(targetKeyType, entry.getKey(), mapping), convert(targetValueType, entry.getValue(), mapping));
-                    }
-                    return convertedElements;
+                    return convertMap(rawClass, targetKeyType, targetValueType, (Map<?, ?>) sourceObject, mapping);
                 }
             }
         }
@@ -167,6 +155,34 @@ public class ProtocolToModelAdapter implements Serializable {
             return adapt((Class) targetType, sourceObject, mapping);
         }
         throw new UnsupportedOperationException(String.format("Cannot convert object of %s to %s.", sourceObject.getClass(), targetType));
+    }
+
+    protected Map<Object, Object> convertMap(Class<?> mapClass, Type targetKeyType, Type targetValueType, Map<?, ?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+        Map<Object, Object> convertedElements = collectionMapper.createEmptyMap(mapClass);
+        convertMap(convertedElements, targetKeyType, targetValueType, sourceObject, mapping);
+        return convertedElements;
+    }
+
+    protected void convertMap(Map<Object, Object> targetMap, Type targetKeyType, Type targetValueType, Map<?, ?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+        for (Map.Entry<?, ?> entry : sourceObject.entrySet()) {
+            targetMap.put(convert(targetKeyType, entry.getKey(), mapping), convert(targetValueType, entry.getValue(), mapping));
+        }
+    }
+
+    protected Object convertCollection(Class<?> collectionClass, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+        Collection<Object> convertedElements = collectionMapper.createEmptyCollection(collectionClass);
+        convertCollection(convertedElements, targetElementType, sourceObject, mapping);
+        if (collectionClass.equals(DomainObjectSet.class)) {
+            return new ImmutableDomainObjectSet(convertedElements);
+        } else {
+            return convertedElements;
+        }
+    }
+
+    protected void convertCollection(Collection<Object> targetCollection, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+        for (Object element : sourceObject) {
+            targetCollection.add(convert(targetElementType, element, mapping));
+        }
     }
 
     private Type getElementType(ParameterizedType type, int index) {
