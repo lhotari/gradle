@@ -90,11 +90,14 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         return FileTreeElementHasher.calculateHashForFileMetadata(allFileVisitDetails);
     }
 
-    private FileCollectionSnapshot snapshot(final List<FileVisitDetails> allFileVisitDetails) {
-            return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
-        }
 
-        final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
+
+    private FileCollectionSnapshot snapshot(final List<FileVisitDetails> allFileVisitDetails) {
+        return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
+    }
+
+    /*
+    final Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
 
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
@@ -119,6 +122,7 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
         return new FileCollectionSnapshotImpl(snapshots);
     }
+    */
 
     protected void visitFiles(FileCollection input, final List<FileVisitDetails> allFileVisitDetails, final List<File> missingFiles) {
         DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(fileResolver);
