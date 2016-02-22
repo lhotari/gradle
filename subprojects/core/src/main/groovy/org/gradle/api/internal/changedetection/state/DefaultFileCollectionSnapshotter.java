@@ -22,6 +22,7 @@ import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.FileResolver;
+import org.gradle.api.internal.file.FileTreeElementHasher;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContext;
 import org.gradle.internal.serialize.SerializerRegistry;
@@ -53,13 +54,43 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
         return new FileCollectionSnapshotImpl(new HashMap<String, IncrementalFileSnapshot>());
     }
 
-    public FileCollectionSnapshot snapshot(final FileCollection input) {
-        final List<FileVisitDetails> allFileVisitDetails = Lists.newLinkedList();
-        final List<File> missingFiles = Lists.newArrayList();
+    @Override
+    public FileCollectionSnapshot snapshot(FileCollectionSnapshot.PreCheck preCheck) {
+        return snapshot(preCheck.getFileVisitDetails());
+    }
 
-        visitFiles(input, allFileVisitDetails, missingFiles);
+    @Override
+    public FileCollectionSnapshot.PreCheck preCheck(final FileCollection files) {
+        final List<FileVisitDetails> allFileVisitDetails = visitFiles(files);
 
-        if (allFileVisitDetails.isEmpty() && missingFiles.isEmpty()) {
+        return new FileCollectionSnapshot.PreCheck() {
+            Integer hash;
+
+            @Override
+            public FileCollection getFileCollection() {
+                return files;
+            }
+
+            @Override
+            public Integer getHash() {
+                if (hash == null) {
+                    hash = calculatePreCheckHash(allFileVisitDetails);
+                }
+                return hash;
+            }
+
+            @Override
+            public List<FileVisitDetails> getFileVisitDetails() {
+                return allFileVisitDetails;
+            }
+        };
+    }
+
+    private Integer calculatePreCheckHash(List<FileVisitDetails> allFileVisitDetails) {
+        return FileTreeElementHasher.calculateHashForFileMetadata(allFileVisitDetails);
+    }
+
+    private FileCollectionSnapshot snapshot(final List<FileVisitDetails> allFileVisitDetails) {
             return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
         }
 
