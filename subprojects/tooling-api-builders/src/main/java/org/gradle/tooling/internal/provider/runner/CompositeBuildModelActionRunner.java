@@ -27,7 +27,6 @@ import org.gradle.tooling.*;
 import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
 import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.tooling.internal.protocol.CompositeBuildExceptionVersion1;
-import org.gradle.tooling.internal.protocol.eclipse.SetContainer;
 import org.gradle.tooling.internal.provider.BuildActionResult;
 import org.gradle.tooling.internal.provider.BuildModelAction;
 import org.gradle.tooling.internal.provider.PayloadSerializer;
@@ -48,9 +47,8 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
         Class<? extends HierarchicalElement> modelType = resolveModelType((BuildModelAction) action);
         ProgressLoggerFactory progressLoggerFactory = buildController.getBuildScopeServices().get(ProgressLoggerFactory.class);
         Set<Object> results = aggregateModels(modelType, actionParameters, requestContext.getCancellationToken(), progressLoggerFactory);
-        SetContainer setContainer = new SetContainer(results);
         PayloadSerializer payloadSerializer = buildController.getBuildScopeServices().get(PayloadSerializer.class);
-        buildController.setResult(new BuildActionResult(payloadSerializer.serialize(setContainer), null));
+        buildController.setResult(new BuildActionResult(payloadSerializer.serialize(results), null));
     }
 
     private Class<? extends HierarchicalElement> resolveModelType(BuildModelAction action) {

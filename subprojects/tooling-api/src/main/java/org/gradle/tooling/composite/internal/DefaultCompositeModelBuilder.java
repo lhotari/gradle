@@ -23,7 +23,6 @@ import org.gradle.tooling.events.OperationType;
 import org.gradle.tooling.internal.consumer.CompositeConnectionParameters;
 import org.gradle.tooling.internal.consumer.DefaultModelBuilder;
 import org.gradle.tooling.internal.consumer.async.AsyncConsumerActionExecutor;
-import org.gradle.tooling.internal.protocol.eclipse.SetOfModels;
 import org.gradle.tooling.model.UnsupportedMethodException;
 
 import java.io.File;
@@ -32,26 +31,26 @@ import java.io.OutputStream;
 import java.util.Set;
 
 public class DefaultCompositeModelBuilder<T> implements ModelBuilder<Set<T>> {
-    private final ModelBuilder<SetOfModels> delegate;
+    private final ModelBuilder<Set> delegate;
     private final Class<T> modelType;
 
     protected DefaultCompositeModelBuilder(Class<T> modelType, AsyncConsumerActionExecutor asyncConnection, CompositeConnectionParameters parameters) {
         this.modelType = modelType;
-        delegate = new DefaultModelBuilder<SetOfModels>(SetOfModels.class, modelType, asyncConnection, parameters);
+        delegate = new DefaultModelBuilder<Set>(Set.class, modelType, asyncConnection, parameters);
         //delegate.setJvmArguments("-Xmx1G", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005");
     }
 
     @Override
     public Set<T> get() throws GradleConnectionException, IllegalStateException {
-        return delegate.get().getResult(modelType);
+        return delegate.get();
     }
 
     @Override
     public void get(final ResultHandler<? super Set<T>> handler) throws IllegalStateException {
-        delegate.get(new ResultHandler<SetOfModels>() {
+        delegate.get(new ResultHandler<Set>() {
                          @Override
-                         public void onComplete(SetOfModels result) {
-                             handler.onComplete(result.getResult(modelType));
+                         public void onComplete(Set result) {
+                             handler.onComplete(result);
                          }
 
                          @Override
