@@ -40,7 +40,7 @@ public class ModelBuilderBackedModelProducer extends HasCompatibilityMapperActio
         this.builder = builder;
     }
 
-    public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
+    public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
         if (!versionDetails.maySupportModel(type)) {
             throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
         }
@@ -51,6 +51,6 @@ public class ModelBuilderBackedModelProducer extends HasCompatibilityMapperActio
         } catch (InternalUnsupportedModelException e) {
             throw Exceptions.unknownModel(type, e);
         }
-        return adapter.adapt(type, result.getModel(), getCompatibilityMapperAction());
+        return adapter.adapt(returnType, result.getModel(), getCompatibilityMapperAction());
     }
 }

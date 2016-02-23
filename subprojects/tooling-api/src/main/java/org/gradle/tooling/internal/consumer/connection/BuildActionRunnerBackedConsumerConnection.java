@@ -93,7 +93,7 @@ public class BuildActionRunnerBackedConsumerConnection extends AbstractPost12Con
             this.mapper = mapper;
         }
 
-        public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
+        public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
             if (!versionDetails.maySupportModel(type)) {
                 //don't bother asking the provider for this model
                 throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
@@ -101,7 +101,7 @@ public class BuildActionRunnerBackedConsumerConnection extends AbstractPost12Con
             }
             Class<?> protocolType = modelMapping.getProtocolType(type);
             Object model = buildActionRunner.run(protocolType, operationParameters).getModel();
-            return adapter.adapt(type, model, mapper);
+            return adapter.adapt(returnType, model, mapper);
         }
     }
 }

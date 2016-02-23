@@ -97,11 +97,11 @@ public class InternalConnectionBackedConsumerConnection extends AbstractConsumer
         }
 
         @Override
-        public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
+        public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
             if (operationParameters.getArguments() != null && !operationParameters.getArguments().isEmpty()) {
                  throw Exceptions.unsupportedOperationConfiguration(operationParameters.getEntryPointName() + " withArguments()", getVersionDetails().getVersion(), "1.0");
             }
-            return delegate.produceModel(type, operationParameters);
+            return delegate.produceModel(returnType, type, operationParameters);
         }
     }
 
@@ -112,7 +112,7 @@ public class InternalConnectionBackedConsumerConnection extends AbstractConsumer
             this.delegate = delegate;
         }
 
-        public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
+        public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
             if (type.equals(Void.class)) {
                 getDelegate().executeBuild(operationParameters, operationParameters);
                 return null;
@@ -120,7 +120,7 @@ public class InternalConnectionBackedConsumerConnection extends AbstractConsumer
                 if (operationParameters.getTasks() != null) {
                     throw Exceptions.unsupportedOperationConfiguration(operationParameters.getEntryPointName() + " forTasks()", getVersionDetails().getVersion(), "1.2");
                 }
-                return delegate.produceModel(type, operationParameters);
+                return delegate.produceModel(returnType, type, operationParameters);
             }
         }
     }
@@ -140,13 +140,13 @@ public class InternalConnectionBackedConsumerConnection extends AbstractConsumer
             this.mapper = mapper;
         }
 
-        public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
+        public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
             if (!versionDetails.maySupportModel(type)) {
                 //don't bother asking the provider for this model
                 throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
             }
             Class<?> protocolType = modelMapping.getProtocolType(type);
-            return adapter.adapt(type, delegate.getTheModel(protocolType, operationParameters), mapper);
+            return adapter.adapt(returnType, delegate.getTheModel(protocolType, operationParameters), mapper);
         }
     }
 }

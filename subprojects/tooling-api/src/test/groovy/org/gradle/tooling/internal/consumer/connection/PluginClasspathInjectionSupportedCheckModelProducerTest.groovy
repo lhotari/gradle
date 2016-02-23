@@ -57,7 +57,7 @@ class PluginClasspathInjectionSupportedCheckModelProducerTest extends Specificat
 
     void run(String providerVersion, boolean injectedClasspath) {
         def producer = producer(providerVersion)
-        producer.produceModel(Void, ConsumerOperationParameters.builder().with {
+        producer.produceModel(Void, Void, ConsumerOperationParameters.builder().with {
             entryPoint = "foo"
             if (injectedClasspath) {
                 injectedPluginClasspath = new DefaultClassPath(new File("foo"))

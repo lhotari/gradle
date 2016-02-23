@@ -56,7 +56,7 @@ public abstract class AbstractConsumerConnection extends HasCompatibilityMapperA
     protected abstract ActionRunner getActionRunner();
 
     public <T> T run(Class<T> type, ConsumerOperationParameters operationParameters) {
-        return getModelProducer().produceModel(type, operationParameters);
+        return getModelProducer().produceModel(type, type, operationParameters);
     }
 
     public <T> T run(BuildAction<T> action, ConsumerOperationParameters operationParameters) {
