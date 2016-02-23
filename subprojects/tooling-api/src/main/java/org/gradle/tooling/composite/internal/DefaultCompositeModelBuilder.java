@@ -50,7 +50,7 @@ public class DefaultCompositeModelBuilder<T> implements ModelBuilder<Set<T>> {
         delegate.get(new ResultHandler<Set>() {
                          @Override
                          public void onComplete(Set result) {
-                             handler.onComplete(result);
+                             handler.onComplete((Set<T>) result);
                          }
 
                          @Override
