@@ -18,10 +18,10 @@ package org.gradle.tooling.internal.consumer.connection;
 
 import org.gradle.tooling.BuildAction;
 import org.gradle.tooling.internal.consumer.ConnectionParameters;
+import org.gradle.tooling.internal.consumer.TestExecutionRequest;
 import org.gradle.tooling.internal.consumer.parameters.ConsumerOperationParameters;
 import org.gradle.tooling.internal.consumer.versioning.VersionDetails;
 import org.gradle.tooling.internal.protocol.ConnectionVersion4;
-import org.gradle.tooling.internal.consumer.TestExecutionRequest;
 import org.gradle.tooling.model.internal.Exceptions;
 
 public abstract class AbstractConsumerConnection extends HasCompatibilityMapperAction implements ConsumerConnection {
@@ -56,7 +56,11 @@ public abstract class AbstractConsumerConnection extends HasCompatibilityMapperA
     protected abstract ActionRunner getActionRunner();
 
     public <T> T run(Class<T> type, ConsumerOperationParameters operationParameters) {
-        return getModelProducer().produceModel(type, type, operationParameters);
+        return run(type, type, operationParameters);
+    }
+
+    public <T> T run(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
+        return getModelProducer().produceModel(returnType, type, operationParameters);
     }
 
     public <T> T run(BuildAction<T> action, ConsumerOperationParameters operationParameters) {
