@@ -57,6 +57,11 @@ public class UnsupportedOlderVersionConnection implements ConsumerConnection {
         throw fail();
     }
 
+    @Override
+    public <T> T run(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) throws UnsupportedOperationException, IllegalStateException {
+        return run(returnType, operationParameters);
+    }
+
     private Object doGetBuildEnvironment() {
         return new VersionOnlyBuildEnvironment(version);
     }

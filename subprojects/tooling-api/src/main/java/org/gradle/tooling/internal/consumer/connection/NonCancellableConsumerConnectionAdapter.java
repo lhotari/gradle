@@ -62,6 +62,16 @@ public class NonCancellableConsumerConnectionAdapter implements ConsumerConnecti
         }
     }
 
+    @Override
+    public <T> T run(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) throws UnsupportedOperationException, IllegalStateException {
+        Runnable callback = handleCancellationPreOperation(operationParameters.getCancellationToken());
+        try {
+            return delegate.run(returnType, type, operationParameters);
+        } finally {
+            handleCancellationPostOperation(operationParameters.getCancellationToken(), callback);
+        }
+    }
+
     private Runnable handleCancellationPreOperation(BuildCancellationToken cancellationToken) {
         Runnable callback = new Runnable() {
             public void run() {

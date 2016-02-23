@@ -45,6 +45,11 @@ public class NoToolingApiConnection implements ConsumerConnection {
         throw Exceptions.unsupportedFeature(operationParameters.getEntryPointName(), distribution, "1.0-milestone-8");
     }
 
+    @Override
+    public <T> T run(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) throws UnsupportedOperationException, IllegalStateException {
+        return run(returnType, operationParameters);
+    }
+
     public <T> T run(BuildAction<T> action, ConsumerOperationParameters operationParameters) throws UnsupportedOperationException, IllegalStateException {
         throw Exceptions.unsupportedFeature(operationParameters.getEntryPointName(), distribution, "1.8");
     }
