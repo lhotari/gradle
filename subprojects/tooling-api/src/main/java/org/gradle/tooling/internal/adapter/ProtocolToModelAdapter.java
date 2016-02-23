@@ -164,7 +164,7 @@ public class ProtocolToModelAdapter implements Serializable {
         return convertedElements;
     }
 
-    protected void convertMap(Map<Object, Object> targetMap, Type targetKeyType, Type targetValueType, Map<?, ?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+    public void convertMap(Map<Object, Object> targetMap, Type targetKeyType, Type targetValueType, Map<?, ?> sourceObject, Action<? super SourceObjectMapping> mapping) {
         for (Map.Entry<?, ?> entry : sourceObject.entrySet()) {
             targetMap.put(convert(targetKeyType, entry.getKey(), mapping), convert(targetValueType, entry.getValue(), mapping));
         }
@@ -180,7 +180,7 @@ public class ProtocolToModelAdapter implements Serializable {
         }
     }
 
-    protected void convertCollection(Collection<Object> targetCollection, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+    public void convertCollection(Collection<Object> targetCollection, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
         for (Object element : sourceObject) {
             targetCollection.add(convert(targetElementType, element, mapping));
         }
