@@ -35,14 +35,14 @@ public class BuildInvocationsAdapterProducer implements ModelProducer {
         this.delegate = delegate;
     }
 
-    public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
+    public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
         if (type.equals(BuildInvocations.class)) {
             if (!versionDetails.maySupportModel(GradleProject.class)) {
                 throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
             }
-            GradleProject gradleProject = delegate.produceModel(GradleProject.class, GradleProject.class, operationParameters);
-            return adapter.adapt(returnType, new BuildInvocationsConverter().convert(gradleProject));
+            GradleProject gradleProject = delegate.produceModel(GradleProject.class, operationParameters);
+            return adapter.adapt(type, new BuildInvocationsConverter().convert(gradleProject));
         }
-        return delegate.produceModel(returnType, type, operationParameters);
+        return delegate.produceModel(type, operationParameters);
     }
 }

@@ -28,10 +28,6 @@ import org.gradle.tooling.internal.protocol.InternalUnsupportedModelException;
 import org.gradle.tooling.internal.protocol.ModelIdentifier;
 import org.gradle.tooling.model.internal.Exceptions;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 public class CancellableModelBuilderBackedModelProducer extends HasCompatibilityMapperAction implements ModelProducer {
     private final ProtocolToModelAdapter adapter;
     private final VersionDetails versionDetails;
@@ -48,7 +44,7 @@ public class CancellableModelBuilderBackedModelProducer extends HasCompatibility
         this.exceptionTransformer = exceptionTransformer;
     }
 
-    public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
+    public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
         if (!versionDetails.maySupportModel(type)) {
             throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
         }
@@ -61,13 +57,6 @@ public class CancellableModelBuilderBackedModelProducer extends HasCompatibility
         } catch (RuntimeException e) {
             throw exceptionTransformer.transform(e);
         }
-        final Object model = result.getModel();
-        if (Set.class.isAssignableFrom(returnType) && model instanceof Iterable) {
-            Set targetCollection = new LinkedHashSet();
-            adapter.convertCollection((Collection<Object>) targetCollection, type, (Iterable) model, getCompatibilityMapperAction());
-            return (T) targetCollection;
-        } else {
-            return adapter.adapt(returnType, model, getCompatibilityMapperAction());
-        }
+        return adapter.adapt(type, result.getModel(), getCompatibilityMapperAction());
     }
 }

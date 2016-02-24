@@ -32,12 +32,12 @@ public class GradleBuildAdapterProducer implements ModelProducer {
         this.delegate = delegate;
     }
 
-    public <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters) {
+    public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
         if (type.equals(GradleBuild.class)) {
-            GradleProject gradleProject = delegate.produceModel(GradleProject.class, GradleProject.class, operationParameters);
+            GradleProject gradleProject = delegate.produceModel(GradleProject.class, operationParameters);
             final DefaultGradleBuild convert = new GradleBuildConverter().convert(gradleProject);
-            return adapter.adapt(returnType, convert);
+            return adapter.adapt(type, convert);
         }
-        return delegate.produceModel(returnType, type, operationParameters);
+        return delegate.produceModel(type, operationParameters);
     }
 }

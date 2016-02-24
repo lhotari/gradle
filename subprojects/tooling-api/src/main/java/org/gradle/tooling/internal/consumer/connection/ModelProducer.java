@@ -19,5 +19,5 @@ package org.gradle.tooling.internal.consumer.connection;
 import org.gradle.tooling.internal.consumer.parameters.ConsumerOperationParameters;
 
 public interface ModelProducer {
-    <T> T produceModel(Class<T> returnType, Class<?> type, ConsumerOperationParameters operationParameters);
+    <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters);
 }
