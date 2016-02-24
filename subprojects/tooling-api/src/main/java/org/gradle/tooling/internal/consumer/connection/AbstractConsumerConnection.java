@@ -24,6 +24,8 @@ import org.gradle.tooling.internal.consumer.versioning.VersionDetails;
 import org.gradle.tooling.internal.protocol.ConnectionVersion4;
 import org.gradle.tooling.model.internal.Exceptions;
 
+import java.util.Set;
+
 public abstract class AbstractConsumerConnection extends HasCompatibilityMapperAction implements ConsumerConnection {
     private final ConnectionVersion4 delegate;
     private final VersionDetails providerMetaData;
@@ -65,5 +67,10 @@ public abstract class AbstractConsumerConnection extends HasCompatibilityMapperA
 
     public void runTests(final TestExecutionRequest testExecutionRequest, ConsumerOperationParameters operationParameters){
         throw Exceptions.unsupportedFeature(operationParameters.getEntryPointName(), getVersionDetails().getVersion(), "2.6");
+    }
+
+    @Override
+    public <T> Set<T> buildModels(Class<T> elementType, ConsumerOperationParameters operationParameters) throws UnsupportedOperationException, IllegalStateException {
+        throw Exceptions.unsupportedFeature(operationParameters.getEntryPointName(), getVersionDetails().getVersion(), "2.13");
     }
 }
