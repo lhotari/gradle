@@ -170,6 +170,17 @@ public class DefaultConnection implements InternalConnection, BuildActionRunner,
     }
 
     /**
+     * This is used by consumers 2.13-rc-1 and later
+     */
+    public BuildResult<?> getModels(ModelIdentifier modelIdentifier, InternalCancellationToken cancellationToken, BuildParameters operationParameters) throws BuildExceptionVersion1, InternalUnsupportedModelException, InternalUnsupportedBuildArgumentException, IllegalStateException {
+        validateCanRun();
+        ProviderOperationParameters providerParameters = toProviderParameters(operationParameters);
+        BuildCancellationToken buildCancellationToken = new InternalCancellationTokenAdapter(cancellationToken);
+        Object result = connection.buildModels(modelIdentifier.getName(), buildCancellationToken, providerParameters);
+        return new ProviderBuildResult<Object>(result);
+    }
+
+    /**
      * This is used by consumers 1.8-rc-1 and later.
      */
     public <T> BuildResult<T> run(InternalBuildAction<T> action, BuildParameters operationParameters) throws BuildExceptionVersion1, InternalUnsupportedBuildArgumentException, IllegalStateException {

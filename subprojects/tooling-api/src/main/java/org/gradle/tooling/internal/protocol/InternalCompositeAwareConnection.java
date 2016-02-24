@@ -16,7 +16,30 @@
 
 package org.gradle.tooling.internal.protocol;
 
+import org.gradle.tooling.internal.protocol.exceptions.InternalUnsupportedBuildArgumentException;
 import org.gradle.tooling.internal.protocol.test.InternalTestExecutionConnection;
 
-public interface InternalCompositeAwareConnection extends InternalTestExecutionConnection {
+public interface InternalCompositeAwareConnection extends InternalTestExecutionConnection, InternalCancellableConnection {
+    /**
+     * Performs some action against a composite and returns the requested model.
+     *
+     * <p>Consumer compatibility: This method is used by all consumer versions from 2.13-rc-1.</p>
+     * <p>Provider compatibility: This method is implemented by all provider versions from 2.13-rc-1.</p>
+     *
+     * @param modelIdentifier The identifier of the model to build.
+     * @param cancellationToken The token to propagate cancellation.
+     * @throws BuildExceptionVersion1 On build failure.
+     * @throws InternalUnsupportedModelException When the requested model is not supported.
+     * @throws InternalUnsupportedBuildArgumentException When the specified command-line options are not supported.
+     * @throws InternalBuildCancelledException When the operation was cancelled before it could complete.
+     * @throws IllegalStateException When this connection has been stopped.
+     * @since 2.13-rc-1
+     */
+    BuildResult<?> getModels(ModelIdentifier modelIdentifier, InternalCancellationToken cancellationToken,
+                            BuildParameters operationParameters) throws
+        BuildExceptionVersion1,
+        InternalUnsupportedModelException,
+        InternalUnsupportedBuildArgumentException,
+        InternalBuildCancelledException,
+        IllegalStateException;
 }

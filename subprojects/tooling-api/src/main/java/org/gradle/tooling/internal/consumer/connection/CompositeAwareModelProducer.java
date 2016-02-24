@@ -18,27 +18,51 @@ package org.gradle.tooling.internal.consumer.connection;
 
 import org.gradle.api.Transformer;
 import org.gradle.tooling.internal.adapter.ProtocolToModelAdapter;
+import org.gradle.tooling.internal.consumer.parameters.BuildCancellationTokenAdapter;
 import org.gradle.tooling.internal.consumer.parameters.ConsumerOperationParameters;
 import org.gradle.tooling.internal.consumer.versioning.ModelMapping;
 import org.gradle.tooling.internal.consumer.versioning.VersionDetails;
 import org.gradle.tooling.internal.protocol.BuildResult;
-import org.gradle.tooling.internal.protocol.InternalCancellableConnection;
+import org.gradle.tooling.internal.protocol.InternalCompositeAwareConnection;
+import org.gradle.tooling.internal.protocol.InternalUnsupportedModelException;
+import org.gradle.tooling.internal.protocol.ModelIdentifier;
+import org.gradle.tooling.model.internal.Exceptions;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class CompositeAwareModelProducer extends CancellableModelBuilderBackedModelProducer implements MultiModelProducer {
-    public CompositeAwareModelProducer(ProtocolToModelAdapter adapter, VersionDetails versionDetails, ModelMapping modelMapping, InternalCancellableConnection builder, Transformer<RuntimeException, RuntimeException> exceptionTransformer) {
-        super(adapter, versionDetails, modelMapping, builder, exceptionTransformer);
+    private final InternalCompositeAwareConnection connection;
+
+    public CompositeAwareModelProducer(ProtocolToModelAdapter adapter, VersionDetails versionDetails, ModelMapping modelMapping, InternalCompositeAwareConnection connection, Transformer<RuntimeException, RuntimeException> exceptionTransformer) {
+        super(adapter, versionDetails, modelMapping, connection, exceptionTransformer);
+        this.connection = connection;
     }
 
     @Override
     public <T> Set<T> produceModels(Class<T> elementType, ConsumerOperationParameters operationParameters) {
-        BuildResult<?> result = buildModel(elementType, operationParameters);
+        BuildResult<?> result = buildModels(elementType, operationParameters);
         Set<T> models = new LinkedHashSet<T>();
         if (result.getModel() instanceof Iterable) {
             adapter.convertCollection(models, elementType, Iterable.class.cast(result.getModel()), getCompatibilityMapperAction());
         }
         return models;
     }
+
+    private <T> BuildResult<?> buildModels(Class<T> type, ConsumerOperationParameters operationParameters) {
+        if (!versionDetails.maySupportModel(type)) {
+            throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
+        }
+        final ModelIdentifier modelIdentifier = modelMapping.getModelIdentifierFromModelType(type);
+        BuildResult<?> result;
+        try {
+            result = connection.getModels(modelIdentifier, new BuildCancellationTokenAdapter(operationParameters.getCancellationToken()), operationParameters);
+        } catch (InternalUnsupportedModelException e) {
+            throw Exceptions.unknownModel(type, e);
+        } catch (RuntimeException e) {
+            throw exceptionTransformer.transform(e);
+        }
+        return result;
+    }
+
 }

@@ -33,7 +33,7 @@ public class CancellableModelBuilderBackedModelProducer extends HasCompatibility
     protected final VersionDetails versionDetails;
     protected final ModelMapping modelMapping;
     private final InternalCancellableConnection builder;
-    private final Transformer<RuntimeException, RuntimeException> exceptionTransformer;
+    protected final Transformer<RuntimeException, RuntimeException> exceptionTransformer;
 
     public CancellableModelBuilderBackedModelProducer(ProtocolToModelAdapter adapter, VersionDetails versionDetails, ModelMapping modelMapping, InternalCancellableConnection builder, Transformer<RuntimeException, RuntimeException> exceptionTransformer) {
         super(versionDetails);
@@ -49,7 +49,7 @@ public class CancellableModelBuilderBackedModelProducer extends HasCompatibility
         return adapter.adapt(type, result.getModel(), getCompatibilityMapperAction());
     }
 
-    protected <T> BuildResult<?> buildModel(Class<T> type, ConsumerOperationParameters operationParameters) {
+    private <T> BuildResult<?> buildModel(Class<T> type, ConsumerOperationParameters operationParameters) {
         if (!versionDetails.maySupportModel(type)) {
             throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
         }
