@@ -45,6 +45,11 @@ public class CancellableModelBuilderBackedModelProducer extends HasCompatibility
     }
 
     public <T> T produceModel(Class<T> type, ConsumerOperationParameters operationParameters) {
+        BuildResult<?> result = buildModel(type, operationParameters);
+        return adapter.adapt(type, result.getModel(), getCompatibilityMapperAction());
+    }
+
+    protected <T> BuildResult<?> buildModel(Class<T> type, ConsumerOperationParameters operationParameters) {
         if (!versionDetails.maySupportModel(type)) {
             throw Exceptions.unsupportedModel(type, versionDetails.getVersion());
         }
@@ -57,6 +62,6 @@ public class CancellableModelBuilderBackedModelProducer extends HasCompatibility
         } catch (RuntimeException e) {
             throw exceptionTransformer.transform(e);
         }
-        return adapter.adapt(type, result.getModel(), getCompatibilityMapperAction());
+        return result;
     }
 }

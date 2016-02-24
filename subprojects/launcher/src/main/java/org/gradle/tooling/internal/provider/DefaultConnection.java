@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 
 public class DefaultConnection implements InternalConnection, BuildActionRunner,
-    ConfigurableConnection, ModelBuilder, InternalBuildActionExecutor, InternalCancellableConnection, StoppableConnection, InternalTestExecutionConnection {
+    ConfigurableConnection, ModelBuilder, InternalBuildActionExecutor, InternalCancellableConnection, StoppableConnection, InternalTestExecutionConnection, InternalCompositeAwareConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultConnection.class);
     private ProtocolToModelAdapter adapter;
     private ServiceRegistry services;
