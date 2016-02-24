@@ -139,7 +139,7 @@ public class ProtocolToModelAdapter implements Serializable {
                 Class<?> rawClass = (Class<?>) parameterizedTargetType.getRawType();
                 if (Iterable.class.isAssignableFrom(rawClass)) {
                     Type targetElementType = getElementType(parameterizedTargetType, 0);
-                    return convertCollection(rawClass, targetElementType, (Iterable<?>) sourceObject, mapping);
+                    return convertCollectionInternal(rawClass, targetElementType, (Iterable<?>) sourceObject, mapping);
                 }
                 if (Map.class.isAssignableFrom(rawClass)) {
                     Type targetKeyType = getElementType(parameterizedTargetType, 0);
@@ -169,9 +169,9 @@ public class ProtocolToModelAdapter implements Serializable {
         }
     }
 
-    protected Object convertCollection(Class<?> collectionClass, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+    protected Object convertCollectionInternal(Class<?> collectionClass, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
         Collection<Object> convertedElements = collectionMapper.createEmptyCollection(collectionClass);
-        convertCollection(convertedElements, targetElementType, sourceObject, mapping);
+        convertCollectionInternal(convertedElements, targetElementType, sourceObject, mapping);
         if (collectionClass.equals(DomainObjectSet.class)) {
             return new ImmutableDomainObjectSet(convertedElements);
         } else {
@@ -179,7 +179,11 @@ public class ProtocolToModelAdapter implements Serializable {
         }
     }
 
-    public void convertCollection(Collection<Object> targetCollection, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+    public <T> void convertCollection(Collection<T> targetCollection, Class<T> targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
+        convertCollectionInternal((Collection<Object>) targetCollection, targetElementType, sourceObject, mapping);
+    }
+
+    private void convertCollectionInternal(Collection<Object> targetCollection, Type targetElementType, Iterable<?> sourceObject, Action<? super SourceObjectMapping> mapping) {
         for (Object element : sourceObject) {
             targetCollection.add(convert(targetElementType, element, mapping));
         }

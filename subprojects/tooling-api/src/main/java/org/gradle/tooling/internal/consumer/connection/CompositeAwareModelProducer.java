@@ -21,8 +21,10 @@ import org.gradle.tooling.internal.adapter.ProtocolToModelAdapter;
 import org.gradle.tooling.internal.consumer.parameters.ConsumerOperationParameters;
 import org.gradle.tooling.internal.consumer.versioning.ModelMapping;
 import org.gradle.tooling.internal.consumer.versioning.VersionDetails;
+import org.gradle.tooling.internal.protocol.BuildResult;
 import org.gradle.tooling.internal.protocol.InternalCancellableConnection;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class CompositeAwareModelProducer extends CancellableModelBuilderBackedModelProducer implements MultiModelProducer {
@@ -32,6 +34,11 @@ public class CompositeAwareModelProducer extends CancellableModelBuilderBackedMo
 
     @Override
     public <T> Set<T> produceModels(Class<T> elementType, ConsumerOperationParameters operationParameters) {
-        return null;
+        BuildResult<?> result = buildModel(elementType, operationParameters);
+        Set<T> models = new LinkedHashSet<T>();
+        if (result.getModel() instanceof Iterable) {
+            adapter.convertCollection(models, elementType, Iterable.class.cast(result.getModel()), getCompatibilityMapperAction());
+        }
+        return models;
     }
 }
