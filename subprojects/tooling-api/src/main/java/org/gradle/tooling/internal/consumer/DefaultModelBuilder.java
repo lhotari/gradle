@@ -28,17 +28,11 @@ import org.gradle.tooling.model.internal.Exceptions;
 import java.util.List;
 
 public class DefaultModelBuilder<T> extends AbstractLongRunningOperation<DefaultModelBuilder<T>> implements ModelBuilder<T> {
-    private final Class<T> returnType;
-    private final Class<?> modelType;
+    private final Class<T> modelType;
     private final AsyncConsumerActionExecutor connection;
 
     public DefaultModelBuilder(Class<T> modelType, AsyncConsumerActionExecutor connection, ConnectionParameters parameters) {
-        this(modelType, modelType, connection, parameters);
-    }
-
-    public DefaultModelBuilder(Class<T> returnType, Class<?> modelType, AsyncConsumerActionExecutor connection, ConnectionParameters parameters) {
         super(parameters);
-        this.returnType = returnType;
         this.modelType = modelType;
         this.connection = connection;
         operationParamsBuilder.setEntryPoint("ModelBuilder API");
@@ -50,7 +44,7 @@ public class DefaultModelBuilder<T> extends AbstractLongRunningOperation<Default
     }
 
     public T get() throws GradleConnectionException {
-        BlockingResultHandler<T> handler = new BlockingResultHandler<T>(returnType);
+        BlockingResultHandler<T> handler = new BlockingResultHandler<T>(modelType);
         get(handler);
         return handler.getResult();
     }
@@ -62,7 +56,7 @@ public class DefaultModelBuilder<T> extends AbstractLongRunningOperation<Default
                 return operationParameters;
             }
             public T run(ConsumerConnection connection) {
-                T model = connection.run(returnType, modelType, operationParameters);
+                T model = connection.run(modelType, operationParameters);
                 return model;
             }
         }, new ResultHandlerAdapter<T>(handler));
