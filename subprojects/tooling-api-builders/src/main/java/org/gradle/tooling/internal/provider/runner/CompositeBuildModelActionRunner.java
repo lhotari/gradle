@@ -17,6 +17,7 @@
 package org.gradle.tooling.internal.provider.runner;
 
 import org.gradle.StartParameter;
+import org.gradle.TaskExecutionRequest;
 import org.gradle.api.Nullable;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.initialization.BuildRequestContext;
@@ -79,11 +80,25 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
                 BuildLauncher buildLauncher = projectConnection.newBuild();
                 buildLauncher.withCancellationToken(new CancellationTokenAdapter(cancellationToken));
                 buildLauncher.addProgressListener(new ProgressListenerToProgressLoggerAdapter(progressLoggerFactory));
-                if (startParameter.getTaskRequests() != null && !startParameter.getTaskRequests().isEmpty()) {
-                    throw new UnsupportedOperationException("Launchables aren't supported.");
-                } else {
-                    buildLauncher.forTasks(startParameter.getTaskNames().toArray(new String[0]));
+                List<String> taskArgs = new ArrayList<String>();
+                for (TaskExecutionRequest request : startParameter.getTaskRequests()) {
+                    if (request.getProjectPath() == null) {
+                        taskArgs.addAll(request.getArgs());
+                    } else {
+                        String projectPath = request.getProjectPath();
+                        int index = 0;
+                        for (String arg : request.getArgs()) {
+                            if (index == 0) {
+                                // add project path to first arg
+                                taskArgs.add(projectPath + ":" + arg);
+                            } else {
+                                taskArgs.add(arg);
+                            }
+                            index++;
+                        }
+                    }
                 }
+                buildLauncher.forTasks(taskArgs.toArray(new String[0]));
                 buildLauncher.run();
             } catch (GradleConnectionException e) {
                 throw new CompositeBuildExceptionVersion1(e);
