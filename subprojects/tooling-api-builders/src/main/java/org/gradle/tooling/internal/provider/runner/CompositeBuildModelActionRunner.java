@@ -16,6 +16,7 @@
 
 package org.gradle.tooling.internal.provider.runner;
 
+import org.gradle.StartParameter;
 import org.gradle.api.Nullable;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.initialization.BuildRequestContext;
@@ -51,14 +52,50 @@ public class CompositeBuildModelActionRunner implements CompositeBuildActionRunn
         }
         Class<?> modelType = resolveModelType((BuildModelAction) action);
         ProgressLoggerFactory progressLoggerFactory = buildController.getBuildScopeServices().get(ProgressLoggerFactory.class);
-        Set<Object> results = aggregateModels(modelType, actionParameters, requestContext.getCancellationToken(), progressLoggerFactory);
+        Set<Object> results = null;
+        if (modelType != Void.class) {
+            results = aggregateModels(modelType, actionParameters, requestContext.getCancellationToken(), progressLoggerFactory);
+        } else {
+            if (!((BuildModelAction) action).isRunTasks()) {
+                throw new IllegalStateException("No tasks defined.");
+            }
+            executeTasks(action.getStartParameter(), actionParameters, requestContext.getCancellationToken(), progressLoggerFactory);
+        }
         PayloadSerializer payloadSerializer = buildController.getBuildScopeServices().get(PayloadSerializer.class);
         buildController.setResult(new BuildActionResult(payloadSerializer.serialize(results), null));
     }
 
-    private Class<? extends HierarchicalElement> resolveModelType(BuildModelAction action) {
+    private void executeTasks(StartParameter startParameter, CompositeBuildActionParameters actionParameters, BuildCancellationToken cancellationToken, ProgressLoggerFactory progressLoggerFactory) {
+        CompositeParameters compositeParameters = actionParameters.getCompositeParameters();
+        for (GradleParticipantBuild participant : compositeParameters.getBuilds()) {
+            if (!participant.getProjectDir().getAbsolutePath().equals(compositeParameters.getCompositeTargetBuildRootDir().getAbsolutePath())) {
+                continue;
+            }
+            if (cancellationToken.isCancellationRequested()) {
+                break;
+            }
+            ProjectConnection projectConnection = connect(participant, compositeParameters);
+            try {
+                BuildLauncher buildLauncher = projectConnection.newBuild();
+                buildLauncher.withCancellationToken(new CancellationTokenAdapter(cancellationToken));
+                buildLauncher.addProgressListener(new ProgressListenerToProgressLoggerAdapter(progressLoggerFactory));
+                if (startParameter.getTaskRequests() != null && !startParameter.getTaskRequests().isEmpty()) {
+                    throw new UnsupportedOperationException("Launchables aren't supported.");
+                } else {
+                    buildLauncher.forTasks(startParameter.getTaskNames().toArray(new String[0]));
+                }
+                buildLauncher.run();
+            } catch (GradleConnectionException e) {
+                throw new CompositeBuildExceptionVersion1(e);
+            } finally {
+                projectConnection.close();
+            }
+        }
+    }
+
+    private Class<?> resolveModelType(BuildModelAction action) {
         final String requestedModelName = action.getModelName();
-        Class<? extends HierarchicalElement> modelType;
+        Class<?> modelType;
         try {
             modelType = Cast.uncheckedCast(HierarchicalElement.class.getClassLoader().loadClass(requestedModelName));
         } catch (ClassNotFoundException e) {

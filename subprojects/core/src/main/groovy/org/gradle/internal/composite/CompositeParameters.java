@@ -63,4 +63,8 @@ public class CompositeParameters implements Serializable {
     public Boolean isEmbeddedParticipants() {
         return embeddedParticipants;
     }
+
+    public File getCompositeTargetBuildRootDir() {
+        return compositeTargetBuildRootDir;
+    }
 }
