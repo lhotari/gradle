@@ -27,7 +27,13 @@ class ExecuteBuildCompositeBuildCrossVersionSpec extends CompositeToolingApiSpec
         given:
         embedCoordinatorAndParticipants = true
         def build1 = populate("build1") {
-            buildFile << "apply plugin: 'java'"
+            buildFile << """
+task hello {
+  doLast {
+     file('hello.txt').text = "Hello world"
+  }
+}
+"""
         }
         def build2 = populate("build2") {
             buildFile << "apply plugin: 'java'"
@@ -36,10 +42,12 @@ class ExecuteBuildCompositeBuildCrossVersionSpec extends CompositeToolingApiSpec
         def build1Id = createGradleBuildParticipant(build1).toBuildIdentity()
         withCompositeConnection([build1, build2]) { connection ->
             def buildLauncher = connection.newBuild(build1Id)
-            buildLauncher.forTasks("jar")
+            buildLauncher.forTasks("hello")
             buildLauncher.run()
         }
         then:
-        noExceptionThrown()
+        def helloFile = build1.file("hello.txt")
+        helloFile.exists()
+        helloFile.text == 'Hello world'
     }
 }
