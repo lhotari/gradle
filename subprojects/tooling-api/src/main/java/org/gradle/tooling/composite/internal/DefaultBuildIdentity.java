@@ -16,20 +16,18 @@
 
 package org.gradle.tooling.composite.internal;
 
-import org.gradle.tooling.composite.BuildIdentity;
-
 import java.io.File;
 
-public class DefaultBuildIdentity implements BuildIdentity {
+public class DefaultBuildIdentity implements BuildIdentityInternal {
     private final File rootDir;
 
     public DefaultBuildIdentity(File rootDir) {
-        this.rootDir = rootDir;
+        this.rootDir = rootDir.getAbsoluteFile();
     }
 
     @Override
     public String toString() {
-        return String.format("build=%s", rootDir.getAbsolutePath());
+        return String.format("build=%s", rootDir.getPath());
     }
 
     @Override
@@ -50,5 +48,10 @@ public class DefaultBuildIdentity implements BuildIdentity {
     @Override
     public int hashCode() {
         return rootDir.hashCode();
+    }
+
+    @Override
+    public File getRootDirectory() {
+        return rootDir;
     }
 }
