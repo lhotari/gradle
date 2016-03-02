@@ -17,6 +17,7 @@ package org.gradle.tooling.internal.adapter;
 
 import org.gradle.api.Action;
 import org.gradle.internal.UncheckedException;
+import org.gradle.internal.io.ClassLoaderObjectInputStream;
 import org.gradle.internal.reflect.DirectInstantiator;
 import org.gradle.internal.typeconversion.EnumFromCharSequenceNotationParser;
 import org.gradle.internal.typeconversion.NotationConverterToNotationParserAdapter;
@@ -26,8 +27,7 @@ import org.gradle.tooling.model.DomainObjectSet;
 import org.gradle.tooling.model.internal.Exceptions;
 import org.gradle.tooling.model.internal.ImmutableDomainObjectSet;
 
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -98,20 +98,53 @@ public class ProtocolToModelAdapter implements Serializable {
         if (wrapperType.isInstance(sourceObject)) {
             return wrapperType.cast(sourceObject);
         }
+        if (targetType.isEnum()) {
+            return adaptToEnum(targetType, sourceObject);
+        }
+        if (wrapperType.isInterface()) {
+            return createProxy(wrapperType, sourceObject, mapper, mapping);
+        } else {
+            if (sourceObject instanceof Serializable && wrapperType.getName().equals(sourceObject.getClass().getName())) {
+                return cloneToTargetClassLoader(wrapperType, sourceObject);
+            } else {
+                throw new UnsupportedOperationException(String.format("Cannot convert object of %s to %s.", sourceObject.getClass(), targetType));
+            }
+        }
+    }
+
+    private <T, S> T createProxy(Class<? extends T> wrapperType, S sourceObject, Action<? super SourceObjectMapping> mapper, DefaultSourceObjectMapping mapping) {
         MethodInvoker overrideMethodInvoker = mapping.overrideInvoker;
         MixInMethodInvoker mixInMethodInvoker = null;
         if (mapping.mixInType != null) {
             mixInMethodInvoker = new MixInMethodInvoker(mapping.mixInType, new AdaptingMethodInvoker(mapper, new ReflectionMethodInvoker()));
             overrideMethodInvoker = mixInMethodInvoker;
         }
-        if (targetType.isEnum()) {
-            return adaptToEnum(targetType, sourceObject);
-        }
+
         Object proxy = Proxy.newProxyInstance(wrapperType.getClassLoader(), new Class<?>[]{wrapperType}, new InvocationHandlerImpl(sourceObject, overrideMethodInvoker, mapper));
         if (mixInMethodInvoker != null) {
             mixInMethodInvoker.setProxy(proxy);
         }
         return wrapperType.cast(proxy);
+    }
+
+    private <T, S> T cloneToTargetClassLoader(Class<? extends T> targetType, S sourceObject) {
+        return targetType.cast(cloneWithSerialization(Serializable.class.cast(sourceObject), targetType.getClassLoader()));
+    }
+
+    private static Object cloneWithSerialization(Serializable sourceObject, ClassLoader targetClassLoader) {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(512);
+        try {
+            new ObjectOutputStream(bout).writeObject(sourceObject);
+        } catch (IOException ex) {
+            throw UncheckedException.throwAsUncheckedException(ex);
+        }
+        try {
+            return new ClassLoaderObjectInputStream(new ByteArrayInputStream(bout.toByteArray()), targetClassLoader).readObject();
+        } catch (ClassNotFoundException ex) {
+            throw UncheckedException.throwAsUncheckedException(ex);
+        } catch (IOException ex) {
+            throw UncheckedException.throwAsUncheckedException(ex);
+        }
     }
 
     private static <T, S> T adaptToEnum(Class<T> targetType, S sourceObject) {

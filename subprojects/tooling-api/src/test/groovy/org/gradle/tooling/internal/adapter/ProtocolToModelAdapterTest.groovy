@@ -469,5 +469,39 @@ class ProtocolToModelAdapterTest extends Specification {
         then:
         thrown(IllegalArgumentException)
     }
+
+    def "clones by serialization when same class is in different classloader"() {
+        given:
+        GroovyClassLoader gcl1 = new GroovyClassLoader()
+        GroovyClassLoader gcl2 = new GroovyClassLoader()
+        def classes = '''
+        import groovy.transform.EqualsAndHashCode
+
+        @EqualsAndHashCode
+        class ValueObject implements Serializable {
+            String name
+            SubValueObject subValueObject = new SubValueObject(name: 'sub value')
+        }
+
+        @EqualsAndHashCode
+        class SubValueObject implements Serializable {
+            String name
+        }
+        '''
+        gcl1.parseClass(classes)
+        gcl2.parseClass(classes)
+        def valueObjectClass1 = gcl1.loadClass("ValueObject")
+        def valueObjectClass2 = gcl1.loadClass("ValueObject")
+        def valueObject = valueObjectClass1.newInstance()
+        valueObject.name = 'name'
+
+        when:
+        def valueObject2 = adapter.adapt(valueObjectClass2, valueObject)
+
+        then:
+        valueObject2 == valueObject
+        valueObject2.name == 'name'
+        valueObject2.subValueObject.name == 'sub value'
+    }
 }
 
