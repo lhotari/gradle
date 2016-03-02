@@ -18,7 +18,6 @@ package org.gradle.tooling.internal.adapter
 
 import org.gradle.api.Action
 import org.gradle.messaging.remote.internal.Message
-import org.gradle.tooling.model.DomainObjectSet
 import org.gradle.tooling.model.UnsupportedMethodException
 import org.gradle.util.Matchers
 import spock.lang.Specification
@@ -472,81 +471,3 @@ class ProtocolToModelAdapterTest extends Specification {
     }
 }
 
-interface TestModel {
-    String getName()
-
-    TestProject getProject()
-
-    boolean isConfigSupported()
-
-    String getConfig(String defaultValue)
-
-    Boolean isThing(Boolean defaultValue)
-
-    DomainObjectSet<? extends TestProject> getChildren()
-
-    List<TestProject> getChildList()
-
-    Map<TestProject, TestProject> getChildMap()
-
-    TestEnum getTestEnum()
-}
-
-interface TestProject {
-    String getName()
-}
-
-interface TestExtendedProject extends TestProject {
-}
-
-interface TestProtocolModel {
-    String getName()
-
-    TestProtocolProject getProject()
-
-    Iterable<? extends TestProtocolProject> getChildren()
-
-    Iterable<? extends TestProtocolProject> getChildList()
-
-    Map<String, ? extends TestProtocolProject> getChildMap()
-
-    String getConfig();
-
-    Object getTestEnum()
-}
-
-interface PartialTestProtocolModel {
-    String getName()
-}
-
-interface TestProtocolProject {
-    String getName()
-}
-
-enum TestEnum {
-    FIRST, SECOND
-}
-
-class TestProtocolProjectImpl implements Serializable {
-    String name = "name"
-}
-
-class ConfigMixin {
-    TestModel model
-
-    ConfigMixin(TestModel model) {
-        this.model = model
-    }
-
-    Object getProject() {
-        return new Object()
-    }
-
-    String getConfig(String value) {
-        return "[${model.getConfig(value)}]"
-    }
-
-    String getName() {
-        return "[${model.name}]"
-    }
-}
