@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
@@ -54,6 +56,7 @@ public class SocketConnection<T> implements RemoteConnection<T> {
             // NOTE: we use non-blocking IO as there is no reliable way when using blocking IO to shutdown reads while
             // keeping writes active. For example, Socket.shutdownInput() does not work on Windows.
             socket.configureBlocking(false);
+            configureSocket(socket.socket());
             outstr = new SocketOutputStream(socket);
             instr = new SocketInputStream(socket);
         } catch (IOException e) {
@@ -65,6 +68,11 @@ public class SocketConnection<T> implements RemoteConnection<T> {
         remoteAddress = new SocketInetAddress(remoteSocketAddress.getAddress(), remoteSocketAddress.getPort());
         objectReader = serializer.newReader(instr, localAddress, remoteAddress);
         objectWriter = serializer.newWriter(outstr);
+    }
+
+    private void configureSocket(Socket socket) throws SocketException {
+        // disable Nagle's algorithm
+        socket.setTcpNoDelay(true);
     }
 
     @Override
