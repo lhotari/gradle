@@ -24,38 +24,70 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.FileTreeAdapter;
+import org.gradle.api.internal.file.collections.MinimalFileTree;
+import org.gradle.api.internal.file.collections.SingletonFileTree;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
 // Visits a FileTreeInternal for snapshotting, caches some directory scans
 public class TreeSnapshotter {
+    private final File fileStoreDirectory;
+    private ConcurrentMap<String, Collection<FileTreeElement>> cachedFileStoreFiles = new MapMaker().weakValues().makeMap();
     private ConcurrentMap<String, Collection<FileTreeElement>> cachedTrees = new MapMaker().weakValues().makeMap();
 
+    public TreeSnapshotter(File fileStoreDirectory) {
+        this.fileStoreDirectory = fileStoreDirectory;
+    }
+
     public Collection<FileTreeElement> visitTreeForSnapshotting(FileTreeInternal fileTree, boolean allowReuse) {
-        if (isDirectoryFileTree(fileTree)) {
-            DirectoryFileTree directoryFileTree = DirectoryFileTree.class.cast(((FileTreeAdapter) fileTree).getTree());
-            if (isEligibleForCaching(directoryFileTree)) {
-                final String absolutePath = directoryFileTree.getDir().getAbsolutePath();
-                Collection<FileTreeElement> cachedTree = allowReuse ? cachedTrees.get(absolutePath) : null;
-                if (cachedTree != null) {
-                    return cachedTree;
-                } else {
-                    cachedTree = doVisitTree(fileTree);
-                    cachedTrees.put(absolutePath, cachedTree);
-                    return cachedTree;
+        if (fileTree instanceof FileTreeAdapter) {
+            MinimalFileTree minimalFileTree = ((FileTreeAdapter) fileTree).getTree();
+            if (minimalFileTree instanceof DirectoryFileTree) {
+                DirectoryFileTree directoryFileTree = DirectoryFileTree.class.cast(minimalFileTree);
+                if (isEligibleForCaching(directoryFileTree)) {
+                    final String absolutePath = directoryFileTree.getDir().getAbsolutePath();
+                    return handleVisitingAndCaching(absolutePath, fileTree, allowReuse, cachedTrees);
+                }
+            } else if (minimalFileTree instanceof SingletonFileTree) {
+                File file = ((SingletonFileTree) minimalFileTree).getFile().getAbsoluteFile();
+                if (isEligibleForCaching(file)) {
+                    return handleVisitingAndCaching(file.getAbsolutePath(), fileTree, allowReuse, cachedFileStoreFiles);
                 }
             }
         }
         return doVisitTree(fileTree);
     }
 
-    private boolean isEligibleForCaching(DirectoryFileTree directoryFileTree) {
-        return directoryFileTree.getPatterns().isEmpty();
+    private Collection<FileTreeElement> handleVisitingAndCaching(String absolutePath, FileTreeInternal fileTree, boolean allowReuse, ConcurrentMap<String, Collection<FileTreeElement>> cache) {
+        Collection<FileTreeElement> cachedTree = allowReuse ? cache.get(absolutePath) : null;
+        if (cachedTree != null) {
+            return cachedTree;
+        } else {
+            cachedTree = doVisitTree(fileTree);
+            cache.put(absolutePath, cachedTree);
+            return cachedTree;
+        }
     }
 
-    private boolean isDirectoryFileTree(FileTreeInternal fileTree) {
-        return fileTree instanceof FileTreeAdapter && ((FileTreeAdapter) fileTree).getTree() instanceof DirectoryFileTree;
+    private boolean isEligibleForCaching(File file) {
+        return isInFileStoreDirectory(file);
+    }
+
+    private boolean isInFileStoreDirectory(File file) {
+        File currentFile = file.getParentFile();
+        while (currentFile != null) {
+            if (currentFile.equals(fileStoreDirectory)) {
+                return true;
+            }
+            currentFile = currentFile.getParentFile();
+        }
+        return false;
+    }
+
+    private boolean isEligibleForCaching(DirectoryFileTree directoryFileTree) {
+        return directoryFileTree.getPatterns().isEmpty();
     }
 
     private Collection<FileTreeElement> doVisitTree(FileTreeInternal fileTree) {

@@ -53,4 +53,8 @@ public class SingletonFileTree implements MinimalFileTree {
     public void visitTreeOrBackingFile(FileVisitor visitor) {
         visit(visitor);
     }
+
+    public File getFile() {
+        return file;
+    }
 }
