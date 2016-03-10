@@ -32,7 +32,16 @@ class TreeSnapshotterTest extends Specification {
     @Rule
     public final TestNameTestDirectoryProvider testDir = new TestNameTestDirectoryProvider();
     @Subject
-    TreeSnapshotter treeSnapshotter = new TreeSnapshotter()
+    TreeSnapshotter treeSnapshotter
+    File rootDir
+    File fileStoreDir
+    def additionalInputs = []
+
+    def setup() {
+        rootDir = testDir.createDir("root")
+        fileStoreDir = testDir.createDir("caches/modules-2/files-2.1")
+        treeSnapshotter = new TreeSnapshotter(fileStoreDir)
+    }
 
     def "should return list of file details and cache it once"() {
         given:
@@ -113,28 +122,74 @@ class TreeSnapshotterTest extends Specification {
         treeSnapshotter.cachedTrees.size() == 1
     }
 
+    def "should cache files in file store directory"() {
+        given:
+        createSampleFiles()
+        def jarfiles = [fileStoreDir.createFile("commons-lang/commons-lang/2.5/b0236b252e86419eef20c31a44579d2aee2f0a69/commons-lang-2.5.jar"),
+                        fileStoreDir.createFile("log4j/log4j/1.2.17/5af35056b4d257e4b64b9e8069c0746e8b08629f/log4j-1.2.17.jar")]
+        additionalInputs.addAll(jarfiles)
+        def fileTrees = resolveAsFileTrees()
+        def fileDetails = []
+
+        when:
+        fileTrees.each { fileDetails.addAll(treeSnapshotter.visitTreeForSnapshotting(it, true)) }
+
+        then:
+        fileDetails.size() == 10
+        treeSnapshotter.cachedTrees.size() == 1
+        treeSnapshotter.cachedFileStoreFiles.size() == 2
+
+        when: 'cache is cleared'
+        treeSnapshotter.clearCache()
+
+        then: 'file store files should not be cleared'
+        treeSnapshotter.cachedFileStoreFiles.size() == 2
+        treeSnapshotter.cachedTrees.size() == 0
+    }
+
+    def "should not cache files in other than file store directory"() {
+        given:
+        createSampleFiles()
+        def jarfiles = [testDir.createFile("commons-lang/commons-lang/2.5/b0236b252e86419eef20c31a44579d2aee2f0a69/commons-lang-2.5.jar"),
+                        testDir.createFile("log4j/log4j/1.2.17/5af35056b4d257e4b64b9e8069c0746e8b08629f/log4j-1.2.17.jar")]
+        additionalInputs.addAll(jarfiles)
+        def fileTrees = resolveAsFileTrees()
+        def fileDetails = []
+
+        when:
+        fileTrees.each { fileDetails.addAll(treeSnapshotter.visitTreeForSnapshotting(it, true)) }
+
+        then:
+        fileDetails.size() == 10
+        treeSnapshotter.cachedTrees.size() == 1
+        treeSnapshotter.cachedFileStoreFiles.size() == 0
+    }
+
     private def createSampleFiles() {
-        [testDir.createFile("a/file1.txt"),
-         testDir.createFile("a/b/file2.txt"),
-         testDir.createFile("a/b/c/file3.txt"),
-         testDir.createFile("a/b/c/file4.md"),
-         testDir.createFile("a/file5.md"),]
+        [rootDir.createFile("a/file1.txt"),
+         rootDir.createFile("a/b/file2.txt"),
+         rootDir.createFile("a/b/c/file3.txt"),
+         rootDir.createFile("a/b/c/file4.md"),
+         rootDir.createFile("a/file5.md"),]
     }
 
     private List<FileTreeInternal> resolveAsFileTrees(includePattern = null, includeFilter = null) {
         def fileResolver = TestFiles.resolver()
 
         def directorySet = new DefaultSourceDirectorySet("files", fileResolver, new DefaultDirectoryFileTreeFactory())
-        directorySet.srcDir(testDir.getTestDirectory())
+        directorySet.srcDir(rootDir)
         if (includePattern) {
             directorySet.include(includePattern)
         }
         if (includeFilter) {
             directorySet.filter.include(includeFilter)
         }
-        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(fileResolver);
-        context.add(directorySet);
-        List<FileTreeInternal> fileTrees = context.resolveAsFileTrees();
+        DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(fileResolver)
+        context.add(directorySet)
+        additionalInputs.each {
+            context.add(it)
+        }
+        List<FileTreeInternal> fileTrees = context.resolveAsFileTrees()
         fileTrees
     }
 }

@@ -33,6 +33,7 @@ import org.gradle.cache.CacheRepository;
 import org.gradle.cache.internal.CacheDecorator;
 import org.gradle.execution.taskgraph.TaskPlanExecutor;
 import org.gradle.execution.taskgraph.TaskPlanExecutorFactory;
+import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.environment.GradleBuildEnvironment;
 import org.gradle.internal.event.ListenerManager;
@@ -41,8 +42,12 @@ import org.gradle.internal.nativeplatform.filesystem.FileSystem;
 import org.gradle.internal.operations.BuildOperationProcessor;
 import org.gradle.internal.operations.DefaultBuildOperationProcessor;
 import org.gradle.internal.reflect.Instantiator;
+import org.gradle.internal.reflect.JavaReflectionUtil;
 import org.gradle.internal.serialize.DefaultSerializerRegistry;
 import org.gradle.internal.serialize.SerializerRegistry;
+import org.gradle.internal.service.ServiceRegistry;
+
+import java.io.File;
 
 public class TaskExecutionServices {
 
@@ -87,8 +92,15 @@ public class TaskExecutionServices {
         return new CachingFileSnapshotter(new DefaultHasher(), cacheAccess, stringInterner);
     }
 
-    TreeSnapshotter createTreeSnapshotter() {
-        return new TreeSnapshotter();
+    TreeSnapshotter createTreeSnapshotter(ServiceRegistry serviceRegistry) {
+        File fileStoreDirectory;
+        try {
+            Object cacheLockingManager = serviceRegistry.get(Class.forName("org.gradle.api.internal.artifacts.ivyservice.CacheLockingManager"));
+            fileStoreDirectory = JavaReflectionUtil.readableProperty(cacheLockingManager, File.class, "fileStoreDirectory").getValue(cacheLockingManager);
+        } catch (ClassNotFoundException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
+        }
+        return new TreeSnapshotter(fileStoreDirectory.getAbsoluteFile());
     }
 
     TaskArtifactStateRepository createTaskArtifactStateRepository(Instantiator instantiator, TaskArtifactStateCacheAccess cacheAccess, StartParameter startParameter, FileSnapshotter fileSnapshotter,
