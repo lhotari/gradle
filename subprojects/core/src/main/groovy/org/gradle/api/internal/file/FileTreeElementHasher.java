@@ -20,9 +20,7 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import org.gradle.api.file.FileTreeElement;
 
-import java.util.Collection;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 public class FileTreeElementHasher {
     private static final byte HASH_PATH_SEPARATOR = (byte) '/';
@@ -30,7 +28,7 @@ public class FileTreeElementHasher {
     private static final byte HASH_RECORD_SEPARATOR = (byte) '\n';
 
     public static final int calculateHashForFileMetadata(Collection<? extends FileTreeElement> allFileTreeElements) {
-        SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
+        Collection<FileTreeElement> sortedFileTreeElement = sortForHashing(allFileTreeElements);
 
         Hasher hasher = createHasher();
         for (FileTreeElement fileTreeElement : sortedFileTreeElement) {
@@ -54,7 +52,7 @@ public class FileTreeElementHasher {
     }
 
     public static final int calculateHashForFilePaths(Collection<? extends FileTreeElement> allFileTreeElements) {
-        SortedSet<FileTreeElement> sortedFileTreeElement = asSortedSet(allFileTreeElements);
+        Collection<FileTreeElement> sortedFileTreeElement = sortForHashing(allFileTreeElements);
 
         Hasher hasher = createHasher();
         for (FileTreeElement fileTreeElement : sortedFileTreeElement) {
@@ -67,12 +65,40 @@ public class FileTreeElementHasher {
         return hasher.hash().asInt();
     }
 
-    private static SortedSet<FileTreeElement> asSortedSet(Collection<? extends FileTreeElement> allFileTreeElements) {
-        if (allFileTreeElements instanceof SortedSet) {
-            return (SortedSet<FileTreeElement>) allFileTreeElements;
-        }
-        SortedSet<FileTreeElement> sortedFileTreeElement = new TreeSet<FileTreeElement>(FileTreeElementComparator.INSTANCE);
-        sortedFileTreeElement.addAll(allFileTreeElements);
+    private static Collection<FileTreeElement> sortForHashing(Collection<? extends FileTreeElement> allFileTreeElements) {
+        List<FileTreeElement> sortedFileTreeElement = new ArrayList<FileTreeElement>(allFileTreeElements);
+        Collections.sort(sortedFileTreeElement, FastFileTreeElementComparator.INSTANCE);
         return sortedFileTreeElement;
+    }
+
+    // Comparator that is fast and produces stable order for FileTreeElements for hashing
+    private static class FastFileTreeElementComparator implements Comparator<FileTreeElement> {
+        public static final FastFileTreeElementComparator INSTANCE = new FastFileTreeElementComparator();
+
+        private FastFileTreeElementComparator() {
+        }
+
+        @Override
+        public int compare(FileTreeElement o1, FileTreeElement o2) {
+            int compareResult = (o1.isDirectory() == o2.isDirectory()) ? 0 : (o1.isDirectory() ? 1 : -1);
+            if (compareResult != 0) {
+                return compareResult;
+            }
+            if (!o1.isDirectory() && !o2.isDirectory()) {
+                compareResult = (o1.getLastModified() < o2.getLastModified()) ? -1 : ((o1.getLastModified() == o2.getLastModified()) ? 0 : 1);
+                if (compareResult != 0) {
+                    return compareResult;
+                }
+                compareResult = (o1.getSize() < o2.getSize()) ? -1 : ((o1.getSize() == o2.getSize()) ? 0 : 1);
+                if (compareResult != 0) {
+                    return compareResult;
+                }
+            }
+            compareResult = o1.getRelativePath().getLastName().compareTo(o2.getRelativePath().getLastName());
+            if (compareResult != 0) {
+                return compareResult;
+            }
+            return o1.getRelativePath().compareTo(o2.getRelativePath());
+        }
     }
 }
