@@ -414,7 +414,7 @@ public class DefaultServiceRegistry implements ServiceRegistry, Closeable {
                 return (Factory<T>) factory.get();
             }
 
-            throw new UnknownServiceException(type, String.format("No factory for objects of type %s available in %s.", format(type), displayName));
+            throw new UnknownServiceExceptionNoStack(type, String.format("No factory for objects of type %s available in %s.", format(type), displayName));
         }
     }
 
