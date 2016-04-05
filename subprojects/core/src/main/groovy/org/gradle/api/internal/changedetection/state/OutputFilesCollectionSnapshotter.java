@@ -75,11 +75,6 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         @Override
-        public FileCollection getFileCollection() {
-            return delegate.getFileCollection();
-        }
-
-        @Override
         public Integer getHash() {
             if (hash == null) {
                 Hasher hasher = FileTreeElementHasher.createHasher();

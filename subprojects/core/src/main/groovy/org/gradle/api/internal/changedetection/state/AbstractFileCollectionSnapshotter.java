@@ -108,11 +108,6 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         }
 
         @Override
-        public FileCollection getFileCollection() {
-            return files;
-        }
-
-        @Override
         public Integer getHash() {
             if (hash == null) {
                 hash = calculatePreCheckHash(fileTreeElements);
