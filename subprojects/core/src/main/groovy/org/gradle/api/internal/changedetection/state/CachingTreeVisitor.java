@@ -16,8 +16,9 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.MapMaker;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
@@ -27,32 +28,55 @@ import org.gradle.api.internal.file.collections.FileTreeAdapter;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
+import java.io.File;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentMap;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 // Visits a FileTreeInternal for snapshotting, caches some directory scans
 public class CachingTreeVisitor {
     private final static Logger LOG = Logging.getLogger(CachingTreeVisitor.class);
-    private ConcurrentMap<String, Collection<FileTreeElement>> cachedTrees = new MapMaker().weakValues().makeMap();
+    private Cache<String, VisitedTree> cachedTrees = CacheBuilder.newBuilder().maximumSize(1024).build();
+    private AtomicLong nextId = new AtomicLong(System.currentTimeMillis());
 
-    public Collection<FileTreeElement> visitTreeForSnapshotting(FileTreeInternal fileTree, boolean allowReuse) {
+    public VisitedTree visitTreeForSnapshotting(FileTreeInternal fileTree, boolean allowReuse) {
         if (isDirectoryFileTree(fileTree)) {
             DirectoryFileTree directoryFileTree = DirectoryFileTree.class.cast(((FileTreeAdapter) fileTree).getTree());
             if (isEligibleForCaching(directoryFileTree)) {
                 final String absolutePath = directoryFileTree.getDir().getAbsolutePath();
-                Collection<FileTreeElement> cachedTree = allowReuse ? cachedTrees.get(absolutePath) : null;
+                VisitedTree cachedTree = allowReuse ? cachedTrees.getIfPresent(absolutePath) : null;
                 if (cachedTree != null) {
                     recordCacheHit(directoryFileTree);
                     return cachedTree;
                 } else {
                     recordCacheMiss(directoryFileTree, allowReuse);
-                    cachedTree = doVisitTree(fileTree);
+                    cachedTree = doVisitTree(fileTree, true);
                     cachedTrees.put(absolutePath, cachedTree);
                     return cachedTree;
                 }
             }
         }
-        return doVisitTree(fileTree);
+        return doVisitTree(fileTree, false);
+    }
+
+    public VisitedTree createJoinedTree(List<VisitedTree> trees, Collection<File> missingFiles) {
+        return createJoinedTree(nextId.incrementAndGet(), trees, missingFiles);
+    }
+
+    public static VisitedTree createJoinedTree(long nextId, List<VisitedTree> trees, Collection<File> missingFiles) {
+        if (missingFiles.isEmpty()) {
+            if (trees.size() == 0) {
+                return null;
+            }
+            if (trees.size() == 1) {
+                return trees.get(0);
+            }
+        }
+        ImmutableList.Builder<FileTreeElement> listBuilder = ImmutableList.builder();
+        for (VisitedTree tree : trees) {
+            listBuilder.addAll(tree.getEntries());
+        }
+        return new DefaultVisitedTree(listBuilder.build(), false, nextId, missingFiles);
     }
 
     protected void recordCacheHit(DirectoryFileTree directoryFileTree) {
@@ -77,7 +101,7 @@ public class CachingTreeVisitor {
         return fileTree instanceof FileTreeAdapter && ((FileTreeAdapter) fileTree).getTree() instanceof DirectoryFileTree;
     }
 
-    private Collection<FileTreeElement> doVisitTree(FileTreeInternal fileTree) {
+    private VisitedTree doVisitTree(FileTreeInternal fileTree, boolean shareable) {
         final ImmutableList.Builder<FileTreeElement> fileTreeElements = ImmutableList.builder();
         fileTree.visitTreeOrBackingFile(new FileVisitor() {
             @Override
@@ -90,10 +114,11 @@ public class CachingTreeVisitor {
                 fileTreeElements.add(fileDetails);
             }
         });
-        return fileTreeElements.build();
+        return new DefaultVisitedTree(fileTreeElements.build(), shareable, nextId.incrementAndGet(), null);
     }
 
     public void clearCache() {
-        cachedTrees.clear();
+        cachedTrees.invalidateAll();
     }
+
 }
