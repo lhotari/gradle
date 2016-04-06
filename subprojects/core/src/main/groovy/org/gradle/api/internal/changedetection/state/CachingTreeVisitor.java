@@ -18,6 +18,7 @@ package org.gradle.api.internal.changedetection.state;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MapMaker;
+import org.gradle.api.Action;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
@@ -29,30 +30,42 @@ import org.gradle.api.logging.Logging;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 // Visits a FileTreeInternal for snapshotting, caches some directory scans
 public class CachingTreeVisitor {
     private final static Logger LOG = Logging.getLogger(CachingTreeVisitor.class);
-    private ConcurrentMap<String, Collection<FileTreeElement>> cachedTrees = new MapMaker().weakValues().makeMap();
+    private ConcurrentMap<String, VisitedTree> cachedTrees = new MapMaker().weakValues().makeMap();
+    private AtomicLong nextId = new AtomicLong(System.currentTimeMillis());
 
-    public Collection<FileTreeElement> visitTreeForSnapshotting(FileTreeInternal fileTree, boolean allowReuse) {
+    public interface VisitedTree {
+        Collection<FileTreeElement> getEntries();
+
+        boolean isShareable();
+
+        Long getAssignedId();
+
+        Long maybeStoreEntry(Action<Long> storeEntryAction);
+    }
+
+    public VisitedTree visitTreeForSnapshotting(FileTreeInternal fileTree, boolean allowReuse) {
         if (isDirectoryFileTree(fileTree)) {
             DirectoryFileTree directoryFileTree = DirectoryFileTree.class.cast(((FileTreeAdapter) fileTree).getTree());
             if (isEligibleForCaching(directoryFileTree)) {
                 final String absolutePath = directoryFileTree.getDir().getAbsolutePath();
-                Collection<FileTreeElement> cachedTree = allowReuse ? cachedTrees.get(absolutePath) : null;
+                VisitedTree cachedTree = allowReuse ? cachedTrees.get(absolutePath) : null;
                 if (cachedTree != null) {
                     recordCacheHit(directoryFileTree);
                     return cachedTree;
                 } else {
                     recordCacheMiss(directoryFileTree, allowReuse);
-                    cachedTree = doVisitTree(fileTree);
+                    cachedTree = doVisitTree(fileTree, true);
                     cachedTrees.put(absolutePath, cachedTree);
                     return cachedTree;
                 }
             }
         }
-        return doVisitTree(fileTree);
+        return doVisitTree(fileTree, false);
     }
 
     protected void recordCacheHit(DirectoryFileTree directoryFileTree) {
@@ -77,7 +90,7 @@ public class CachingTreeVisitor {
         return fileTree instanceof FileTreeAdapter && ((FileTreeAdapter) fileTree).getTree() instanceof DirectoryFileTree;
     }
 
-    private Collection<FileTreeElement> doVisitTree(FileTreeInternal fileTree) {
+    private VisitedTree doVisitTree(FileTreeInternal fileTree, boolean shareable) {
         final ImmutableList.Builder<FileTreeElement> fileTreeElements = ImmutableList.builder();
         fileTree.visitTreeOrBackingFile(new FileVisitor() {
             @Override
@@ -90,10 +103,47 @@ public class CachingTreeVisitor {
                 fileTreeElements.add(fileDetails);
             }
         });
-        return fileTreeElements.build();
+        return new DefaultVisitedTree(fileTreeElements.build(), shareable, nextId);
     }
 
     public void clearCache() {
         cachedTrees.clear();
+    }
+
+    private static class DefaultVisitedTree implements VisitedTree {
+        private final ImmutableList<FileTreeElement> entries;
+        private final boolean shareable;
+        private final AtomicLong nextId;
+        private Long assignedId;
+
+        public DefaultVisitedTree(ImmutableList<FileTreeElement> entries, boolean shareable, AtomicLong nextId) {
+            this.entries = entries;
+            this.shareable = shareable;
+            this.nextId = nextId;
+        }
+
+        @Override
+        public Collection<FileTreeElement> getEntries() {
+            return entries;
+        }
+
+        @Override
+        public boolean isShareable() {
+            return shareable;
+        }
+
+        @Override
+        public Long getAssignedId() {
+            return assignedId;
+        }
+
+        @Override
+        public synchronized Long maybeStoreEntry(Action<Long> storeEntryAction) {
+            if (assignedId == null) {
+                assignedId = nextId.incrementAndGet();
+                storeEntryAction.execute(assignedId);
+            }
+            return assignedId;
+        }
     }
 }
