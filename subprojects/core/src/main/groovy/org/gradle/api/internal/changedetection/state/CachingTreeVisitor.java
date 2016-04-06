@@ -16,8 +16,9 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.MapMaker;
 import org.gradle.api.Action;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
@@ -29,13 +30,12 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
 import java.util.Collection;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 // Visits a FileTreeInternal for snapshotting, caches some directory scans
 public class CachingTreeVisitor {
     private final static Logger LOG = Logging.getLogger(CachingTreeVisitor.class);
-    private ConcurrentMap<String, VisitedTree> cachedTrees = new MapMaker().weakValues().makeMap();
+    private Cache<String, VisitedTree> cachedTrees = CacheBuilder.newBuilder().maximumSize(1024).build();
     private AtomicLong nextId = new AtomicLong(System.currentTimeMillis());
 
     public interface VisitedTree {
@@ -53,7 +53,7 @@ public class CachingTreeVisitor {
             DirectoryFileTree directoryFileTree = DirectoryFileTree.class.cast(((FileTreeAdapter) fileTree).getTree());
             if (isEligibleForCaching(directoryFileTree)) {
                 final String absolutePath = directoryFileTree.getDir().getAbsolutePath();
-                VisitedTree cachedTree = allowReuse ? cachedTrees.get(absolutePath) : null;
+                VisitedTree cachedTree = allowReuse ? cachedTrees.getIfPresent(absolutePath) : null;
                 if (cachedTree != null) {
                     recordCacheHit(directoryFileTree);
                     return cachedTree;
@@ -107,7 +107,7 @@ public class CachingTreeVisitor {
     }
 
     public void clearCache() {
-        cachedTrees.clear();
+        cachedTrees.invalidateAll();
     }
 
     private static class DefaultVisitedTree implements VisitedTree {
