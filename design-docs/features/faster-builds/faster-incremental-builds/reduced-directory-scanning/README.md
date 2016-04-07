@@ -158,6 +158,11 @@ There is currently duplication in the snapshots of outputs and inputs of depende
 Change persistence of input and output snapshots to reference shared tree snapshots.
 An input or output snapshot might be composed of multiple tree snapshots.
 
+#### Implementation notes
+
+- updateFrom and applyAllChangesSince should be replaced
+  - prevents sharing output & input snapshots
+
 
 ### Incremental build reuses directory scanning results in most cases
 
