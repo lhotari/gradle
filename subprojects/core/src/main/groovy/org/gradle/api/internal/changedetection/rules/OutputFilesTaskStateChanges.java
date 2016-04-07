@@ -75,10 +75,10 @@ public class OutputFilesTaskStateChanges extends AbstractFileSnapshotTaskStateCh
         } else {
             lastExecutionOutputFiles = previousExecution.getOutputFilesSnapshot();
         }
-        FileCollectionSnapshot newOutputFiles = lastExecutionOutputFiles.updateFrom(outputFilesBefore);
+        FileCollectionSnapshot lastExecutionFilesUpdatedToStateBeforeTask = lastExecutionOutputFiles.updateFrom(outputFilesBefore);
         FileCollectionSnapshot.PreCheck outputFilesAfterPreCheck = createSnapshotPreCheck(outputFilesSnapshotter, task.getOutputs().getFiles());
         FileCollectionSnapshot outputFilesAfter = createSnapshot(outputFilesSnapshotter, outputFilesAfterPreCheck);
-        currentExecution.setOutputFilesSnapshot(outputFilesAfter.applyAllChangesSince(outputFilesBefore, newOutputFiles));
+        currentExecution.setOutputFilesSnapshot(outputFilesAfter.applyAllChangesSince(outputFilesBefore, lastExecutionFilesUpdatedToStateBeforeTask));
         currentExecution.setOutputFilesHash(outputFilesAfterPreCheck.getHash());
     }
 

@@ -17,11 +17,12 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.file.FileTreeElement;
+import org.gradle.api.internal.cache.StringInterner;
 
 import java.util.Collection;
 
 public interface VisitedTree {
     Collection<FileTreeElement> getEntries();
-    TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter);
+    TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter, StringInterner stringInterner);
     boolean isShareable();
 }

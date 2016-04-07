@@ -16,12 +16,20 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import org.gradle.api.Action;
+public class FileSnapshotWithKey {
+    private final String key;
+    private final IncrementalFileSnapshot incrementalFileSnapshot;
 
-import java.util.Collection;
+    public FileSnapshotWithKey(String key, IncrementalFileSnapshot incrementalFileSnapshot) {
+        this.key = key;
+        this.incrementalFileSnapshot = incrementalFileSnapshot;
+    }
 
-public interface TreeSnapshot {
-    Collection<FileSnapshotWithKey> getFileSnapshots();
-    Long getAssignedId();
-    Long maybeStoreEntry(Action<Long> storeEntryAction);
+    public String getKey() {
+        return key;
+    }
+
+    public IncrementalFileSnapshot getIncrementalFileSnapshot() {
+        return incrementalFileSnapshot;
+    }
 }

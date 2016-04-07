@@ -19,7 +19,6 @@ package org.gradle.api.internal.changedetection.state;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import org.gradle.api.Action;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
@@ -28,9 +27,8 @@ import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.FileTreeAdapter;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
-import org.gradle.internal.Pair;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 // Visits a FileTreeInternal for snapshotting, caches some directory scans
@@ -57,6 +55,20 @@ public class CachingTreeVisitor {
             }
         }
         return doVisitTree(fileTree, false);
+    }
+
+    public VisitedTree createJoinedTree(List<VisitedTree> trees) {
+        if (trees.size() == 0) {
+            return null;
+        }
+        if (trees.size() == 1) {
+            return trees.get(0);
+        }
+        ImmutableList.Builder<FileTreeElement> listBuilder = ImmutableList.builder();
+        for (VisitedTree tree : trees) {
+            listBuilder.addAll(tree.getEntries());
+        }
+        return new DefaultVisitedTree(listBuilder.build(), false, nextId.incrementAndGet());
     }
 
     protected void recordCacheHit(DirectoryFileTree directoryFileTree) {
@@ -94,57 +106,11 @@ public class CachingTreeVisitor {
                 fileTreeElements.add(fileDetails);
             }
         });
-        return new DefaultVisitedTree(fileTreeElements.build(), shareable, nextId);
+        return new DefaultVisitedTree(fileTreeElements.build(), shareable, nextId.incrementAndGet());
     }
 
     public void clearCache() {
         cachedTrees.invalidateAll();
     }
 
-    private static class DefaultVisitedTree implements VisitedTree {
-        private final ImmutableList<FileTreeElement> entries;
-        private final boolean shareable;
-        private final AtomicLong nextId;
-        private Long assignedId;
-
-        public DefaultVisitedTree(ImmutableList<FileTreeElement> entries, boolean shareable, AtomicLong nextId) {
-            this.entries = entries;
-            this.shareable = shareable;
-            this.nextId = nextId;
-        }
-
-        @Override
-        public Collection<FileTreeElement> getEntries() {
-            return entries;
-        }
-
-        @Override
-        public TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter) {
-            return new TreeSnapshot() {
-                @Override
-                public Collection<Pair<FileTreeElement, IncrementalFileSnapshot>> getFileSnapshots() {
-                    throw new UnsupportedOperationException("Not implemented.");
-                }
-
-                @Override
-                public Long getAssignedId() {
-                    return assignedId;
-                }
-
-                @Override
-                public Long maybeStoreEntry(Action<Long> storeEntryAction) {
-                    if (assignedId == null) {
-                        assignedId = nextId.incrementAndGet();
-                        storeEntryAction.execute(assignedId);
-                    }
-                    return assignedId;
-                }
-            };
-        }
-
-        @Override
-        public boolean isShareable() {
-            return shareable;
-        }
-    }
 }

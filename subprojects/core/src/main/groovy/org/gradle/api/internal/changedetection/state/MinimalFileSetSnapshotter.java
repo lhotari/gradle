@@ -42,17 +42,21 @@ public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter
     }
 
     @Override
+    VisitedTree createJoinedTree(List<VisitedTree> nonShareableTrees, Collection<File> missingFiles) {
+        return nonShareableTrees.get(0);
+    }
+
+    @Override
     protected void visitFiles(FileCollection input, List<VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse) {
         final List<FileTreeElement> fileTreeElements = new ArrayList<FileTreeElement>();
         VisitedTree tree = new VisitedTree() {
-
             @Override
             public Collection<FileTreeElement> getEntries() {
                 return fileTreeElements;
             }
 
             @Override
-            public TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter) {
+            public TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter, StringInterner stringInterner) {
                 return null;
             }
 

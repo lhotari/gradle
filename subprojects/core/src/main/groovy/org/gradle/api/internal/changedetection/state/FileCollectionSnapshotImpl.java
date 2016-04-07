@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.gradle.util.ChangeListener;
 
@@ -24,9 +25,20 @@ import java.util.*;
 
 class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
     final Map<String, IncrementalFileSnapshot> snapshots;
+    final List<TreeSnapshot> treeSnapshots;
 
-    public FileCollectionSnapshotImpl(Map<String, IncrementalFileSnapshot> snapshots) {
-        this.snapshots = snapshots;
+    public FileCollectionSnapshotImpl(List<TreeSnapshot> treeSnapshots) {
+        this.treeSnapshots = ImmutableList.copyOf(treeSnapshots);
+        snapshots = new HashMap<String, IncrementalFileSnapshot>();
+        for(TreeSnapshot treeSnapshot : treeSnapshots) {
+            addSnapshots(treeSnapshot.getFileSnapshots());
+        }
+    }
+
+    private void addSnapshots(Collection<FileSnapshotWithKey> fileSnapshots) {
+        for(FileSnapshotWithKey fileSnapshotWithKey : fileSnapshots) {
+            snapshots.put(fileSnapshotWithKey.getKey(), fileSnapshotWithKey.getIncrementalFileSnapshot());
+        }
     }
 
     public List<File> getFiles() {
