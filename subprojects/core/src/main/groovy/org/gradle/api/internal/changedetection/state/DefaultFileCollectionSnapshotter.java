@@ -17,7 +17,6 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.FileTreeInternal;
@@ -35,13 +34,13 @@ public class DefaultFileCollectionSnapshotter extends AbstractFileCollectionSnap
     }
 
     @Override
-    protected void visitFiles(FileCollection input, final List<FileTreeElement> fileTreeElements, final List<File> missingFiles, boolean allowReuse) {
+    protected void visitFiles(FileCollection input, final List<CachingTreeVisitor.VisitedTree> visitedTrees, final List<File> missingFiles, boolean allowReuse) {
         DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(fileResolver);
         context.add(input);
         List<FileTreeInternal> fileTrees = context.resolveAsFileTrees();
 
         for (FileTreeInternal fileTree : fileTrees) {
-            fileTreeElements.addAll(treeVisitor.visitTreeForSnapshotting(fileTree, allowReuse).getEntries());
+            visitedTrees.add(treeVisitor.visitTreeForSnapshotting(fileTree, allowReuse));
         }
     }
 }

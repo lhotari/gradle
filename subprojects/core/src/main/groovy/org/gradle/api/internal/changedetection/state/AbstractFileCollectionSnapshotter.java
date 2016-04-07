@@ -52,13 +52,17 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         return new DefaultFileCollectionSnapshotPreCheck(files, allowReuse);
     }
 
-    private Integer calculatePreCheckHash(List<FileTreeElement> allFileVisitDetails) {
-        return FileTreeElementHasher.calculateHashForFileMetadata(allFileVisitDetails);
+    private Integer calculatePreCheckHash(Collection<CachingTreeVisitor.VisitedTree> visitedTrees) {
+        Collection<FileTreeElement> fileTreeElements = new ArrayList<FileTreeElement>();
+        for (CachingTreeVisitor.VisitedTree tree : visitedTrees) {
+            fileTreeElements.addAll(tree.getEntries());
+        }
+        return FileTreeElementHasher.calculateHashForFileMetadata(fileTreeElements);
     }
 
 
     public FileCollectionSnapshot snapshot(final FileCollectionSnapshot.PreCheck preCheck) {
-        if (preCheck.getFileTreeElements().isEmpty() && preCheck.getMissingFiles().isEmpty()) {
+        if (preCheck.isEmpty()) {
             return emptySnapshot();
         }
 
@@ -66,13 +70,15 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
 
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
-                for (FileTreeElement fileDetails : preCheck.getFileTreeElements()) {
-                    String absolutePath = getInternedAbsolutePath(fileDetails.getFile());
-                    if (!snapshots.containsKey(absolutePath)) {
-                        if (fileDetails.isDirectory()) {
-                            snapshots.put(absolutePath, DirSnapshot.getInstance());
-                        } else {
-                            snapshots.put(absolutePath, new FileHashSnapshot(snapshotter.snapshot(fileDetails).getHash(), fileDetails.getLastModified()));
+                for (CachingTreeVisitor.VisitedTree tree : preCheck.getVisitedTrees()) {
+                    for (FileTreeElement fileDetails : tree.getEntries()) {
+                        String absolutePath = getInternedAbsolutePath(fileDetails.getFile());
+                        if (!snapshots.containsKey(absolutePath)) {
+                            if (fileDetails.isDirectory()) {
+                                snapshots.put(absolutePath, DirSnapshot.getInstance());
+                            } else {
+                                snapshots.put(absolutePath, new FileHashSnapshot(snapshotter.snapshot(fileDetails).getHash(), fileDetails.getLastModified()));
+                            }
                         }
                     }
                 }
@@ -92,37 +98,47 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         return stringInterner.intern(file.getAbsolutePath());
     }
 
-    abstract protected void visitFiles(FileCollection input, List<FileTreeElement> fileTreeElements, List<File> missingFiles, boolean allowReuse);
+    abstract protected void visitFiles(FileCollection input, List<CachingTreeVisitor.VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse);
 
     private final class DefaultFileCollectionSnapshotPreCheck implements FileCollectionSnapshot.PreCheck {
-        private final List<FileTreeElement> fileTreeElements;
+        private final List<CachingTreeVisitor.VisitedTree> visitedTrees;
         private final List<File> missingFiles;
         private final FileCollection files;
         private Integer hash;
 
         public DefaultFileCollectionSnapshotPreCheck(FileCollection files, boolean allowReuse) {
             this.files = files;
-            fileTreeElements = Lists.newLinkedList();
+            visitedTrees = Lists.newLinkedList();
             missingFiles = Lists.newArrayList();
-            visitFiles(files, fileTreeElements, missingFiles, allowReuse);
+            visitFiles(files, visitedTrees, missingFiles, allowReuse);
         }
 
         @Override
         public Integer getHash() {
             if (hash == null) {
-                hash = calculatePreCheckHash(fileTreeElements);
+                hash = calculatePreCheckHash(visitedTrees);
             }
             return hash;
         }
 
         @Override
-        public Collection<FileTreeElement> getFileTreeElements() {
-            return fileTreeElements;
+        public Collection<CachingTreeVisitor.VisitedTree> getVisitedTrees() {
+            return visitedTrees;
         }
 
         @Override
         public Collection<File> getMissingFiles() {
             return missingFiles;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            for (CachingTreeVisitor.VisitedTree tree : visitedTrees) {
+                if (!tree.getEntries().isEmpty()) {
+                    return false;
+                }
+            }
+            return missingFiles.isEmpty();
         }
     }
 }

@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.cache.StringInterner;
@@ -24,6 +25,8 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.internal.nativeplatform.filesystem.FileSystem;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -40,7 +43,30 @@ public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter
     }
 
     @Override
-    protected void visitFiles(FileCollection input, final List<FileTreeElement> fileTreeElements, final List<File> missingFiles, boolean allowReuse) {
+    protected void visitFiles(FileCollection input, List<CachingTreeVisitor.VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse) {
+        final List<FileTreeElement> fileTreeElements = new ArrayList<FileTreeElement>();
+        CachingTreeVisitor.VisitedTree tree = new CachingTreeVisitor.VisitedTree() {
+            @Override
+            public Collection<FileTreeElement> getEntries() {
+                return fileTreeElements;
+            }
+
+            @Override
+            public boolean isShareable() {
+                return false;
+            }
+
+            @Override
+            public Long getAssignedId() {
+                return null;
+            }
+
+            @Override
+            public Long maybeStoreEntry(Action<Long> storeEntryAction) {
+                return null;
+            }
+        };
+        visitedTrees.add(tree);
         for (File file : input.getFiles()) {
             if (file.exists()) {
                 fileTreeElements.add(new DefaultFileVisitDetails(file, fileSystem, fileSystem));

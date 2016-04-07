@@ -18,7 +18,6 @@ package org.gradle.api.internal.changedetection.state;
 
 import com.google.common.hash.Hasher;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.FileTreeElementHasher;
 import org.gradle.internal.serialize.DefaultSerializerRegistry;
@@ -89,8 +88,13 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         @Override
-        public Collection<FileTreeElement> getFileTreeElements() {
-            return delegate.getFileTreeElements();
+        public Collection<CachingTreeVisitor.VisitedTree> getVisitedTrees() {
+            return delegate.getVisitedTrees();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return roots.isEmpty() && delegate.isEmpty();
         }
 
         @Override

@@ -16,7 +16,6 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import org.gradle.api.file.FileTreeElement;
 import org.gradle.util.ChangeListener;
 
 import java.io.File;
@@ -62,8 +61,10 @@ public interface FileCollectionSnapshot {
     interface PreCheck {
         Integer getHash();
 
-        Collection<FileTreeElement> getFileTreeElements();
+        Collection<CachingTreeVisitor.VisitedTree> getVisitedTrees();
 
         Collection<File> getMissingFiles();
+
+        boolean isEmpty();
     }
 }
