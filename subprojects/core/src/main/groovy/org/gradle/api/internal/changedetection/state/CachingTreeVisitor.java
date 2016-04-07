@@ -28,6 +28,7 @@ import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.FileTreeAdapter;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.internal.Pair;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
@@ -100,7 +101,7 @@ public class CachingTreeVisitor {
         cachedTrees.invalidateAll();
     }
 
-    private static class DefaultVisitedTree implements ShareableTree {
+    private static class DefaultVisitedTree implements VisitedTree {
         private final ImmutableList<FileTreeElement> entries;
         private final boolean shareable;
         private final AtomicLong nextId;
@@ -118,22 +119,32 @@ public class CachingTreeVisitor {
         }
 
         @Override
+        public TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter) {
+            return new TreeSnapshot() {
+                @Override
+                public Collection<Pair<FileTreeElement, IncrementalFileSnapshot>> getFileSnapshots() {
+                    throw new UnsupportedOperationException("Not implemented.");
+                }
+
+                @Override
+                public Long getAssignedId() {
+                    return assignedId;
+                }
+
+                @Override
+                public Long maybeStoreEntry(Action<Long> storeEntryAction) {
+                    if (assignedId == null) {
+                        assignedId = nextId.incrementAndGet();
+                        storeEntryAction.execute(assignedId);
+                    }
+                    return assignedId;
+                }
+            };
+        }
+
+        @Override
         public boolean isShareable() {
             return shareable;
-        }
-
-        @Override
-        public Long getAssignedId() {
-            return assignedId;
-        }
-
-        @Override
-        public synchronized Long maybeStoreEntry(Action<Long> storeEntryAction) {
-            if (assignedId == null) {
-                assignedId = nextId.incrementAndGet();
-                storeEntryAction.execute(assignedId);
-            }
-            return assignedId;
         }
     }
 }

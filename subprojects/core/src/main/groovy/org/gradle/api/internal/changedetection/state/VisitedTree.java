@@ -22,6 +22,6 @@ import java.util.Collection;
 
 public interface VisitedTree {
     Collection<FileTreeElement> getEntries();
-
+    TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter);
     boolean isShareable();
 }

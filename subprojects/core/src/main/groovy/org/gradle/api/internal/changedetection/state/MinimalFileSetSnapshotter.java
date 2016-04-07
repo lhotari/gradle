@@ -16,7 +16,6 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.cache.StringInterner;
@@ -46,24 +45,20 @@ public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter
     protected void visitFiles(FileCollection input, List<VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse) {
         final List<FileTreeElement> fileTreeElements = new ArrayList<FileTreeElement>();
         VisitedTree tree = new VisitedTree() {
+
             @Override
             public Collection<FileTreeElement> getEntries() {
                 return fileTreeElements;
             }
 
             @Override
+            public TreeSnapshot maybeCreateSnapshot(FileSnapshotter fileSnapshotter) {
+                return null;
+            }
+
+            @Override
             public boolean isShareable() {
                 return false;
-            }
-
-            @Override
-            public Long getAssignedId() {
-                return null;
-            }
-
-            @Override
-            public Long maybeStoreEntry(Action<Long> storeEntryAction) {
-                return null;
             }
         };
         visitedTrees.add(tree);

@@ -17,9 +17,13 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.Action;
+import org.gradle.api.file.FileTreeElement;
+import org.gradle.internal.Pair;
 
-public interface ShareableTree extends VisitedTree {
+import java.util.Collection;
+
+public interface TreeSnapshot {
+    Collection<Pair<FileTreeElement, IncrementalFileSnapshot>> getFileSnapshots();
     Long getAssignedId();
-
     Long maybeStoreEntry(Action<Long> storeEntryAction);
 }
