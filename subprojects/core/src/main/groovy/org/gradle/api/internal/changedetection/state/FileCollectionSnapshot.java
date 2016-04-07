@@ -61,7 +61,7 @@ public interface FileCollectionSnapshot {
     interface PreCheck {
         Integer getHash();
 
-        Collection<CachingTreeVisitor.VisitedTree> getVisitedTrees();
+        Collection<VisitedTree> getVisitedTrees();
 
         Collection<File> getMissingFiles();
 

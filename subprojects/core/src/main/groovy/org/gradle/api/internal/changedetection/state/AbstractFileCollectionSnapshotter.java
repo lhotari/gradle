@@ -52,9 +52,9 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         return new DefaultFileCollectionSnapshotPreCheck(files, allowReuse);
     }
 
-    private Integer calculatePreCheckHash(Collection<CachingTreeVisitor.VisitedTree> visitedTrees) {
+    private Integer calculatePreCheckHash(Collection<VisitedTree> visitedTrees) {
         Collection<FileTreeElement> fileTreeElements = new ArrayList<FileTreeElement>();
-        for (CachingTreeVisitor.VisitedTree tree : visitedTrees) {
+        for (VisitedTree tree : visitedTrees) {
             fileTreeElements.addAll(tree.getEntries());
         }
         return FileTreeElementHasher.calculateHashForFileMetadata(fileTreeElements);
@@ -70,7 +70,7 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
 
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
-                for (CachingTreeVisitor.VisitedTree tree : preCheck.getVisitedTrees()) {
+                for (VisitedTree tree : preCheck.getVisitedTrees()) {
                     for (FileTreeElement fileDetails : tree.getEntries()) {
                         String absolutePath = getInternedAbsolutePath(fileDetails.getFile());
                         if (!snapshots.containsKey(absolutePath)) {
@@ -98,10 +98,10 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         return stringInterner.intern(file.getAbsolutePath());
     }
 
-    abstract protected void visitFiles(FileCollection input, List<CachingTreeVisitor.VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse);
+    abstract protected void visitFiles(FileCollection input, List<VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse);
 
     private final class DefaultFileCollectionSnapshotPreCheck implements FileCollectionSnapshot.PreCheck {
-        private final List<CachingTreeVisitor.VisitedTree> visitedTrees;
+        private final List<VisitedTree> visitedTrees;
         private final List<File> missingFiles;
         private final FileCollection files;
         private Integer hash;
@@ -122,7 +122,7 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         }
 
         @Override
-        public Collection<CachingTreeVisitor.VisitedTree> getVisitedTrees() {
+        public Collection<VisitedTree> getVisitedTrees() {
             return visitedTrees;
         }
 
@@ -133,7 +133,7 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
 
         @Override
         public boolean isEmpty() {
-            for (CachingTreeVisitor.VisitedTree tree : visitedTrees) {
+            for (VisitedTree tree : visitedTrees) {
                 if (!tree.getEntries().isEmpty()) {
                     return false;
                 }

@@ -88,7 +88,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         @Override
-        public Collection<CachingTreeVisitor.VisitedTree> getVisitedTrees() {
+        public Collection<VisitedTree> getVisitedTrees() {
             return delegate.getVisitedTrees();
         }
 

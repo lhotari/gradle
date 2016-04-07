@@ -34,7 +34,7 @@ public class DefaultFileCollectionSnapshotter extends AbstractFileCollectionSnap
     }
 
     @Override
-    protected void visitFiles(FileCollection input, final List<CachingTreeVisitor.VisitedTree> visitedTrees, final List<File> missingFiles, boolean allowReuse) {
+    protected void visitFiles(FileCollection input, final List<VisitedTree> visitedTrees, final List<File> missingFiles, boolean allowReuse) {
         DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(fileResolver);
         context.add(input);
         List<FileTreeInternal> fileTrees = context.resolveAsFileTrees();

@@ -38,16 +38,6 @@ public class CachingTreeVisitor {
     private Cache<String, VisitedTree> cachedTrees = CacheBuilder.newBuilder().maximumSize(1024).build();
     private AtomicLong nextId = new AtomicLong(System.currentTimeMillis());
 
-    public interface VisitedTree {
-        Collection<FileTreeElement> getEntries();
-
-        boolean isShareable();
-
-        Long getAssignedId();
-
-        Long maybeStoreEntry(Action<Long> storeEntryAction);
-    }
-
     public VisitedTree visitTreeForSnapshotting(FileTreeInternal fileTree, boolean allowReuse) {
         if (isDirectoryFileTree(fileTree)) {
             DirectoryFileTree directoryFileTree = DirectoryFileTree.class.cast(((FileTreeAdapter) fileTree).getTree());
@@ -110,7 +100,7 @@ public class CachingTreeVisitor {
         cachedTrees.invalidateAll();
     }
 
-    private static class DefaultVisitedTree implements VisitedTree {
+    private static class DefaultVisitedTree implements ShareableTree {
         private final ImmutableList<FileTreeElement> entries;
         private final boolean shareable;
         private final AtomicLong nextId;

@@ -43,9 +43,9 @@ public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter
     }
 
     @Override
-    protected void visitFiles(FileCollection input, List<CachingTreeVisitor.VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse) {
+    protected void visitFiles(FileCollection input, List<VisitedTree> visitedTrees, List<File> missingFiles, boolean allowReuse) {
         final List<FileTreeElement> fileTreeElements = new ArrayList<FileTreeElement>();
-        CachingTreeVisitor.VisitedTree tree = new CachingTreeVisitor.VisitedTree() {
+        VisitedTree tree = new VisitedTree() {
             @Override
             public Collection<FileTreeElement> getEntries() {
                 return fileTreeElements;
