@@ -20,6 +20,7 @@ import org.gradle.util.ChangeListener;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,6 +41,8 @@ public interface FileCollectionSnapshot {
     ChangeIterator<String> iterateContentChangesSince(FileCollectionSnapshot oldSnapshot, Set<ChangeFilter> filters);
 
     Collection<File> getFiles();
+
+    Map<String, IncrementalFileSnapshot> getSnapshots();
 
     FilesSnapshotSet getSnapshot();
 

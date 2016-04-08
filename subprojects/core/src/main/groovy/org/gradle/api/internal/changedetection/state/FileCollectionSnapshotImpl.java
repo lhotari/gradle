@@ -29,10 +29,15 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
 
     public FileCollectionSnapshotImpl(List<TreeSnapshot> treeSnapshots) {
         this.treeSnapshots = ImmutableList.copyOf(treeSnapshots);
-        snapshots = new HashMap<String, IncrementalFileSnapshot>();
+        this.snapshots = new HashMap<String, IncrementalFileSnapshot>();
         for(TreeSnapshot treeSnapshot : treeSnapshots) {
             addSnapshots(treeSnapshot.getFileSnapshots());
         }
+    }
+
+    public FileCollectionSnapshotImpl(Map<String, IncrementalFileSnapshot> snapshots) {
+        this.snapshots = snapshots;
+        this.treeSnapshots = null;
     }
 
     private void addSnapshots(Collection<FileSnapshotWithKey> fileSnapshots) {
@@ -49,6 +54,11 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
             }
         }
         return files;
+    }
+
+    @Override
+    public Map<String, IncrementalFileSnapshot> getSnapshots() {
+        return snapshots;
     }
 
     public FilesSnapshotSet getSnapshot() {
@@ -70,8 +80,7 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
 
     @Override
     public ChangeIterator<String> iterateContentChangesSince(FileCollectionSnapshot oldSnapshot, final Set<ChangeFilter> filters) {
-        FileCollectionSnapshotImpl oldSnapshotImpl = (FileCollectionSnapshotImpl) oldSnapshot;
-        final Map<String, IncrementalFileSnapshot> otherSnapshots = new HashMap<String, IncrementalFileSnapshot>(oldSnapshotImpl.snapshots);
+        final Map<String, IncrementalFileSnapshot> otherSnapshots = new HashMap<String, IncrementalFileSnapshot>(oldSnapshot.getSnapshots());
         final Iterator<String> currentFiles = snapshots.keySet().iterator();
         final boolean includeAdded = !filters.contains(ChangeFilter.IgnoreAddedFiles);
 
@@ -128,11 +137,11 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
             return this;
         }
 
-        return applyAllChangesSince(this, before, FileCollectionSnapshotImpl.updateFrom(((FileCollectionSnapshotImpl) after), before));
+        return applyAllChangesSince(this, before, FileCollectionSnapshotImpl.updateFrom((FileCollectionSnapshotImpl) after, before));
     }
 
-    public static FileCollectionSnapshot updateFrom(FileCollectionSnapshotImpl fileCollectionSnapshot, FileCollectionSnapshot newSnapshot) {
-        if (fileCollectionSnapshot.snapshots.isEmpty()) {
+    public static FileCollectionSnapshot updateFrom(FileCollectionSnapshot fileCollectionSnapshot, FileCollectionSnapshot newSnapshot) {
+        if (fileCollectionSnapshot.getSnapshots().isEmpty()) {
             // Nothing to update
             return fileCollectionSnapshot;
         }
@@ -143,22 +152,20 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
         }
 
         // Update entries from new snapshot
-        Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(fileCollectionSnapshot.snapshots.size());
-        for (String path : fileCollectionSnapshot.snapshots.keySet()) {
+        Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(fileCollectionSnapshot.getSnapshots().size());
+        for (String path : fileCollectionSnapshot.getSnapshots().keySet()) {
             IncrementalFileSnapshot newValue = newSnapshotImpl.snapshots.get(path);
             if (newValue != null) {
                 newSnapshots.put(path, newValue);
             }
         }
-        return new FileCollectionSnapshotImpl(null);
+        return new FileCollectionSnapshotImpl(newSnapshots);
     }
 
-    public static FileCollectionSnapshot applyAllChangesSince(FileCollectionSnapshotImpl fileCollectionSnapshot, FileCollectionSnapshot oldSnapshot, FileCollectionSnapshot target) {
-        FileCollectionSnapshotImpl oldSnapshotImpl = (FileCollectionSnapshotImpl) oldSnapshot;
-        FileCollectionSnapshotImpl targetImpl = (FileCollectionSnapshotImpl) target;
-        Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(targetImpl.snapshots);
-        FileCollectionSnapshotImpl.diff(fileCollectionSnapshot.snapshots, oldSnapshotImpl.snapshots, newSnapshots);
-        return new FileCollectionSnapshotImpl(null);
+    public static FileCollectionSnapshot applyAllChangesSince(FileCollectionSnapshot fileCollectionSnapshot, FileCollectionSnapshot oldSnapshot, FileCollectionSnapshot target) {
+        Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(target.getSnapshots());
+        FileCollectionSnapshotImpl.diff(fileCollectionSnapshot.getSnapshots(), oldSnapshot.getSnapshots(), newSnapshots);
+        return new FileCollectionSnapshotImpl(newSnapshots);
     }
 
     private static void diff(Map<String, IncrementalFileSnapshot> snapshots, Map<String, IncrementalFileSnapshot> oldSnapshots, Map<String, IncrementalFileSnapshot> target) {

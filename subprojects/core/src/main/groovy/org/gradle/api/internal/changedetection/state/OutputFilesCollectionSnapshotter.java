@@ -64,9 +64,9 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
      * Returns a new snapshot that ignores new files between 2 previous snapshots
      */
     public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after, FileCollection roots) {
-        FileCollectionSnapshotImpl previousImpl = ((FileCollectionSnapshotImpl) previous);
-        FileCollectionSnapshot lastExecutionFilesUpdatedToStateBeforeTask = FileCollectionSnapshotImpl.updateFrom(previousImpl, before);
-        return new OutputFilesSnapshot(getRoots(roots), FileCollectionSnapshotImpl.applyAllChangesSince(((FileCollectionSnapshotImpl) after), before, lastExecutionFilesUpdatedToStateBeforeTask));
+        FileCollectionSnapshot lastExecutionFilesUpdatedToStateBeforeTask = FileCollectionSnapshotImpl.updateFrom(previous, before);
+        final FileCollectionSnapshot filesSnapshot = FileCollectionSnapshotImpl.applyAllChangesSince(after, before, lastExecutionFilesUpdatedToStateBeforeTask);
+        return new OutputFilesSnapshot(getRoots(roots), filesSnapshot);
     }
 
     @Override
@@ -87,21 +87,13 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
             return filesSnapshot.getFiles();
         }
 
+        @Override
+        public Map<String, IncrementalFileSnapshot> getSnapshots() {
+            return filesSnapshot.getSnapshots();
+        }
+
         public FilesSnapshotSet getSnapshot() {
             return filesSnapshot.getSnapshot();
-        }
-
-        //@Override
-        public FileCollectionSnapshot updateFrom(FileCollectionSnapshot newSnapshot) {
-            OutputFilesSnapshot newOutputsSnapshot = (OutputFilesSnapshot) newSnapshot;
-            return new OutputFilesSnapshot(roots, null);//filesSnapshot.updateFrom(newOutputsSnapshot.filesSnapshot));
-        }
-
-        //@Override
-        public FileCollectionSnapshot applyAllChangesSince(FileCollectionSnapshot oldSnapshot, FileCollectionSnapshot target) {
-            OutputFilesSnapshot oldOutputsSnapshot = (OutputFilesSnapshot) oldSnapshot;
-            OutputFilesSnapshot targetOutputsSnapshot = (OutputFilesSnapshot) target;
-            return new OutputFilesSnapshot(roots, null);//filesSnapshot.applyAllChangesSince(oldOutputsSnapshot.filesSnapshot, targetOutputsSnapshot.filesSnapshot));
         }
 
         @Override

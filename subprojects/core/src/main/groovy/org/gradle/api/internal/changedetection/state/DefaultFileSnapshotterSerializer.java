@@ -35,7 +35,7 @@ class DefaultFileSnapshotterSerializer implements Serializer<FileCollectionSnaps
 
     public FileCollectionSnapshotImpl read(Decoder decoder) throws Exception {
         Map<String, IncrementalFileSnapshot> snapshots = new HashMap<String, IncrementalFileSnapshot>();
-        FileCollectionSnapshotImpl snapshot = new FileCollectionSnapshotImpl(null);//snapshots);
+        FileCollectionSnapshotImpl snapshot = new FileCollectionSnapshotImpl(snapshots);
         int snapshotsCount = decoder.readSmallInt();
         for (int i = 0; i < snapshotsCount; i++) {
             String key = stringInterner.intern(decoder.readString());

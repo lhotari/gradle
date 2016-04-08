@@ -25,10 +25,7 @@ import org.gradle.api.internal.file.FileTreeElementHasher;
 import org.gradle.internal.serialize.SerializerRegistry;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapshotter {
     protected final FileSnapshotter snapshotter;
@@ -48,7 +45,7 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
     }
 
     public FileCollectionSnapshot emptySnapshot() {
-        return new FileCollectionSnapshotImpl(null);//Collections.<String, IncrementalFileSnapshot>emptyMap());
+        return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
     }
 
     public FileCollectionSnapshot.PreCheck preCheck(final FileCollection files, final boolean allowReuse) {
@@ -68,6 +65,7 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         if (preCheck.isEmpty()) {
             return emptySnapshot();
         }
+
         final List<TreeSnapshot> treeSnapshots = new ArrayList<TreeSnapshot>();
         cacheAccess.useCache("Create file snapshot", new Runnable() {
             public void run() {
