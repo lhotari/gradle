@@ -124,17 +124,22 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
             return filesSnapshot.getSnapshot();
         }
 
-        @Override
+        //@Override
         public FileCollectionSnapshot updateFrom(FileCollectionSnapshot newSnapshot) {
             OutputFilesSnapshot newOutputsSnapshot = (OutputFilesSnapshot) newSnapshot;
-            return new OutputFilesSnapshot(roots, filesSnapshot.updateFrom(newOutputsSnapshot.filesSnapshot));
+            return new OutputFilesSnapshot(roots, null);//filesSnapshot.updateFrom(newOutputsSnapshot.filesSnapshot));
         }
 
-        @Override
+        //@Override
         public FileCollectionSnapshot applyAllChangesSince(FileCollectionSnapshot oldSnapshot, FileCollectionSnapshot target) {
             OutputFilesSnapshot oldOutputsSnapshot = (OutputFilesSnapshot) oldSnapshot;
             OutputFilesSnapshot targetOutputsSnapshot = (OutputFilesSnapshot) target;
-            return new OutputFilesSnapshot(roots, filesSnapshot.applyAllChangesSince(oldOutputsSnapshot.filesSnapshot, targetOutputsSnapshot.filesSnapshot));
+            return new OutputFilesSnapshot(roots, null);//filesSnapshot.applyAllChangesSince(oldOutputsSnapshot.filesSnapshot, targetOutputsSnapshot.filesSnapshot));
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
         }
 
         @Override
@@ -154,6 +159,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
                     return false;
                 }
             };
+        }
+
+        @Override
+        public FileCollectionSnapshot ignoreChangesBetweenSnapshots(FileCollectionSnapshot after, FileCollectionSnapshot before) {
+            return null;
         }
 
         private ChangeIterator<String> iterateRootFileIdChanges(final OutputFilesSnapshot other) {

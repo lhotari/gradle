@@ -48,7 +48,7 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
     }
 
     public FileCollectionSnapshot emptySnapshot() {
-        return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
+        return new FileCollectionSnapshotImpl(null);//Collections.<String, IncrementalFileSnapshot>emptyMap());
     }
 
     public FileCollectionSnapshot.PreCheck preCheck(final FileCollection files, final boolean allowReuse) {
