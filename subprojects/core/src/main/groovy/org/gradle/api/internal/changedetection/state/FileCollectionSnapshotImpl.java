@@ -107,8 +107,7 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
             }
         };
     }
-
-    @Override
+    
     public FileCollectionSnapshot ignoreChangesBetweenSnapshots(FileCollectionSnapshot after, FileCollectionSnapshot before) {
         if (before.isEmpty() || before.iterateContentChangesSince(after, null).next(new ChangeListener<String>() {
             @Override

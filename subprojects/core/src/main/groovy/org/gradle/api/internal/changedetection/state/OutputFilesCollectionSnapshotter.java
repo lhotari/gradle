@@ -63,7 +63,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     /**
      * Returns a new snapshot that ignores new files between 2 previous snapshots
      */
-    OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after) {
+    public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after) {
 
         return null;
     }
@@ -126,11 +126,6 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
                     return false;
                 }
             };
-        }
-
-        @Override
-        public FileCollectionSnapshot ignoreChangesBetweenSnapshots(FileCollectionSnapshot after, FileCollectionSnapshot before) {
-            return null;
         }
 
         private ChangeIterator<String> iterateRootFileIdChanges(final OutputFilesSnapshot other) {
