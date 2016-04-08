@@ -63,7 +63,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     /**
      * Returns a new snapshot that ignores new files between 2 previous snapshots
      */
-    OutputFilesSnapshot createOutputSnapshot(OutputFilesSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after) {
+    OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after) {
 
         return null;
     }
