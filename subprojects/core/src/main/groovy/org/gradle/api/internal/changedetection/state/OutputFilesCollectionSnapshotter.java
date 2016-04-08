@@ -63,11 +63,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     /**
      * Returns a new snapshot that ignores new files between 2 previous snapshots
      */
-    public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after) {
-
-        return null;
+    public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after, FileCollection roots) {
+        FileCollectionSnapshotImpl previousImpl = ((FileCollectionSnapshotImpl) previous);
+        FileCollectionSnapshot lastExecutionFilesUpdatedToStateBeforeTask = FileCollectionSnapshotImpl.updateFrom(previousImpl, before);
+        return new OutputFilesSnapshot(getRoots(roots), FileCollectionSnapshotImpl.applyAllChangesSince(((FileCollectionSnapshotImpl) after), before, lastExecutionFilesUpdatedToStateBeforeTask));
     }
-
 
     @Override
     public FileCollectionSnapshot snapshot(FileCollectionSnapshot.PreCheck preCheck) {

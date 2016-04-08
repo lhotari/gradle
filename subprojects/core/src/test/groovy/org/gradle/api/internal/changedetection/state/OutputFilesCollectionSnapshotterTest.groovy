@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.changedetection.state
 
+import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.cache.StringInterner
 import org.gradle.api.internal.file.TestFiles
 import org.gradle.api.internal.hash.DefaultHasher
@@ -45,13 +46,17 @@ class OutputFilesCollectionSnapshotterTest extends Specification {
         rootDir.createFile("taskcreated/1.txt")
         def afterTask = createSnapshot(rootDir)
         when:
-        def outputSnapshot = snapshotter.createOutputSnapshot(previous, beforeTask, afterTask)
+        def outputSnapshot = snapshotter.createOutputSnapshot(previous, beforeTask, afterTask, createFileCollection(rootDir))
         then:
         outputSnapshot.files.findAll { it.isFile() }.size() == 4
     }
 
     private FileCollectionSnapshot createSnapshot(File dir) {
-        snapshotter.snapshot(snapshotter.preCheck(TestFiles.fileCollectionFactory().fixed("root", dir), false))
+        snapshotter.snapshot(snapshotter.preCheck(createFileCollection(dir), false))
+    }
+
+    private FileCollection createFileCollection(File dir) {
+        TestFiles.fileCollectionFactory().fixed("root", dir)
     }
 
     def setup() {

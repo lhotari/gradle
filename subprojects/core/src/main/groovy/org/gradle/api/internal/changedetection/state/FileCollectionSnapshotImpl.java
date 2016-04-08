@@ -107,7 +107,7 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
             }
         };
     }
-    
+
     public FileCollectionSnapshot ignoreChangesBetweenSnapshots(FileCollectionSnapshot after, FileCollectionSnapshot before) {
         if (before.isEmpty() || before.iterateContentChangesSince(after, null).next(new ChangeListener<String>() {
             @Override
@@ -128,13 +128,13 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
             return this;
         }
 
-        return applyAllChangesSince(before, ((FileCollectionSnapshotImpl) after).updateFrom(before));
+        return applyAllChangesSince(this, before, FileCollectionSnapshotImpl.updateFrom(((FileCollectionSnapshotImpl) after), before));
     }
 
-    private FileCollectionSnapshot updateFrom(FileCollectionSnapshot newSnapshot) {
-        if (snapshots.isEmpty()) {
+    public static FileCollectionSnapshot updateFrom(FileCollectionSnapshotImpl fileCollectionSnapshot, FileCollectionSnapshot newSnapshot) {
+        if (fileCollectionSnapshot.snapshots.isEmpty()) {
             // Nothing to update
-            return this;
+            return fileCollectionSnapshot;
         }
         FileCollectionSnapshotImpl newSnapshotImpl = (FileCollectionSnapshotImpl) newSnapshot;
         if (newSnapshotImpl.snapshots.isEmpty()) {
@@ -143,8 +143,8 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
         }
 
         // Update entries from new snapshot
-        Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(snapshots.size());
-        for (String path : snapshots.keySet()) {
+        Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(fileCollectionSnapshot.snapshots.size());
+        for (String path : fileCollectionSnapshot.snapshots.keySet()) {
             IncrementalFileSnapshot newValue = newSnapshotImpl.snapshots.get(path);
             if (newValue != null) {
                 newSnapshots.put(path, newValue);
@@ -153,32 +153,31 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
         return new FileCollectionSnapshotImpl(null);
     }
 
-    private FileCollectionSnapshot applyAllChangesSince(FileCollectionSnapshot oldSnapshot, FileCollectionSnapshot target) {
+    public static FileCollectionSnapshot applyAllChangesSince(FileCollectionSnapshotImpl fileCollectionSnapshot, FileCollectionSnapshot oldSnapshot, FileCollectionSnapshot target) {
         FileCollectionSnapshotImpl oldSnapshotImpl = (FileCollectionSnapshotImpl) oldSnapshot;
         FileCollectionSnapshotImpl targetImpl = (FileCollectionSnapshotImpl) target;
         Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(targetImpl.snapshots);
-        diff(snapshots, oldSnapshotImpl.snapshots, newSnapshots);
+        FileCollectionSnapshotImpl.diff(fileCollectionSnapshot.snapshots, oldSnapshotImpl.snapshots, newSnapshots);
         return new FileCollectionSnapshotImpl(null);
     }
 
-    private void diff(Map<String, IncrementalFileSnapshot> snapshots, Map<String, IncrementalFileSnapshot> oldSnapshots, Map<String, IncrementalFileSnapshot> target) {
+    private static void diff(Map<String, IncrementalFileSnapshot> snapshots, Map<String, IncrementalFileSnapshot> oldSnapshots, Map<String, IncrementalFileSnapshot> target) {
         if (oldSnapshots.isEmpty()) {
             // Everything is new
             target.putAll(snapshots);
-            return;
-        }
-
-        Map<String, IncrementalFileSnapshot> otherSnapshots = new HashMap<String, IncrementalFileSnapshot>(oldSnapshots);
-        for (Map.Entry<String, IncrementalFileSnapshot> entry : snapshots.entrySet()) {
-            IncrementalFileSnapshot otherFile = otherSnapshots.remove(entry.getKey());
-            if (otherFile == null) {
-                target.put(entry.getKey(), entry.getValue());
-            } else if (!entry.getValue().isContentAndMetadataUpToDate(otherFile)) {
-                target.put(entry.getKey(), entry.getValue());
+        } else {
+            Map<String, IncrementalFileSnapshot> otherSnapshots = new HashMap<String, IncrementalFileSnapshot>(oldSnapshots);
+            for (Map.Entry<String, IncrementalFileSnapshot> entry : snapshots.entrySet()) {
+                IncrementalFileSnapshot otherFile = otherSnapshots.remove(entry.getKey());
+                if (otherFile == null) {
+                    target.put(entry.getKey(), entry.getValue());
+                } else if (!entry.getValue().isContentAndMetadataUpToDate(otherFile)) {
+                    target.put(entry.getKey(), entry.getValue());
+                }
             }
-        }
-        for (Map.Entry<String, IncrementalFileSnapshot> entry : otherSnapshots.entrySet()) {
-            target.remove(entry.getKey());
+            for (Map.Entry<String, IncrementalFileSnapshot> entry : otherSnapshots.entrySet()) {
+                target.remove(entry.getKey());
+            }
         }
     }
 
