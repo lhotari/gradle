@@ -164,6 +164,35 @@ An input or output snapshot might be composed of multiple tree snapshots.
   - prevents sharing output & input snapshots
 
 
+### Improvement: Optimize output directory snapshotting so that snapshots can be shared
+
+Output directory snapshotting is special currently. it handles the case
+where the output directory is shared. The current algoritm is:
+  - snapshot before task executions
+  - snapshot after task executions
+  - save snapshot for the files created by the task
+    - uses previous saved snapshot as template for list of files
+    - adds any changed or new files to the list of files created by the task
+
+#### Implementation notes
+
+It's possible to optimize output directory snapshotting for the case where the output directory isn't shared. The list of files for the output snapshot can be tracked, but when the list of files is the same as the content of the full snapshot, it doesn't have to be tracked separately and the snapshot information can be shared. 
+If the list of files differs from the whole snapshot, the implementation should switch to use a non-shareable snapshot that only contains the files that were produced by the task.  
+
+- remove public updateFrom and applyAllChangesSince methods from FileCollectionSnapshot interface
+- add method on OutputFilesCollectionSnapshotter to create a OutputFileCollectionSnapshot
+  - method takes previously saved snapshot, the pre-check snapshot and the after-check snapshot
+    - how to handle roots?
+- change snapshot method to return an ordinary FileCollectionSnapshot
+
+### Improvement: Use relative paths in Jdk7DirectoryWalker and in snapshots
+
+Currently the snapshot uses absolute paths. Absolute paths contain a lot of redundant information.
+- Absolute path of root + relative path
+  - change in directory scanning to create File instances on demand
+    - Path.toFile relatively expensive
+- TreeSnapshot can hold the root information
+
 ### Incremental build reuses directory scanning results in most cases
 
 The story implements cache invalidation strategy that makes it possible to reuse directory scanning results across multiple task executions. Besides the cache invalidation strategy change, there should be a solution for reusing a directory scanning result when the input is using a pattern to filter the results. Currently it's a common case that the output filesnapshot will scan the output directory with the _all_ pattern, but the input will be using a pattern to filter the results.
