@@ -39,12 +39,6 @@ public interface FileCollectionSnapshot {
      */
     ChangeIterator<String> iterateContentChangesSince(FileCollectionSnapshot oldSnapshot, Set<ChangeFilter> filters);
 
-    /**
-     * Returns a new snapshot that ignores new files between 2 previous snapshots
-     *
-     */
-    FileCollectionSnapshot ignoreChangesBetweenSnapshots(FileCollectionSnapshot after, FileCollectionSnapshot before);
-
     Collection<File> getFiles();
 
     FilesSnapshotSet getSnapshot();
