@@ -87,6 +87,9 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         } else {
             filesSnapshot = afterExecution;
         }
+        if (filesSnapshot instanceof OutputFilesSnapshot) {
+            filesSnapshot = ((OutputFilesSnapshot) filesSnapshot).filesSnapshot;
+        }
         return new OutputFilesSnapshot(getRoots(roots), filesSnapshot);
     }
 
