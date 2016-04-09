@@ -27,12 +27,12 @@ import java.util.Map;
 
 class DefaultFileSnapshotterSerializer implements Serializer<FileCollectionSnapshotImpl> {
     private final StringInterner stringInterner;
-    private final TreeSnapshotCache treeSnapshotCache;
+    private final TreeSnapshotRepository treeSnapshotRepository;
     private final IncrementalFileSnapshotSerializer incrementalFileSnapshotSerializer = new IncrementalFileSnapshotSerializer();
 
-    public DefaultFileSnapshotterSerializer(StringInterner stringInterner, TreeSnapshotCache treeSnapshotCache) {
+    public DefaultFileSnapshotterSerializer(StringInterner stringInterner, TreeSnapshotRepository treeSnapshotRepository) {
         this.stringInterner = stringInterner;
-        this.treeSnapshotCache = treeSnapshotCache;
+        this.treeSnapshotRepository = treeSnapshotRepository;
     }
 
     public FileCollectionSnapshotImpl read(Decoder decoder) throws Exception {
@@ -40,7 +40,7 @@ class DefaultFileSnapshotterSerializer implements Serializer<FileCollectionSnaps
         int sharedTreeCount = decoder.readSmallInt();
         for (int i = 0; i < sharedTreeCount; i++) {
             long treeId = decoder.readLong();
-            treeSnapshots.add(treeSnapshotCache.getTreeSnapshot(treeId));
+            treeSnapshots.add(treeSnapshotRepository.getTreeSnapshot(treeId));
         }
         TreeSnapshot nonShared = TreeSnapshotSerializer.readStoredTreeSnapshot(-1, decoder, incrementalFileSnapshotSerializer, stringInterner);
         if (!nonShared.getFileSnapshots().isEmpty()) {
@@ -64,7 +64,7 @@ class DefaultFileSnapshotterSerializer implements Serializer<FileCollectionSnaps
             encoder.writeSmallInt(treeSnapshots.size() - ((nonShared != null) ? 1 : 0));
             for (TreeSnapshot snapshot : treeSnapshots) {
                 if (snapshot.isShareable()) {
-                    encoder.writeLong(treeSnapshotCache.maybeStoreTreeSnapshot(snapshot));
+                    encoder.writeLong(treeSnapshotRepository.maybeStoreTreeSnapshot(snapshot));
                 }
             }
             if (nonShared != null) {

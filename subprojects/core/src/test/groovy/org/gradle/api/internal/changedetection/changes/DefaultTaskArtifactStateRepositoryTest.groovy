@@ -76,7 +76,7 @@ public class DefaultTaskArtifactStateRepositoryTest extends Specification {
         def stringInterner = new StringInterner()
         def snapshotter = new CachingFileSnapshotter(new DefaultHasher(), cacheAccess, stringInterner)
         treeVisitor = new CachingTreeVisitor()
-        def treeSnapshotCache = new TreeSnapshotCache(cacheAccess, stringInterner)
+        def treeSnapshotCache = new TreeSnapshotRepository(cacheAccess, stringInterner)
         FileCollectionSnapshotter inputFilesSnapshotter = new DefaultFileCollectionSnapshotter(snapshotter, cacheAccess, stringInterner, TestFiles.resolver(), treeVisitor, treeSnapshotCache)
         FileCollectionSnapshotter discoveredFilesSnapshotter = new MinimalFileSetSnapshotter(snapshotter, cacheAccess, stringInterner, TestFiles.resolver(), TestFiles.fileSystem())
         FileCollectionSnapshotter outputFilesSnapshotter = new OutputFilesCollectionSnapshotter(inputFilesSnapshotter, stringInterner)
