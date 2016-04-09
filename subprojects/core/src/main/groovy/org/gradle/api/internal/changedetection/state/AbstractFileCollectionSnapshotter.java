@@ -25,7 +25,10 @@ import org.gradle.api.internal.file.FileTreeElementHasher;
 import org.gradle.internal.serialize.SerializerRegistry;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapshotter {
     protected final FileSnapshotter snapshotter;
@@ -113,6 +116,11 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
                 hash = calculatePreCheckHash(visitedTrees);
             }
             return hash;
+        }
+
+        @Override
+        public FileCollection getFiles() {
+            return files;
         }
 
         @Override

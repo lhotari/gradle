@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import org.gradle.api.file.FileCollection;
 import org.gradle.util.ChangeListener;
 
 import java.io.File;
@@ -52,6 +53,8 @@ public interface FileCollectionSnapshot {
 
     interface PreCheck {
         Integer getHash();
+
+        FileCollection getFiles();
 
         Collection<VisitedTree> getVisitedTrees();
 

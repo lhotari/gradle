@@ -119,7 +119,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
 
     @Override
     public FileCollectionSnapshot snapshot(FileCollectionSnapshot.PreCheck preCheck) {
-        return snapshotter.snapshot(preCheck);
+        return new OutputFilesSnapshot(getRoots(preCheck.getFiles()), snapshotter.snapshot(preCheck));
     }
 
     static class OutputFilesSnapshot implements FileCollectionSnapshot {
