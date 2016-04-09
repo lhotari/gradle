@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.collect.ImmutableList;
 import org.gradle.api.Action;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.cache.PersistentIndexedCache;
@@ -24,6 +25,7 @@ import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
 
 import java.io.EOFException;
+import java.util.Collection;
 
 public class TreeSnapshotCache {
     private final PersistentIndexedCache<Long, TreeSnapshot> cache;
@@ -46,6 +48,7 @@ public class TreeSnapshotCache {
     }
 
     private static class TreeSnapshotSerializer implements org.gradle.internal.serialize.Serializer<TreeSnapshot> {
+        private final IncrementalFileSnapshotSerializer incrementalFileSnapshotSerializer = new IncrementalFileSnapshotSerializer();
         private final StringInterner stringInterner;
 
         public TreeSnapshotSerializer(StringInterner stringInterner) {
@@ -54,12 +57,51 @@ public class TreeSnapshotCache {
 
         @Override
         public TreeSnapshot read(Decoder decoder) throws EOFException, Exception {
-            return null;
+            final long assignedId = decoder.readLong();
+            final int entryCount = decoder.readSmallInt();
+            ImmutableList.Builder<FileSnapshotWithKey> fileSnapshotWithKeyListBuilder = ImmutableList.builder();
+            for (int i = 0; i < entryCount; i++) {
+                String key = decoder.readString();
+                fileSnapshotWithKeyListBuilder.add(new FileSnapshotWithKey(key, incrementalFileSnapshotSerializer.read(decoder)));
+            }
+            final ImmutableList<FileSnapshotWithKey> fileSnapshotWithKeyList = fileSnapshotWithKeyListBuilder.build();
+            return new StoredTreeSnapshot(fileSnapshotWithKeyList, assignedId);
         }
 
         @Override
         public void write(Encoder encoder, TreeSnapshot value) throws Exception {
+            encoder.writeLong(value.getAssignedId());
+            encoder.writeSmallInt(value.getFileSnapshots().size());
+            for (FileSnapshotWithKey fileSnapshotWithKey : value.getFileSnapshots()) {
+                encoder.writeString(fileSnapshotWithKey.getKey());
+                incrementalFileSnapshotSerializer.write(encoder, fileSnapshotWithKey.getIncrementalFileSnapshot());
+            }
+        }
 
+    }
+
+    private static class StoredTreeSnapshot implements TreeSnapshot {
+        private final ImmutableList<FileSnapshotWithKey> fileSnapshotWithKeyList;
+        private final long assignedId;
+
+        public StoredTreeSnapshot(ImmutableList<FileSnapshotWithKey> fileSnapshotWithKeyList, long assignedId) {
+            this.fileSnapshotWithKeyList = fileSnapshotWithKeyList;
+            this.assignedId = assignedId;
+        }
+
+        @Override
+        public Collection<FileSnapshotWithKey> getFileSnapshots() {
+            return fileSnapshotWithKeyList;
+        }
+
+        @Override
+        public Long getAssignedId() {
+            return assignedId;
+        }
+
+        @Override
+        public Long maybeStoreEntry(Action<Long> storeEntryAction) {
+            return assignedId;
         }
     }
 }
