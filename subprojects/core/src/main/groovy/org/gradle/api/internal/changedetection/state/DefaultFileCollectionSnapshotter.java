@@ -21,16 +21,23 @@ import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContext;
+import org.gradle.internal.serialize.SerializerRegistry;
 
 import java.io.File;
 import java.util.List;
 
 public class DefaultFileCollectionSnapshotter extends AbstractFileCollectionSnapshotter {
     private final CachingTreeVisitor treeVisitor;
+    private final TreeSnapshotCache treeSnapshotCache;
 
-    public DefaultFileCollectionSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, FileResolver fileResolver, CachingTreeVisitor treeVisitor) {
+    public DefaultFileCollectionSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, FileResolver fileResolver, CachingTreeVisitor treeVisitor, TreeSnapshotCache treeSnapshotCache) {
         super(snapshotter, cacheAccess, stringInterner, fileResolver);
         this.treeVisitor = treeVisitor;
+        this.treeSnapshotCache = treeSnapshotCache;
+    }
+
+    public void registerSerializers(SerializerRegistry registry) {
+        registry.register(FileCollectionSnapshotImpl.class, new DefaultFileSnapshotterSerializer(stringInterner, treeSnapshotCache));
     }
 
     @Override

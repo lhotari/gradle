@@ -22,7 +22,6 @@ import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.file.FileTreeElementHasher;
-import org.gradle.internal.serialize.SerializerRegistry;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -43,10 +42,6 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         this.fileResolver = fileResolver;
     }
 
-    public void registerSerializers(SerializerRegistry registry) {
-        registry.register(FileCollectionSnapshotImpl.class, new DefaultFileSnapshotterSerializer(stringInterner));
-    }
-
     public FileCollectionSnapshot emptySnapshot() {
         return new FileCollectionSnapshotImpl(Collections.<String, IncrementalFileSnapshot>emptyMap());
     }
@@ -62,7 +57,6 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
         }
         return FileTreeElementHasher.calculateHashForFileMetadata(fileTreeElements);
     }
-
 
     public FileCollectionSnapshot snapshot(final FileCollectionSnapshot.PreCheck preCheck) {
         if (preCheck.isEmpty()) {

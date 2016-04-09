@@ -23,6 +23,7 @@ import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.internal.nativeplatform.filesystem.FileSystem;
+import org.gradle.internal.serialize.SerializerRegistry;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -57,5 +58,10 @@ public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter
             }
         }
         visitedTrees.add(new DefaultVisitedTree(ImmutableList.<FileTreeElement>copyOf(fileTreeElements), false, -1));
+    }
+
+    @Override
+    public void registerSerializers(SerializerRegistry registry) {
+
     }
 }
