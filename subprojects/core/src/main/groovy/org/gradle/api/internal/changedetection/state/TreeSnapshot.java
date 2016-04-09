@@ -21,6 +21,7 @@ import org.gradle.api.Action;
 import java.util.Collection;
 
 public interface TreeSnapshot {
+    boolean isShareable();
     Collection<FileSnapshotWithKey> getFileSnapshots();
     Long getAssignedId();
     Long maybeStoreEntry(Action<Long> storeEntryAction);

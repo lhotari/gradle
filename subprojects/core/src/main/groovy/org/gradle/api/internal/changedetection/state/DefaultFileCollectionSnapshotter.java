@@ -24,6 +24,7 @@ import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveCont
 import org.gradle.internal.serialize.SerializerRegistry;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 public class DefaultFileCollectionSnapshotter extends AbstractFileCollectionSnapshotter {
@@ -41,8 +42,8 @@ public class DefaultFileCollectionSnapshotter extends AbstractFileCollectionSnap
     }
 
     @Override
-    VisitedTree createJoinedTree(List<VisitedTree> nonShareableTrees) {
-        return treeVisitor.createJoinedTree(nonShareableTrees);
+    VisitedTree createJoinedTree(List<VisitedTree> nonShareableTrees, Collection<File> missingFiles) {
+        return treeVisitor.createJoinedTree(nonShareableTrees, missingFiles);
     }
 
     @Override

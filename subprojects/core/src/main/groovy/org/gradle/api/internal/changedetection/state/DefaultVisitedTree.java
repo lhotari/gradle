@@ -30,12 +30,14 @@ class DefaultVisitedTree implements VisitedTree {
     private final ImmutableList<FileTreeElement> entries;
     private final boolean shareable;
     private final long nextId;
+    private final Collection<File> missingFiles;
     private Long assignedId;
 
-    public DefaultVisitedTree(ImmutableList<FileTreeElement> entries, boolean shareable, long nextId) {
+    public DefaultVisitedTree(ImmutableList<FileTreeElement> entries, boolean shareable, long nextId, Collection<File> missingFiles) {
         this.entries = entries;
         this.shareable = shareable;
         this.nextId = nextId;
+        this.missingFiles = missingFiles;
     }
 
     @Override
@@ -58,7 +60,17 @@ class DefaultVisitedTree implements VisitedTree {
                 return new FileSnapshotWithKey(absolutePath, incrementalFileSnapshot);
             }
         });
+        if (missingFiles != null) {
+            for (File file : missingFiles) {
+                fileSnapshots.add(new FileSnapshotWithKey(getInternedAbsolutePath(file, stringInterner), MissingFileSnapshot.getInstance()));
+            }
+        }
         return new TreeSnapshot() {
+            @Override
+            public boolean isShareable() {
+                return shareable;
+            }
+
             @Override
             public Collection<FileSnapshotWithKey> getFileSnapshots() {
                 return fileSnapshots;

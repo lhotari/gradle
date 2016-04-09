@@ -17,12 +17,14 @@
 package org.gradle.api.internal.changedetection.state
 
 import org.gradle.api.internal.cache.StringInterner
+import org.gradle.cache.internal.MapBackedInMemoryStore
 import org.gradle.internal.hash.HashUtil
 import org.gradle.internal.serialize.SerializerSpec
 
 class DefaultFileSnapshotterSerializerTest extends SerializerSpec {
-
-    def serializer = new DefaultFileSnapshotterSerializer(new StringInterner(), treeSnapshotCache)
+    def stringInterner = new StringInterner()
+    def treeSnapshotCache = new TreeSnapshotCache(new InMemoryCache(), stringInterner)
+    def serializer = new DefaultFileSnapshotterSerializer(stringInterner, treeSnapshotCache)
 
     def "reads and writes the snapshot"() {
         when:
@@ -37,5 +39,9 @@ class DefaultFileSnapshotterSerializerTest extends SerializerSpec {
         out.snapshots['1'] instanceof DirSnapshot
         out.snapshots['2'] instanceof MissingFileSnapshot
         ((FileHashSnapshot) out.snapshots['3']).hash == hash
+    }
+
+    private static class InMemoryCache extends MapBackedInMemoryStore implements TaskArtifactStateCacheAccess {
+
     }
 }

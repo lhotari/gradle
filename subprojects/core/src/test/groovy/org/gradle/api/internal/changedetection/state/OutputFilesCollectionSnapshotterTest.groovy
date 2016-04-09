@@ -65,7 +65,8 @@ class OutputFilesCollectionSnapshotterTest extends Specification {
         def cache = new InMemoryCache()
         def hasher = new DefaultHasher()
         def fileSnapshotter = new CachingFileSnapshotter(hasher, cache, stringInterner)
-        def defaultSnapshotter = new DefaultFileCollectionSnapshotter(fileSnapshotter, cache, stringInterner, TestFiles.resolver(), cachingTreeVisitor)
+        def treeSnapshotCache = new TreeSnapshotCache(cache, stringInterner)
+        def defaultSnapshotter = new DefaultFileCollectionSnapshotter(fileSnapshotter, cache, stringInterner, TestFiles.resolver(), cachingTreeVisitor, treeSnapshotCache)
         snapshotter = new OutputFilesCollectionSnapshotter(defaultSnapshotter, stringInterner)
     }
 

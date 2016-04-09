@@ -28,6 +28,8 @@ import org.gradle.api.internal.file.collections.FileTreeAdapter;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
+import java.io.File;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -57,18 +59,24 @@ public class CachingTreeVisitor {
         return doVisitTree(fileTree, false);
     }
 
-    public VisitedTree createJoinedTree(List<VisitedTree> trees) {
-        if (trees.size() == 0) {
-            return null;
-        }
-        if (trees.size() == 1) {
-            return trees.get(0);
+    public VisitedTree createJoinedTree(List<VisitedTree> trees, Collection<File> missingFiles) {
+        return createJoinedTree(nextId.incrementAndGet(), trees, missingFiles);
+    }
+
+    public static VisitedTree createJoinedTree(long nextId, List<VisitedTree> trees, Collection<File> missingFiles) {
+        if (missingFiles.isEmpty()) {
+            if (trees.size() == 0) {
+                return null;
+            }
+            if (trees.size() == 1) {
+                return trees.get(0);
+            }
         }
         ImmutableList.Builder<FileTreeElement> listBuilder = ImmutableList.builder();
         for (VisitedTree tree : trees) {
             listBuilder.addAll(tree.getEntries());
         }
-        return new DefaultVisitedTree(listBuilder.build(), false, nextId.incrementAndGet());
+        return new DefaultVisitedTree(listBuilder.build(), false, nextId, missingFiles);
     }
 
     protected void recordCacheHit(DirectoryFileTree directoryFileTree) {
@@ -106,7 +114,7 @@ public class CachingTreeVisitor {
                 fileTreeElements.add(fileDetails);
             }
         });
-        return new DefaultVisitedTree(fileTreeElements.build(), shareable, nextId.incrementAndGet());
+        return new DefaultVisitedTree(fileTreeElements.build(), shareable, nextId.incrementAndGet(), null);
     }
 
     public void clearCache() {

@@ -27,6 +27,7 @@ import org.gradle.internal.serialize.SerializerRegistry;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -43,8 +44,8 @@ public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter
     }
 
     @Override
-    VisitedTree createJoinedTree(List<VisitedTree> nonShareableTrees) {
-        return nonShareableTrees.get(0);
+    VisitedTree createJoinedTree(List<VisitedTree> nonShareableTrees, Collection<File> missingFiles) {
+        return CachingTreeVisitor.createJoinedTree(-1, nonShareableTrees, missingFiles);
     }
 
     @Override
@@ -57,7 +58,7 @@ public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter
                 missingFiles.add(file);
             }
         }
-        visitedTrees.add(new DefaultVisitedTree(ImmutableList.<FileTreeElement>copyOf(fileTreeElements), false, -1));
+        visitedTrees.add(new DefaultVisitedTree(ImmutableList.<FileTreeElement>copyOf(fileTreeElements), false, -1, null));
     }
 
     @Override
