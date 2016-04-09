@@ -23,15 +23,18 @@ import org.gradle.internal.serialize.Serializer;
 public class CacheBackedFileSnapshotRepository implements FileSnapshotRepository {
     private final PersistentIndexedCache<Long, FileCollectionSnapshot> cache;
     private IdGenerator<Long> idGenerator = new RandomLongIdGenerator();
+    private final TreeSnapshotCache treeSnapshotCache;
 
-    public CacheBackedFileSnapshotRepository(TaskArtifactStateCacheAccess cacheAccess, Serializer<FileCollectionSnapshot> serializer, IdGenerator<Long> idGenerator) {
+    public CacheBackedFileSnapshotRepository(TaskArtifactStateCacheAccess cacheAccess, Serializer<FileCollectionSnapshot> serializer, IdGenerator<Long> idGenerator, TreeSnapshotCache treeSnapshotCache) {
         this.idGenerator = idGenerator;
+        this.treeSnapshotCache = treeSnapshotCache;
         cache = cacheAccess.createCache("fileSnapshots", Long.class, serializer);
     }
 
     public Long add(FileCollectionSnapshot snapshot) {
         Long id = idGenerator.generateId();
         cache.put(id, snapshot);
+        treeSnapshotCache.addTreeSnapshotUsage(snapshot, id);
         return id;
     }
 
@@ -41,5 +44,6 @@ public class CacheBackedFileSnapshotRepository implements FileSnapshotRepository
 
     public void remove(Long id) {
         cache.remove(id);
+        treeSnapshotCache.removeTreeSnapshotUsage(id);
     }
 }

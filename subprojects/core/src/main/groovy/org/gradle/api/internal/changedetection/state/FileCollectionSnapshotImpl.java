@@ -75,6 +75,19 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
     }
 
     @Override
+    public Collection<Long> getTreeSnapshotIds() {
+        List<Long> snapshotIds = new ArrayList<Long>();
+        if (treeSnapshots != null) {
+            for (TreeSnapshot treeSnapshot : treeSnapshots) {
+                if (treeSnapshot.isShareable() && treeSnapshot.getAssignedId() != null && treeSnapshot.getAssignedId().longValue() != -1) {
+                    snapshotIds.add(treeSnapshot.getAssignedId());
+                }
+            }
+        }
+        return snapshotIds;
+    }
+
+    @Override
     public boolean isEmpty() {
         return snapshots.isEmpty();
     }

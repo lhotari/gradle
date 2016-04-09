@@ -62,4 +62,6 @@ public interface FileCollectionSnapshot {
 
         boolean isEmpty();
     }
+
+    Collection<Long> getTreeSnapshotIds();
 }

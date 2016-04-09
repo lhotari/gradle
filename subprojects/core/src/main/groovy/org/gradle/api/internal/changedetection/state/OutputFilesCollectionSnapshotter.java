@@ -125,6 +125,11 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         @Override
+        public Collection<Long> getTreeSnapshotIds() {
+            return filesSnapshot.getTreeSnapshotIds();
+        }
+
+        @Override
         public boolean isEmpty() {
             return filesSnapshot.isEmpty();
         }
