@@ -63,28 +63,29 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     /**
      * Returns a new snapshot that ignores new files between 2 previous snapshots
      */
-    public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after, FileCollection roots) {
+    public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot afterPreviousExecution, FileCollectionSnapshot beforeExecution, FileCollectionSnapshot afterExecution, FileCollection roots) {
         FileCollectionSnapshot filesSnapshot;
-        if (!before.isEmpty()) {
-            Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>();
-            Map<String, IncrementalFileSnapshot> beforeSnapshots = before.getSnapshots();
-            Map<String, IncrementalFileSnapshot> previousSnapshots = previous.getSnapshots();
+        if (!beforeExecution.getSnapshots().isEmpty() && !afterExecution.getSnapshots().isEmpty()) {
+            Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(afterExecution.getSnapshots().size());
+            Map<String, IncrementalFileSnapshot> beforeSnapshots = beforeExecution.getSnapshots();
+            Map<String, IncrementalFileSnapshot> previousSnapshots = afterPreviousExecution.getSnapshots();
 
-            for (Map.Entry<String, IncrementalFileSnapshot> entry : after.getSnapshots().entrySet()) {
+            for (Map.Entry<String, IncrementalFileSnapshot> entry : afterExecution.getSnapshots().entrySet()) {
                 final String path = entry.getKey();
                 IncrementalFileSnapshot otherFile = beforeSnapshots.get(path);
-                if (otherFile == null || !entry.getValue().isContentAndMetadataUpToDate(otherFile) ||
-                    previousSnapshots.containsKey(path)) {
+                if (otherFile == null
+                    || !entry.getValue().isContentAndMetadataUpToDate(otherFile)
+                    || previousSnapshots.containsKey(path)) {
                     newSnapshots.put(path, entry.getValue());
                 }
             }
-            if (newSnapshots.size() == after.getSnapshots().size()) {
-                filesSnapshot = after;
+            if (newSnapshots.size() == afterExecution.getSnapshots().size()) {
+                filesSnapshot = afterExecution;
             } else {
                 filesSnapshot = new FileCollectionSnapshotImpl(newSnapshots);
             }
         } else {
-            filesSnapshot = after;
+            filesSnapshot = afterExecution;
         }
         return new OutputFilesSnapshot(getRoots(roots), filesSnapshot);
     }
