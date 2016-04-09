@@ -252,6 +252,7 @@ public class DefaultFileCollectionSnapshotterTest extends Specification {
         0 * listener._
     }
 
+    /*
     def applyChangesAddsAddedFilesToSnapshot() {
         TestFile file = tmpDir.createFile('file')
 
@@ -469,6 +470,7 @@ public class DefaultFileCollectionSnapshotterTest extends Specification {
         then:
         target.is(original)
     }
+    */
 
     private void changes(FileCollectionSnapshot newSnapshot, FileCollectionSnapshot oldSnapshot, ChangeListener<String> listener) {
         changes(newSnapshot.iterateContentChangesSince(oldSnapshot, [] as Set), listener)
