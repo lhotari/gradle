@@ -66,9 +66,9 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot afterPreviousExecution, FileCollectionSnapshot beforeExecution, FileCollectionSnapshot afterExecution, FileCollection roots) {
         FileCollectionSnapshot filesSnapshot;
         if (!beforeExecution.getSnapshots().isEmpty() && !afterExecution.getSnapshots().isEmpty()) {
-            Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(afterExecution.getSnapshots().size());
             Map<String, IncrementalFileSnapshot> beforeSnapshots = beforeExecution.getSnapshots();
             Map<String, IncrementalFileSnapshot> previousSnapshots = afterPreviousExecution.getSnapshots();
+            List<Map.Entry<String, IncrementalFileSnapshot>> newEntries = new ArrayList<Map.Entry<String, IncrementalFileSnapshot>>(afterExecution.getSnapshots().size());
 
             for (Map.Entry<String, IncrementalFileSnapshot> entry : afterExecution.getSnapshots().entrySet()) {
                 final String path = entry.getKey();
@@ -76,12 +76,16 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
                 if (otherFile == null
                     || !entry.getValue().isContentAndMetadataUpToDate(otherFile)
                     || previousSnapshots.containsKey(path)) {
-                    newSnapshots.put(path, entry.getValue());
+                    newEntries.add(entry);
                 }
             }
-            if (newSnapshots.size() == afterExecution.getSnapshots().size()) {
+            if (newEntries.size() == afterExecution.getSnapshots().size()) {
                 filesSnapshot = afterExecution;
             } else {
+                Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(newEntries.size());
+                for (Map.Entry<String, IncrementalFileSnapshot> entry : newEntries) {
+                    newSnapshots.put(entry.getKey(), entry.getValue());
+                }
                 filesSnapshot = new FileCollectionSnapshotImpl(newSnapshots);
             }
         } else {
