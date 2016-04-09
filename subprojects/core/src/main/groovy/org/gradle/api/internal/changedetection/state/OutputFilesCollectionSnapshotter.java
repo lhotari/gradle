@@ -64,45 +64,28 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
      * Returns a new snapshot that ignores new files between 2 previous snapshots
      */
     public OutputFilesSnapshot createOutputSnapshot(FileCollectionSnapshot previous, FileCollectionSnapshot before, FileCollectionSnapshot after, FileCollection roots) {
-        FileCollectionSnapshot lastExecutionFilesUpdatedToStateBeforeTask;
-        if (previous.isEmpty()) {
-            // Nothing to update
-            lastExecutionFilesUpdatedToStateBeforeTask = previous;
-        } else if (before.isEmpty()) {
-            // Everything has been removed
-            lastExecutionFilesUpdatedToStateBeforeTask = before;
-        } else {
-            // Update entries from new snapshot
-            Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(previous.getSnapshots().size());
-            for (String path : previous.getSnapshots().keySet()) {
-                IncrementalFileSnapshot newValue = before.getSnapshots().get(path);
-                if (newValue != null) {
-                    newSnapshots.put(path, newValue);
+        FileCollectionSnapshot filesSnapshot;
+        if (!before.isEmpty()) {
+            Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>();
+            Map<String, IncrementalFileSnapshot> beforeSnapshots = before.getSnapshots();
+            Map<String, IncrementalFileSnapshot> previousSnapshots = previous.getSnapshots();
+
+            for (Map.Entry<String, IncrementalFileSnapshot> entry : after.getSnapshots().entrySet()) {
+                final String path = entry.getKey();
+                IncrementalFileSnapshot otherFile = beforeSnapshots.get(path);
+                if (otherFile == null || !entry.getValue().isContentAndMetadataUpToDate(otherFile) ||
+                    previousSnapshots.containsKey(path)) {
+                    newSnapshots.put(path, entry.getValue());
                 }
             }
-            lastExecutionFilesUpdatedToStateBeforeTask = new FileCollectionSnapshotImpl(newSnapshots);
-        }
-        Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(lastExecutionFilesUpdatedToStateBeforeTask.getSnapshots());
-        Map<String, IncrementalFileSnapshot> snapshots = after.getSnapshots();
-        Map<String, IncrementalFileSnapshot> oldSnapshots = before.getSnapshots();
-        if (oldSnapshots.isEmpty()) {
-            // Everything is new
-            newSnapshots.putAll(snapshots);
+            if (newSnapshots.size() == after.getSnapshots().size()) {
+                filesSnapshot = after;
+            } else {
+                filesSnapshot = new FileCollectionSnapshotImpl(newSnapshots);
+            }
         } else {
-            Map<String, IncrementalFileSnapshot> otherSnapshots = new HashMap<String, IncrementalFileSnapshot>(oldSnapshots);
-            for (Map.Entry<String, IncrementalFileSnapshot> entry : snapshots.entrySet()) {
-                IncrementalFileSnapshot otherFile = otherSnapshots.remove(entry.getKey());
-                if (otherFile == null) {
-                    newSnapshots.put(entry.getKey(), entry.getValue());
-                } else if (!entry.getValue().isContentAndMetadataUpToDate(otherFile)) {
-                    newSnapshots.put(entry.getKey(), entry.getValue());
-                }
-            }
-            for (Map.Entry<String, IncrementalFileSnapshot> entry : otherSnapshots.entrySet()) {
-                newSnapshots.remove(entry.getKey());
-            }
+            filesSnapshot = after;
         }
-        final FileCollectionSnapshot filesSnapshot = new FileCollectionSnapshotImpl(newSnapshots);
         return new OutputFilesSnapshot(getRoots(roots), filesSnapshot);
     }
 
