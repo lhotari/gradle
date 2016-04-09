@@ -27,18 +27,20 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
     final Map<String, IncrementalFileSnapshot> snapshots;
     final List<TreeSnapshot> treeSnapshots;
 
-    public FileCollectionSnapshotImpl(List<TreeSnapshot> treeSnapshots) {
+    public FileCollectionSnapshotImpl(List<TreeSnapshot> treeSnapshots, Collection<FileSnapshotWithKey> missingFileSnapshots) {
         this.treeSnapshots = ImmutableList.copyOf(treeSnapshots);
         this.snapshots = new HashMap<String, IncrementalFileSnapshot>();
         for(TreeSnapshot treeSnapshot : treeSnapshots) {
             addSnapshots(treeSnapshot.getFileSnapshots());
         }
+        addSnapshots(missingFileSnapshots);
     }
 
     public FileCollectionSnapshotImpl(Map<String, IncrementalFileSnapshot> snapshots) {
         this.snapshots = snapshots;
         this.treeSnapshots = null;
     }
+
 
     private void addSnapshots(Collection<FileSnapshotWithKey> fileSnapshots) {
         for(FileSnapshotWithKey fileSnapshotWithKey : fileSnapshots) {

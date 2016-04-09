@@ -80,16 +80,24 @@ abstract class AbstractFileCollectionSnapshotter implements FileCollectionSnapsh
                         nonShareableTrees.add(tree);
                     }
                 }
-                if (!nonShareableTrees.isEmpty() || !preCheck.getMissingFiles().isEmpty()) {
-                    VisitedTree nonShareableTree = createJoinedTree(nonShareableTrees, preCheck.getMissingFiles());
+                if (!nonShareableTrees.isEmpty()) {
+                    VisitedTree nonShareableTree = createJoinedTree(nonShareableTrees);
                     treeSnapshots.add(nonShareableTree.maybeCreateSnapshot(snapshotter, stringInterner));
                 }
             }
         });
-        return new FileCollectionSnapshotImpl(treeSnapshots);
+        return new FileCollectionSnapshotImpl(treeSnapshots, createMissingFileSnapshots(preCheck.getMissingFiles()));
     }
 
-    abstract VisitedTree createJoinedTree(List<VisitedTree> nonShareableTrees, Collection<File> missingFiles);
+    private Collection<FileSnapshotWithKey> createMissingFileSnapshots(Collection<File> missingFiles) {
+        List<FileSnapshotWithKey> missingFileSnapshots = new ArrayList<FileSnapshotWithKey>();
+        for (File missingFile : missingFiles) {
+            missingFileSnapshots.add(new FileSnapshotWithKey(getInternedAbsolutePath(missingFile), MissingFileSnapshot.getInstance()));
+        }
+        return missingFileSnapshots;
+    }
+
+    abstract VisitedTree createJoinedTree(List<VisitedTree> nonShareableTrees);
 
     private String getInternedAbsolutePath(File file) {
         return stringInterner.intern(file.getAbsolutePath());
