@@ -70,20 +70,19 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
     }
 
     private static FileCollectionSnapshot updateFrom(FileCollectionSnapshot fileCollectionSnapshot, FileCollectionSnapshot newSnapshot) {
-        if (fileCollectionSnapshot.getSnapshots().isEmpty()) {
+        if (fileCollectionSnapshot.isEmpty()) {
             // Nothing to update
             return fileCollectionSnapshot;
         }
-        FileCollectionSnapshotImpl newSnapshotImpl = (FileCollectionSnapshotImpl) newSnapshot;
-        if (newSnapshotImpl.snapshots.isEmpty()) {
+        if (newSnapshot.isEmpty()) {
             // Everything has been removed
-            return newSnapshotImpl;
+            return newSnapshot;
         }
 
         // Update entries from new snapshot
         Map<String, IncrementalFileSnapshot> newSnapshots = new HashMap<String, IncrementalFileSnapshot>(fileCollectionSnapshot.getSnapshots().size());
         for (String path : fileCollectionSnapshot.getSnapshots().keySet()) {
-            IncrementalFileSnapshot newValue = newSnapshotImpl.snapshots.get(path);
+            IncrementalFileSnapshot newValue = newSnapshot.getSnapshots().get(path);
             if (newValue != null) {
                 newSnapshots.put(path, newValue);
             }
@@ -146,7 +145,7 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
 
         @Override
         public boolean isEmpty() {
-            return false;
+            return filesSnapshot.isEmpty();
         }
 
         @Override
