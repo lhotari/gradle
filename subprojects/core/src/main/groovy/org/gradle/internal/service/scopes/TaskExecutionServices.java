@@ -114,7 +114,8 @@ public class TaskExecutionServices {
         TaskHistoryRepository taskHistoryRepository = new CacheBackedTaskHistoryRepository(cacheAccess,
             new CacheBackedFileSnapshotRepository(cacheAccess,
                 serializerRegistry.build(FileCollectionSnapshot.class),
-                new RandomLongIdGenerator()),
+                new RandomLongIdGenerator(),
+                treeSnapshotRepository),
             stringInterner);
 
         return new ShortCircuitTaskArtifactStateRepository(
