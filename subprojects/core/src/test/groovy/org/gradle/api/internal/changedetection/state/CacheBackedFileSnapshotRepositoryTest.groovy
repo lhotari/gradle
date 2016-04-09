@@ -25,6 +25,7 @@ class CacheBackedFileSnapshotRepositoryTest extends Specification {
     final PersistentIndexedCache<Object, Object> indexedCache = Mock()
     final IdGenerator<Long> idGenerator = Mock()
     final Serializer<FileCollectionSnapshot> serializer = Mock()
+    final TreeSnapshotRepository treeSnapshotRepository = Mock()
     FileSnapshotRepository repository
 
     def setup() {
