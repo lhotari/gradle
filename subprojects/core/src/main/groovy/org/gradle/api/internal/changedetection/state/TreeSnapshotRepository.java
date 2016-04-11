@@ -29,12 +29,12 @@ import java.io.EOFException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class TreeSnapshotCache {
+public class TreeSnapshotRepository {
     private final PersistentIndexedCache<Long, TreeSnapshot> treeSnapshotsCache;
     private final PersistentIndexedCache<Long, Set<Long>> treeSnapshotUsageTrackingCache;
     private final PersistentIndexedCache<Long, Set<Long>> fileSnapshotToTreeSnapshotsCache;
 
-    public TreeSnapshotCache(PersistentStore store, StringInterner stringInterner) {
+    public TreeSnapshotRepository(PersistentStore store, StringInterner stringInterner) {
         this.treeSnapshotsCache = store.createCache("treeSnapshots", Long.class, new TreeSnapshotSerializer(stringInterner));
         this.treeSnapshotUsageTrackingCache = store.createCache("treeSnapshotUsage", Long.class, new SetSerializer<Long>(new LongSerializer()));
         this.fileSnapshotToTreeSnapshotsCache = store.createCache("fileSnapshotsToTreeSnapshotsIndex", Long.class, new SetSerializer<Long>(new LongSerializer()));

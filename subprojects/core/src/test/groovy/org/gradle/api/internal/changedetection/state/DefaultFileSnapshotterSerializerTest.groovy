@@ -23,8 +23,8 @@ import org.gradle.internal.serialize.SerializerSpec
 
 class DefaultFileSnapshotterSerializerTest extends SerializerSpec {
     def stringInterner = new StringInterner()
-    def treeSnapshotCache = new TreeSnapshotCache(new InMemoryCache(), stringInterner)
-    def serializer = new DefaultFileSnapshotterSerializer(stringInterner, treeSnapshotCache)
+    def treeSnapshotRepository = new TreeSnapshotRepository(new InMemoryCache(), stringInterner)
+    def serializer = new DefaultFileSnapshotterSerializer(stringInterner, treeSnapshotRepository)
 
     def "reads and writes the snapshot"() {
         when:

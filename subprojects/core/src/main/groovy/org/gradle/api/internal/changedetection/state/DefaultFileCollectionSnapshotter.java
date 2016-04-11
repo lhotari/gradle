@@ -29,16 +29,16 @@ import java.util.List;
 
 public class DefaultFileCollectionSnapshotter extends AbstractFileCollectionSnapshotter {
     private final CachingTreeVisitor treeVisitor;
-    private final TreeSnapshotCache treeSnapshotCache;
+    private final TreeSnapshotRepository treeSnapshotRepository;
 
-    public DefaultFileCollectionSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, FileResolver fileResolver, CachingTreeVisitor treeVisitor, TreeSnapshotCache treeSnapshotCache) {
+    public DefaultFileCollectionSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, FileResolver fileResolver, CachingTreeVisitor treeVisitor, TreeSnapshotRepository treeSnapshotRepository) {
         super(snapshotter, cacheAccess, stringInterner, fileResolver);
         this.treeVisitor = treeVisitor;
-        this.treeSnapshotCache = treeSnapshotCache;
+        this.treeSnapshotRepository = treeSnapshotRepository;
     }
 
     public void registerSerializers(SerializerRegistry registry) {
-        registry.register(FileCollectionSnapshotImpl.class, new DefaultFileSnapshotterSerializer(stringInterner, treeSnapshotCache));
+        registry.register(FileCollectionSnapshotImpl.class, new DefaultFileSnapshotterSerializer(stringInterner, treeSnapshotRepository));
     }
 
     @Override
