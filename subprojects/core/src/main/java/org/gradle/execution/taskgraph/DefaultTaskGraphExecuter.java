@@ -163,6 +163,12 @@ public class DefaultTaskGraphExecuter implements TaskGraphExecuter {
         return taskExecutionPlan.getTasks();
     }
 
+    @Override
+    public List<TaskInfo> getAllTaskInfos() {
+        ensurePopulated();
+        return taskExecutionPlan.getTaskInfos();
+    }
+
     private void ensurePopulated() {
         switch (taskGraphState) {
             case EMPTY:
