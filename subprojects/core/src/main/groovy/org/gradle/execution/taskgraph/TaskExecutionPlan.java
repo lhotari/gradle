@@ -41,6 +41,11 @@ public interface TaskExecutionPlan {
     List<Task> getTasks();
 
     /**
+     * @return the list of all task infos in the execution order.
+     */
+    List<TaskInfo> getTaskInfos();
+
+    /**
      * Provides a ready-to-execute task. A task is ready-to-execute if all of its dependencies have been completed successfully.
      * This method blocks until the at least one task is ready-to-execute.
      * If no tasks remain, null will be returned.

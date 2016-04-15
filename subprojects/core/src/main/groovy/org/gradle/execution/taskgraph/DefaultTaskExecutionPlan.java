@@ -443,6 +443,10 @@ public class DefaultTaskExecutionPlan implements TaskExecutionPlan {
         return new ArrayList<Task>(executionPlan.keySet());
     }
 
+    public List<TaskInfo> getTaskInfos() {
+        return new ArrayList<TaskInfo>(executionPlan.values());
+    }
+
     public void useFilter(Spec<? super Task> filter) {
         this.filter = filter;
     }

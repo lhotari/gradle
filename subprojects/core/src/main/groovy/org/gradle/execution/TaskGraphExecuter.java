@@ -18,6 +18,9 @@ package org.gradle.execution;
 import org.gradle.api.Task;
 import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.specs.Spec;
+import org.gradle.execution.taskgraph.TaskInfo;
+
+import java.util.List;
 
 public interface TaskGraphExecuter extends TaskExecutionGraph {
     /**
@@ -41,4 +44,13 @@ public interface TaskGraphExecuter extends TaskExecutionGraph {
      * Sets the handler to use when a task fails.
      */
     void useFailureHandler(TaskFailureHandler handler);
+
+    /**
+     * <p>Returns the task infos of the tasks which are included in the execution plan. The tasks are returned in the order that they will
+     * be executed.</p>
+     *
+     * @return The task infos. Returns an empty set if no tasks are to be executed.
+     * @throws IllegalStateException When this graph has not been populated.
+     */
+    List<TaskInfo> getAllTaskInfos();
 }
