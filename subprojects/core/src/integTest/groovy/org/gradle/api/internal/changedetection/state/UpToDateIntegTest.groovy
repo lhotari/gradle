@@ -50,8 +50,11 @@ public class CreateEmptyDirectory extends DefaultTask {
 '''
         when:
         succeeds("clean", "checkCreated")
+        then:
+        executedAndNotSkipped(":createEmpty", ":checkCreated")
+        when:
         succeeds("clean", "checkCreated")
         then:
-        noExceptionThrown()
+        executedAndNotSkipped(":createEmpty", ":checkCreated")
     }
 }
