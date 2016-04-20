@@ -28,6 +28,7 @@ import java.net.URISyntaxException;
 public class ExternalResourceName {
     private final String encodedRoot;
     private final String path;
+    private final String decoded;
 
     public ExternalResourceName(URI uri) {
         if (uri.getPath() == null) {
@@ -35,16 +36,26 @@ public class ExternalResourceName {
         }
         this.encodedRoot = encodeRoot(uri);
         this.path = uri.getPath();
+        this.decoded = createDecoded(encodedRoot, path);
     }
 
     public ExternalResourceName(String path) {
         encodedRoot = null;
         this.path = path;
+        this.decoded = createDecoded(encodedRoot, path);
     }
 
     private ExternalResourceName(String encodedRoot, String path) {
         this.encodedRoot = encodedRoot;
         this.path = path;
+        this.decoded = createDecoded(encodedRoot, path);
+    }
+
+    private static String createDecoded(String encodedRoot, String path) {
+        if (encodedRoot == null) {
+            return path;
+        }
+        return encodedRoot + path;
     }
 
     public ExternalResourceName(URI parent, String path) {
@@ -64,6 +75,7 @@ public class ExternalResourceName {
         }
         this.encodedRoot = encodeRoot(parent);
         this.path = newPath;
+        this.decoded = createDecoded(encodedRoot, path);
     }
 
     private String encodeRoot(URI uri) {
@@ -148,10 +160,7 @@ public class ExternalResourceName {
      * Returns the 'decoded' name, which is the opaque root + the path of the name.
      */
     public String getDecoded() {
-        if (encodedRoot == null) {
-            return path;
-        }
-        return encodedRoot + path;
+        return decoded;
     }
 
     /**
