@@ -69,6 +69,8 @@ public abstract class ExternalResourceResolver implements ModuleVersionPublisher
 
     private final VersionLister versionLister;
 
+    private String id;
+
     public ExternalResourceResolver(String name,
                                     boolean local,
                                     ExternalResourceRepository repository,
@@ -86,7 +88,14 @@ public abstract class ExternalResourceResolver implements ModuleVersionPublisher
     }
 
     public String getId() {
-        return DependencyResolverIdentifier.forExternalResourceResolver(this);
+        if (id == null) {
+            id = DependencyResolverIdentifier.forExternalResourceResolver(this);
+        }
+        return id;
+    }
+
+    protected void resetId() {
+        this.id = null;
     }
 
     public String getName() {
@@ -94,6 +103,7 @@ public abstract class ExternalResourceResolver implements ModuleVersionPublisher
     }
 
     public void setName(String name) {
+        resetId();
         this.name = name;
     }
 
@@ -312,10 +322,12 @@ public abstract class ExternalResourceResolver implements ModuleVersionPublisher
     }
 
     protected void addIvyPattern(ResourcePattern pattern) {
+        resetId();
         ivyPatterns.add(pattern);
     }
 
     protected void addArtifactPattern(ResourcePattern pattern) {
+        resetId();
         artifactPatterns.add(pattern);
     }
 
