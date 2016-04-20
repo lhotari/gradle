@@ -75,6 +75,7 @@ public class IvyResolver extends ExternalResourceResolver implements PatternBase
     }
 
     public void setM2compatible(boolean m2compatible) {
+        resetId();
         this.m2Compatible = m2compatible;
     }
 
