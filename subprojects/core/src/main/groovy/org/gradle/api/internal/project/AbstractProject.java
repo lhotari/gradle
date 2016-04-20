@@ -54,13 +54,13 @@ import org.gradle.internal.Actions;
 import org.gradle.internal.Factories;
 import org.gradle.internal.Factory;
 import org.gradle.internal.event.ListenerBroadcast;
+import org.gradle.internal.logging.LoggingManagerInternal;
+import org.gradle.internal.logging.StandardOutputCapture;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.scopes.ServiceRegistryFactory;
 import org.gradle.internal.typeconversion.TypeConverter;
 import org.gradle.listener.ClosureBackedMethodInvocationDispatch;
-import org.gradle.internal.logging.LoggingManagerInternal;
-import org.gradle.internal.logging.StandardOutputCapture;
 import org.gradle.model.Model;
 import org.gradle.model.RuleSource;
 import org.gradle.model.dsl.internal.NonTransformedModelDslBacking;
@@ -348,7 +348,8 @@ public abstract class AbstractProject extends AbstractPluginAware implements Pro
         } else if (this == rootProject) {
             return "";
         }
-        return rootProject.getName() + (getParent() == rootProject ? "" : "." + getParent().getPath().substring(1).replace(':', '.'));
+        group = rootProject.getName() + (getParent() == rootProject ? "" : "." + getParent().getPath().substring(1).replace(':', '.'));
+        return group;
     }
 
     public void setGroup(Object group) {
