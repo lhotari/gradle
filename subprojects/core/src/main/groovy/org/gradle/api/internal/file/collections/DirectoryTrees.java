@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 
 public abstract class DirectoryTrees {
 
-    private static final String QUOTED_SEPARATOR = Pattern.quote(File.separator);
+    private static final Pattern PATH_SEPARATOR_PATTERN = Pattern.compile(Pattern.quote(File.separator));
 
     private DirectoryTrees() {
     }
@@ -37,7 +37,7 @@ public abstract class DirectoryTrees {
             return false;
         }
 
-        String[] partsUnderDir = file.getAbsolutePath().substring(prefix.length()).split(QUOTED_SEPARATOR);
+        String[] partsUnderDir = PATH_SEPARATOR_PATTERN.split(file.getAbsolutePath().substring(prefix.length()));
         RelativePath path = new RelativePath(true, partsUnderDir);
         return tree.getPatterns().getAsSpec().isSatisfiedBy(new DefaultFileTreeElement(file, path, fileSystem, fileSystem));
     }
