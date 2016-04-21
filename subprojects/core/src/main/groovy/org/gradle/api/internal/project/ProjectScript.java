@@ -145,4 +145,25 @@ public abstract class ProjectScript extends DefaultScript {
     public File getBuildFile() {
         return getProject().getBuildFile();
     }
+
+    @Override
+    protected PropertyValue resolvePropertyValue(String property) {
+        if (property.equals("project")) {
+            return new PropertyValue(getProject());
+        }
+        if (property.equals("rootProject")) {
+            return new PropertyValue(getRootProject());
+        }
+        if (property.equals("gradle")) {
+            return new PropertyValue(getGradle());
+        }
+        Object extension = getExtensions().findByName(property);
+        if (extension != null) {
+            return new PropertyValue(extension);
+        }
+        if (getExtensions().getExtraProperties().has(property)) {
+            return new PropertyValue(getExtensions().getExtraProperties().get(property));
+        }
+        return null;
+    }
 }

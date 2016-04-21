@@ -16,8 +16,8 @@
 
 package org.gradle.groovy.scripts;
 
-import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.logging.StandardOutputCapture;
+import org.gradle.internal.service.ServiceRegistry;
 
 /**
  * The base class for all scripts executed by Gradle.
@@ -53,7 +53,28 @@ public abstract class Script extends groovy.lang.Script {
         if (getBinding().hasVariable(property)) {
             return super.getProperty(property);
         } else {
-            return getMetaClass().getProperty(this, property);
+            PropertyValue propertyValue = resolvePropertyValue(property);
+            if (propertyValue != null) {
+                return propertyValue.getValue();
+            } else {
+                return getMetaClass().getProperty(this, property);
+            }
+        }
+    }
+
+    protected PropertyValue resolvePropertyValue(String property) {
+        return null;
+    }
+
+    protected static class PropertyValue {
+        private final Object value;
+
+        public PropertyValue(Object value) {
+            this.value = value;
+        }
+
+        public Object getValue() {
+            return value;
         }
     }
 }
