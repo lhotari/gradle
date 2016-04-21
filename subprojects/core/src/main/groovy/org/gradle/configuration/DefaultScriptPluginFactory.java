@@ -186,9 +186,13 @@ public class DefaultScriptPluginFactory implements ScriptPluginFactory {
         }
 
         private ScriptTarget wrap(Object target, boolean isInitialPass) {
-            if (target instanceof ProjectInternal && topLevelScript) {
-                // Only use this for top level project scripts
-                return new ProjectScriptTarget((ProjectInternal) target);
+            if (target instanceof ProjectInternal) {
+                if(topLevelScript) {
+                    // Only use this for top level project scripts
+                    return new ProjectScriptTarget((ProjectInternal) target);
+                } else {
+                    return new SubprojectScriptTarget((ProjectInternal) target);
+                }
             }
             if (target instanceof GradleInternal && topLevelScript) {
                 // Only use this for top level init scripts

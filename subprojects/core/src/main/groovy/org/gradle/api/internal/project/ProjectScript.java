@@ -39,14 +39,6 @@ public abstract class ProjectScript extends DefaultScript {
         return (Project) getScriptTarget();
     }
 
-    public ScriptHandler getBuildscript() {
-        return getProject().getBuildscript();
-    }
-
-    public void buildscript(Closure configureClosure) {
-        getProject().buildscript(configureClosure);
-    }
-
     public StandardOutputCapture getStandardOutputCapture() {
         return ((ProjectInternal) getProject()).getStandardOutputCapture();
     }
