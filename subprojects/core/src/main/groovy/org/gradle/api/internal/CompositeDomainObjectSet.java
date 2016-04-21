@@ -15,17 +15,16 @@
  */
 package org.gradle.api.internal;
 
-import com.google.common.collect.Iterators;
 import org.apache.commons.collections.collection.CompositeCollection;
 import org.gradle.api.Action;
 import org.gradle.api.DomainObjectCollection;
+import org.gradle.api.internal.collections.UniqueIterator;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.Actions;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 
 /**
  * A domain object collection that presents a combined view of one or more collections.
@@ -106,11 +105,7 @@ public class CompositeDomainObjectSet<T> extends DelegatingDomainObjectSet<T> {
     @SuppressWarnings({"NullableProblems", "unchecked"})
     @Override
     public Iterator<T> iterator() {
-        CompositeCollection store = getStore();
-        if (store.isEmpty()) {
-            return Iterators.emptyIterator();
-        }
-        return Iterators.unmodifiableIterator(new LinkedHashSet<T>(store).iterator());
+        return new UniqueIterator<T>(getStore().iterator());
     }
 
     @SuppressWarnings("unchecked")
@@ -130,4 +125,5 @@ public class CompositeDomainObjectSet<T> extends DelegatingDomainObjectSet<T> {
             action.execute(t);
         }
     }
+
 }
