@@ -9,18 +9,31 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.initialization.dsl.ScriptHandler;
+import org.gradle.api.internal.DynamicObject;
+import org.gradle.api.internal.DynamicObjectAware;
+import org.gradle.api.internal.GetPropertyResult;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.LoggingManager;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.groovy.scripts.DefaultScript;
 import org.gradle.internal.logging.StandardOutputCapture;
+import org.gradle.internal.service.ServiceRegistry;
 
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
 
 public abstract class ProjectScript extends DefaultScript {
+    DynamicObject dynamicObject;
+
+    @Override
+    public void init(Object target, ServiceRegistry services) {
+        super.init(target, services);
+        if (getScriptTarget() instanceof DynamicObjectAware) {
+            dynamicObject = ((DynamicObjectAware) getScriptTarget()).getAsDynamicObject();
+        }
+    }
 
     public void apply(Closure closure) {
         getProject().apply(closure);
@@ -163,6 +176,13 @@ public abstract class ProjectScript extends DefaultScript {
         }
         if (getExtensions().getExtraProperties().has(property)) {
             return new PropertyValue(getExtensions().getExtraProperties().get(property));
+        }
+        if (dynamicObject != null) {
+            GetPropertyResult result = new GetPropertyResult();
+            dynamicObject.getProperty(property, result);
+            if (result.isFound()) {
+                return new PropertyValue(result.getValue());
+            }
         }
         return null;
     }
