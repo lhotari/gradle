@@ -38,10 +38,10 @@ import org.gradle.api.tasks.TaskDependency;
 import org.gradle.api.tasks.TaskInputs;
 import org.gradle.api.tasks.TaskInstantiationException;
 import org.gradle.internal.Factory;
-import org.gradle.internal.reflect.Instantiator;
-import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.logging.LoggingManagerInternal;
 import org.gradle.internal.logging.StandardOutputCapture;
+import org.gradle.internal.reflect.Instantiator;
+import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.util.ConfigureUtil;
 import org.gradle.util.GFileUtils;
 
@@ -125,6 +125,9 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
         shouldRunAfter = new DefaultTaskDependency(project.getTasks());
         services = project.getServiceRegistryFactory().createFor(this);
         extensibleDynamicObject = new ExtensibleDynamicObject(this, services.get(Instantiator.class));
+        if (project instanceof DynamicObjectAware) {
+            extensibleDynamicObject.setParent(((DynamicObjectAware) project).getAsDynamicObject());
+        }
         taskMutator = services.get(TaskMutator.class);
 
         observableActionList = new ObservableActionWrapperList(actions);
