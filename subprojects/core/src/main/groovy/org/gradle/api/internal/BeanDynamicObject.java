@@ -24,6 +24,7 @@ import org.gradle.api.internal.coerce.PropertySetTransformer;
 import org.gradle.api.internal.coerce.StringToEnumTransformer;
 import org.gradle.internal.UncheckedException;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -32,6 +33,7 @@ import java.util.*;
  */
 public class BeanDynamicObject extends AbstractDynamicObject {
     private static final Method META_PROP_METHOD;
+    private static final Field MISSING_PROP_GET_FIELD;
     private final Object bean;
     private final boolean includeProperties;
     private final DynamicObject delegate;
@@ -48,6 +50,13 @@ public class BeanDynamicObject extends AbstractDynamicObject {
         } catch (NoSuchMethodException e) {
             throw UncheckedException.throwAsUncheckedException(e);
         }
+        try {
+            MISSING_PROP_GET_FIELD = MetaClassImpl.class.getDeclaredField("propertyMissingGet");
+            MISSING_PROP_GET_FIELD.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
+        }
+
     }
 
     public BeanDynamicObject(Object bean) {
@@ -231,6 +240,13 @@ public class BeanDynamicObject extends AbstractDynamicObject {
 
         @Nullable
         private MetaMethod findPropertyMissingMethod(MetaClass metaClass) {
+            if (metaClass instanceof MetaClassImpl) {
+                try {
+                    return (MetaMethod) MISSING_PROP_GET_FIELD.get(metaClass);
+                } catch (Throwable e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
+                }
+            }
             for (MetaMethod method : metaClass.getMethods()) {
                 if (method.getName().equals("propertyMissing") && method.getParameterTypes().length == 1) {
                     return method;
