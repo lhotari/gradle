@@ -20,6 +20,7 @@ import org.gradle.api.internal.plugins.DefaultConvention;
 import org.gradle.api.internal.plugins.ExtraPropertiesDynamicObjectAdapter;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.groovy.scripts.internal.ScriptClosureContextStack;
 import org.gradle.internal.reflect.Instantiator;
 
 import java.util.Map;
@@ -68,7 +69,7 @@ public class ExtensibleDynamicObject extends CompositeDynamicObject implements H
         this.dynamicDelegate = dynamicDelegate;
         this.convention = convention;
         this.extraPropertiesDynamicObject = new ExtraPropertiesDynamicObjectAdapter(delegate.getClass(), convention.getExtraProperties());
-
+        this.parent = ScriptClosureContextStack.createDynamicObjectInstance(delegate);
         updateDelegates();
     }
 

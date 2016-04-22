@@ -88,9 +88,14 @@ public class DefaultScriptRunnerFactory implements ScriptRunnerFactory {
             Thread.currentThread().setContextClassLoader(script.getContextClassloader());
             script.getStandardOutputCapture().start();
             try {
+                ScriptClosureContextStack.setFallbackDynamicTarget(target);
+                ScriptClosureContextStack.Holder.create();
                 script.run();
             } catch (Throwable e) {
                 failure = new GradleScriptException(String.format("A problem occurred evaluating %s.", script), e);
+            } finally {
+                ScriptClosureContextStack.Holder.clear();
+                ScriptClosureContextStack.clearFallbackDynamicTarget();
             }
             script.getStandardOutputCapture().stop();
             Thread.currentThread().setContextClassLoader(originalLoader);
