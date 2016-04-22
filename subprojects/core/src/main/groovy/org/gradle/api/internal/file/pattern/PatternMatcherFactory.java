@@ -20,12 +20,10 @@ import org.gradle.api.specs.Spec;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class PatternMatcherFactory {
 
     public static final EndOfPathMatcher END_OF_PATH_MATCHER = new EndOfPathMatcher();
-    private static final Pattern PATH_SEPARATOR_PATTERN = Pattern.compile("\\\\|/");
 
     public static Spec<RelativePath> getPatternMatcher(boolean partialMatchDirs, boolean caseSensitive, String pattern) {
         PathMatcher pathMatcher = compile(caseSensitive, pattern);
@@ -41,7 +39,7 @@ public class PatternMatcherFactory {
         if (pattern.endsWith("/") || pattern.endsWith("\\")) {
             pattern = pattern + "**";
         }
-        String[] parts = PATH_SEPARATOR_PATTERN.split(pattern);
+        String[] parts = pattern.split("\\\\|/");
         return compile(parts, 0, caseSensitive);
     }
 
