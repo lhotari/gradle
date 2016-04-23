@@ -55,7 +55,7 @@ public class LifecycleProjectEvaluator implements ProjectEvaluator {
         Object previous = null;
         ScriptClosureContextStack previousStack = null;
         try {
-            previous = ScriptClosureContextStack.setFallbackDynamicTarget(this);
+            previous = ScriptClosureContextStack.setFallbackDynamicTarget(project);
             previousStack = ScriptClosureContextStack.Holder.create();
             delegate.evaluate(project, state);
         } catch (Exception e) {

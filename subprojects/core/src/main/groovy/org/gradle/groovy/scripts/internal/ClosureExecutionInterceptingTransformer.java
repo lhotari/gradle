@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package org.gradle.model.dsl.internal.transform;
+package org.gradle.groovy.scripts.internal;
 
 import net.jcip.annotations.ThreadSafe;
-import org.codehaus.groovy.ast.ClassHelper;
-import org.codehaus.groovy.ast.ClassNode;
-import org.codehaus.groovy.ast.MethodNode;
-import org.codehaus.groovy.ast.Parameter;
+import org.codehaus.groovy.ast.*;
 import org.codehaus.groovy.ast.expr.*;
 import org.codehaus.groovy.ast.stmt.*;
-import org.gradle.api.Action;
-import org.gradle.groovy.scripts.internal.AstUtils;
+import org.codehaus.groovy.control.CompilationFailedException;
+import org.codehaus.groovy.control.Phases;
+import org.codehaus.groovy.control.SourceUnit;
+import org.gradle.model.dsl.internal.transform.RuleVisitor;
 import org.objectweb.asm.Opcodes;
 
 import static org.codehaus.groovy.ast.ClassHelper.OBJECT_TYPE;
@@ -39,45 +38,49 @@ import static org.codehaus.groovy.ast.ClassHelper.OBJECT_TYPE;
  * <pre>
  * {@code
  * try {
- *     ScriptClosureContextStack.Holder.push(this.getOwner(), this.getDelegate());
+ *     ScriptClosureContextStack.Holder.push(getOwner(), getDelegate());
  *     « original method body »
  * } finally {
- *     ScriptClosureContextStack.Holder.pop();null;
+ *     ScriptClosureContextStack.Holder.pop();
  * }
  * }
  * </pre>
  */
 @ThreadSafe
-public class ClosureExecutionInterceptingVerifier implements Action<ClassNode> {
-    public static final Action<ClassNode> INSTANCE = new ClosureExecutionInterceptingVerifier();
+public class ClosureExecutionInterceptingTransformer extends AbstractScriptTransformer {
     private static final ClassNode CLOSURE_CONTEXT_STACK_HOLDER = new ClassNode("org.gradle.groovy.scripts.internal.ScriptClosureContextStack$Holder", Opcodes.ACC_PUBLIC, OBJECT_TYPE);
 
     @Override
-    public void execute(ClassNode node) {
-        if (node.implementsInterface(ClassHelper.GENERATED_CLOSURE_Type)) {
-            if (!RulesVisitor.hasRulesBlockAnnotation(node)) {
-                visitGeneratedClosure(node);
-            }
-        }
+    protected int getPhase() {
+        return Phases.CANONICALIZATION;
     }
 
-    private void visitGeneratedClosure(ClassNode node) {
-        MethodNode closureCallMethod = AstUtils.getGeneratedClosureImplMethod(node);
-        Statement closureCode = closureCallMethod.getCode();
-        if (!RuleVisitor.hasRuleVisitorMetadata(closureCode)) {
-            BlockStatement tryBlock = new BlockStatement();
-            Expression thisExpression = buildThisExpression(node);
-            MethodCallExpression getOwnerExpression = buildCallGetMethod(thisExpression, "getOwner");
-            MethodCallExpression getDelegateExpression = buildCallGetMethod(thisExpression, "getDelegate");
-            tryBlock.addStatement(new ExpressionStatement(makeDirectForSpecialStaticCase(new MethodCallExpression(new ClassExpression(CLOSURE_CONTEXT_STACK_HOLDER), "push", new ArgumentListExpression(getOwnerExpression, getDelegateExpression)))));
-            tryBlock.addStatement(closureCode);
+    @Override
+    public void call(SourceUnit source) throws CompilationFailedException {
+        AstUtils.visitScriptCode(source, new ClosureTransformer());
+    }
 
-            BlockStatement finallyBlock = new BlockStatement();
-            finallyBlock.addStatement(new ExpressionStatement(makeDirectForSpecialStaticCase(new MethodCallExpression(new ClassExpression(CLOSURE_CONTEXT_STACK_HOLDER), "pop", new ArgumentListExpression()))));
+    private static class ClosureTransformer extends CodeVisitorSupport {
+        @Override
+        public void visitClosureExpression(ClosureExpression expression) {
+            Statement closureCode = expression.getCode();
+            if (!RuleVisitor.hasRuleVisitorMetadata(closureCode)) {
+                BlockStatement tryBlock = new BlockStatement();
+                Expression thisExpression = buildThisExpression(ClassHelper.CLOSURE_TYPE);
+                MethodCallExpression getOwnerExpression = buildCallGetMethod(thisExpression, "getOwner");
+                MethodCallExpression getDelegateExpression = buildCallGetMethod(thisExpression, "getDelegate");
+                tryBlock.addStatement(new ExpressionStatement(makeDirectForSpecialStaticCase(new MethodCallExpression(new ClassExpression(CLOSURE_CONTEXT_STACK_HOLDER), "push", new ArgumentListExpression(getOwnerExpression, getDelegateExpression)))));
+                tryBlock.addStatement(closureCode);
 
-            TryCatchStatement tryCatchStatement = new TryCatchStatement(tryBlock, finallyBlock);
+                BlockStatement finallyBlock = new BlockStatement();
+                finallyBlock.addStatement(new ExpressionStatement(makeDirectForSpecialStaticCase(new MethodCallExpression(new ClassExpression(CLOSURE_CONTEXT_STACK_HOLDER), "pop", new ArgumentListExpression()))));
 
-            closureCallMethod.setCode(tryCatchStatement);
+                TryCatchStatement tryCatchStatement = new TryCatchStatement(tryBlock, finallyBlock);
+
+                expression.setCode(tryCatchStatement);
+
+                super.visitClosureExpression(expression);
+            }
         }
     }
 
@@ -111,5 +114,6 @@ public class ClosureExecutionInterceptingVerifier implements Action<ClassNode> {
         }
         return methodCallExpression;
     }
+
 
 }
