@@ -280,28 +280,12 @@ public class ScriptClosureContextStack {
 
         @Override
         public boolean isMayImplementMissingMethods() {
-            try {
-                DynamicObject delegate = findParent(originalDelegate);
-                if (delegate != null) {
-                    return delegate.isMayImplementMissingMethods();
-                }
-                return false;
-            } finally {
-                previousDynamicObjects.remove();
-            }
+            return false;
         }
 
         @Override
         public boolean isMayImplementMissingProperties() {
-            try {
-                DynamicObject delegate = findParent(originalDelegate);
-                if (delegate != null) {
-                    return delegate.isMayImplementMissingProperties();
-                }
-                return false;
-            } finally {
-                previousDynamicObjects.remove();
-            }
+            return false;
         }
     }
 }
