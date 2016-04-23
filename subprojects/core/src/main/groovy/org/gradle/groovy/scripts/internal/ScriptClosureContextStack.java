@@ -33,12 +33,10 @@ public class ScriptClosureContextStack {
     private final Deque<ScriptClosureContext> stack = new LinkedList<ScriptClosureContext>();
     private static final ThreadLocal<Object> fallbackDynamicTargetThreadLocal = new ThreadLocal<Object>();
 
-    public static void setFallbackDynamicTarget(Object delegate) {
+    public static Object setFallbackDynamicTarget(Object delegate) {
+        Object previous = fallbackDynamicTargetThreadLocal.get();
         fallbackDynamicTargetThreadLocal.set(delegate);
-    }
-
-    public static void clearFallbackDynamicTarget() {
-        fallbackDynamicTargetThreadLocal.remove();
+        return previous;
     }
 
     public static DynamicObject createDynamicObjectInstance(Object delegate) {
@@ -125,12 +123,14 @@ public class ScriptClosureContextStack {
     public static class Holder {
         private static final ThreadLocal<ScriptClosureContextStack> currentStackThreadLocal = new ThreadLocal<ScriptClosureContextStack>();
 
-        public static void create() {
+        public static ScriptClosureContextStack create() {
+            ScriptClosureContextStack previous = currentStackThreadLocal.get();
             currentStackThreadLocal.set(new ScriptClosureContextStack());
+            return previous;
         }
 
-        public static void clear() {
-            currentStackThreadLocal.remove();
+        public static void reset(ScriptClosureContextStack previous) {
+            currentStackThreadLocal.set(previous);
         }
 
         public static void push(Object owner, Object delegate) {

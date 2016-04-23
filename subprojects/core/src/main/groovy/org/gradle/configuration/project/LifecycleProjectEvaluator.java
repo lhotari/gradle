@@ -19,6 +19,7 @@ import org.gradle.api.ProjectConfigurationException;
 import org.gradle.api.ProjectEvaluationListener;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.internal.project.ProjectStateInternal;
+import org.gradle.groovy.scripts.internal.ScriptClosureContextStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,11 @@ public class LifecycleProjectEvaluator implements ProjectEvaluator {
         }
 
         state.setExecuting(true);
+        Object previous = null;
+        ScriptClosureContextStack previousStack = null;
         try {
+            previous = ScriptClosureContextStack.setFallbackDynamicTarget(this);
+            previousStack = ScriptClosureContextStack.Holder.create();
             delegate.evaluate(project, state);
         } catch (Exception e) {
             addConfigurationFailure(project, state, e);
@@ -59,6 +64,8 @@ public class LifecycleProjectEvaluator implements ProjectEvaluator {
             state.setExecuting(false);
             state.executed();
             notifyAfterEvaluate(listener, project, state);
+            ScriptClosureContextStack.setFallbackDynamicTarget(previous);
+            ScriptClosureContextStack.Holder.reset(previousStack);
         }
     }
 
