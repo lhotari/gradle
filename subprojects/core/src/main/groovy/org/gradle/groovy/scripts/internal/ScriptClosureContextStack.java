@@ -32,6 +32,12 @@ import java.util.Map;
 public class ScriptClosureContextStack {
     private final Deque<ScriptClosureContext> stack = new LinkedList<ScriptClosureContext>();
     private static final ThreadLocal<Object> fallbackDynamicTargetThreadLocal = new ThreadLocal<Object>();
+    private static final ThreadLocal<Boolean> fallbackUsed = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return Boolean.FALSE;
+        }
+    };
 
     public static Object setFallbackDynamicTarget(Object delegate) {
         Object previous = fallbackDynamicTargetThreadLocal.get();
@@ -72,7 +78,8 @@ public class ScriptClosureContextStack {
             }
         }
         Object fallbackTarget = fallbackDynamicTargetThreadLocal.get();
-        if (fallbackTarget != originalDelegate) {
+        if (fallbackTarget != originalDelegate && !fallbackUsed.get()) {
+            fallbackUsed.set(Boolean.TRUE);
             return resolveDynamicObject(fallbackTarget);
         } else {
             return null;
@@ -162,92 +169,133 @@ public class ScriptClosureContextStack {
 
         @Override
         protected String getDisplayName() {
-            DynamicObject delegate = findParent(originalDelegate);
-            return (delegate != null) ? "Proxy to " + delegate.toString() : "Proxy without target from threadlocal stack";
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                return (delegate != null) ? "Proxy to " + delegate.toString() : "Proxy without target from threadlocal stack";
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
+            }
         }
 
         @Override
         public boolean hasProperty(String name) {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                return delegate.hasProperty(name);
-            } else {
-                return false;
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    return delegate.hasProperty(name);
+                } else {
+                    return false;
+                }
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
         }
 
         @Override
         public void getProperty(String name, GetPropertyResult result) {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                delegate.getProperty(name, result);
+
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    delegate.getProperty(name, result);
+                }
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
         }
 
         @Override
         public Object getProperty(String name) throws MissingPropertyException {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                return delegate.getProperty(name);
-            } else {
-                throw getMissingProperty(name);
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    return delegate.getProperty(name);
+                } else {
+                    throw getMissingProperty(name);
+                }
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
         }
 
         @Override
         public void setProperty(String name, Object value) throws MissingPropertyException {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                delegate.setProperty(name, value);
-            } else {
-                throw setMissingProperty(name);
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    delegate.setProperty(name, value);
+                } else {
+                    throw setMissingProperty(name);
+                }
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
         }
 
         @Override
         public Map<String, ?> getProperties() {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                return delegate.getProperties();
-            } else {
-                return Collections.emptyMap();
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    return delegate.getProperties();
+                } else {
+                    return Collections.emptyMap();
+                }
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
         }
 
         @Override
         public boolean hasMethod(String name, Object... arguments) {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                return delegate.hasMethod(name, arguments);
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    return delegate.hasMethod(name, arguments);
+                }
+                return false;
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
-            return false;
         }
 
         @Override
         public Object invokeMethod(String name, Object... arguments) throws MissingMethodException {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                return delegate.invokeMethod(name, arguments);
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    return delegate.invokeMethod(name, arguments);
+                }
+                return null;
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
-            return null;
         }
 
         @Override
         public boolean isMayImplementMissingMethods() {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                return delegate.isMayImplementMissingMethods();
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    return delegate.isMayImplementMissingMethods();
+                }
+                return false;
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
-            return false;
         }
 
         @Override
         public boolean isMayImplementMissingProperties() {
-            DynamicObject delegate = findParent(originalDelegate);
-            if (delegate != null) {
-                return delegate.isMayImplementMissingProperties();
+            try {
+                DynamicObject delegate = findParent(originalDelegate);
+                if (delegate != null) {
+                    return delegate.isMayImplementMissingProperties();
+                }
+                return false;
+            } finally {
+                fallbackUsed.set(Boolean.FALSE);
             }
-            return false;
         }
     }
 }
