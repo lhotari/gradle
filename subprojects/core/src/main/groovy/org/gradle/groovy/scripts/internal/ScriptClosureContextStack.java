@@ -24,18 +24,15 @@ import org.gradle.api.internal.DynamicObject;
 import org.gradle.api.internal.DynamicObjectAware;
 import org.gradle.api.internal.GetPropertyResult;
 
-import java.util.Collections;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class ScriptClosureContextStack {
     private final Deque<ScriptClosureContext> stack = new LinkedList<ScriptClosureContext>();
     private static final ThreadLocal<Object> fallbackDynamicTargetThreadLocal = new ThreadLocal<Object>();
-    private static final ThreadLocal<Boolean> fallbackUsed = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Set<DynamicObject>> previousDynamicObjects = new ThreadLocal<Set<DynamicObject>>() {
         @Override
-        protected Boolean initialValue() {
-            return Boolean.FALSE;
+        protected Set<DynamicObject> initialValue() {
+            return new HashSet<DynamicObject>();
         }
     };
 
@@ -50,40 +47,49 @@ public class ScriptClosureContextStack {
     }
 
     private static DynamicObject findParent(Object originalDelegate) {
+        DynamicObject current = resolveDynamicObject(originalDelegate);
+        final Set<DynamicObject> usedDynamicObjects = previousDynamicObjects.get();
+        if (current != null) {
+            usedDynamicObjects.add(current);
+        }
         ScriptClosureContextStack contextStack = Holder.currentStack();
         if (contextStack != null) {
             boolean returnNextFound = false;
             for (ScriptClosureContext context : contextStack.stack) {
-                DynamicObject dynamicObject;
+                DynamicObject dynamicObject = null;
                 if (context.getDelegate() == originalDelegate) {
                     returnNextFound = true;
                     if (context.getOwner() != context.getDelegate()) {
-                        dynamicObject = resolveDynamicObject(context.getOwner());
-                        if (dynamicObject != null) {
-                            return dynamicObject;
-                        }
+                        dynamicObject = resolveUnusedDynamicObject(context.getOwner(), usedDynamicObjects);
                     }
                 } else if (returnNextFound) {
-                    dynamicObject = resolveDynamicObject(context.getDelegate());
-                    if (dynamicObject != null) {
-                        return dynamicObject;
+                    dynamicObject = resolveUnusedDynamicObject(context.getDelegate(), usedDynamicObjects);
+                    if (dynamicObject == null && context.getOwner() != context.getDelegate()) {
+                        dynamicObject = resolveUnusedDynamicObject(context.getOwner(), usedDynamicObjects);
                     }
-                    if (context.getOwner() != context.getDelegate()) {
-                        dynamicObject = resolveDynamicObject(context.getOwner());
-                        if (dynamicObject != null) {
-                            return dynamicObject;
-                        }
-                    }
+                }
+                if (dynamicObject != null) {
+                    return dynamicObject;
                 }
             }
         }
         Object fallbackTarget = fallbackDynamicTargetThreadLocal.get();
-        if (fallbackTarget != originalDelegate && !fallbackUsed.get()) {
-            fallbackUsed.set(Boolean.TRUE);
-            return resolveDynamicObject(fallbackTarget);
-        } else {
-            return null;
+        if (fallbackTarget != originalDelegate) {
+            DynamicObject dynamicObject = resolveUnusedDynamicObject(fallbackTarget, usedDynamicObjects);
+            if (dynamicObject != null) {
+                return dynamicObject;
+            }
         }
+        return null;
+    }
+
+    private static DynamicObject resolveUnusedDynamicObject(Object object, Set<DynamicObject> usedDynamicObjects) {
+        DynamicObject dynamicObject = resolveDynamicObject(object);
+        if (dynamicObject != null && !usedDynamicObjects.contains(dynamicObject)) {
+            usedDynamicObjects.add(dynamicObject);
+            return dynamicObject;
+        }
+        return null;
     }
 
     @Nullable
@@ -173,7 +179,7 @@ public class ScriptClosureContextStack {
                 DynamicObject delegate = findParent(originalDelegate);
                 return (delegate != null) ? "Proxy to " + delegate.toString() : "Proxy without target from threadlocal stack";
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -187,7 +193,7 @@ public class ScriptClosureContextStack {
                     return false;
                 }
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -200,7 +206,7 @@ public class ScriptClosureContextStack {
                     delegate.getProperty(name, result);
                 }
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -214,7 +220,7 @@ public class ScriptClosureContextStack {
                     throw getMissingProperty(name);
                 }
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -228,7 +234,7 @@ public class ScriptClosureContextStack {
                     throw setMissingProperty(name);
                 }
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -242,7 +248,7 @@ public class ScriptClosureContextStack {
                     return Collections.emptyMap();
                 }
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -255,7 +261,7 @@ public class ScriptClosureContextStack {
                 }
                 return false;
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -268,7 +274,7 @@ public class ScriptClosureContextStack {
                 }
                 return null;
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -281,7 +287,7 @@ public class ScriptClosureContextStack {
                 }
                 return false;
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
 
@@ -294,7 +300,7 @@ public class ScriptClosureContextStack {
                 }
                 return false;
             } finally {
-                fallbackUsed.set(Boolean.FALSE);
+                previousDynamicObjects.remove();
             }
         }
     }
