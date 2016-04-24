@@ -21,7 +21,6 @@ import groovy.lang.MissingMethodException;
 import org.gradle.api.internal.ClosureBackedAction;
 import org.gradle.api.internal.DynamicObject;
 import org.gradle.api.internal.DynamicObjectUtil;
-import org.gradle.groovy.scripts.internal.ScriptClosureContextStack;
 
 import java.util.Collection;
 import java.util.Map;
@@ -77,13 +76,13 @@ public class ConfigureUtil {
 
     /**
      * <p>Configures {@code delegate} with {@code configureClosure}, via the {@link Configurable} interface if necessary.</p>
-     *
-     * <p>If {@code delegate} does not implement {@link Configurable} interface, it is set as the delegate of a clone of
+     * 
+     * <p>If {@code delegate} does not implement {@link Configurable} interface, it is set as the delegate of a clone of 
      * {@code configureClosure} with a resolve strategy of {@code DELEGATE_FIRST}.</p>
-     *
+     * 
      * <p>If {@code delegate} does implement the {@link Configurable} interface, the {@code configureClosure} will be passed to
      * {@code delegate}'s {@link Configurable#configure(Closure)} method.</p>
-     *
+     * 
      * @param configureClosure The configuration closure
      * @param delegate The object to be configured
      * @return The delegate param
@@ -94,14 +93,14 @@ public class ConfigureUtil {
 
     /**
      * <p>Configures {@code delegate} with {@code configureClosure}, via the {@link Configurable} interface if necessary.</p>
-     *
-     * <p>If {@code delegate} does not implement {@link Configurable} interface, it is set as the delegate of a clone of
+     * 
+     * <p>If {@code delegate} does not implement {@link Configurable} interface, it is set as the delegate of a clone of 
      * {@code configureClosure} with a resolve strategy of {@code DELEGATE_FIRST}.</p>
-     *
+     * 
      * <p>If {@code delegate} does implement the {@link Configurable} interface, the {@code configureClosure} will be passed to
      * {@code delegate}'s {@link Configurable#configure(Closure)} method. However, if {@code configureableAware} is false then
      * {@code delegate} will be treated like it does not implement the configurable interface.</p>
-     *
+     * 
      * @param configureClosure The configuration closure
      * @param delegate The object to be configured
      * @param configureableAware Whether or not to use the {@link Configurable} interface to configure the object if possible
@@ -113,10 +112,10 @@ public class ConfigureUtil {
 
     /**
      * <p>Configures {@code delegate} with {@code configureClosure}, ignoring the {@link Configurable} interface.</p>
-     *
-     * <p>{@code delegate} is set as the delegate of a clone of {@code configureClosure} with a resolve strategy
+     * 
+     * <p>{@code delegate} is set as the delegate of a clone of {@code configureClosure} with a resolve strategy 
      * of the {@code resolveStrategy} param.</p>
-     *
+     * 
      * @param configureClosure The configuration closure
      * @param delegate The object to be configured
      * @param resolveStrategy The resolution strategy to use for the configuration closure
@@ -127,15 +126,8 @@ public class ConfigureUtil {
     }
 
     private static <T> T configure(Closure configureClosure, T delegate, int resolveStrategy, boolean configureableAware) {
-        if (configureClosure != null) {
-            ClosureBackedAction<T> action = new ClosureBackedAction<T>(configureClosure, resolveStrategy, configureableAware);
-            try {
-                ScriptClosureContextStack.Holder.push(configureClosure.getOwner(), delegate);
-                action.execute(delegate);
-            } finally {
-                ScriptClosureContextStack.Holder.pop();
-            }
-        }
+        ClosureBackedAction<T> action = new ClosureBackedAction<T>(configureClosure, resolveStrategy, configureableAware);
+        action.execute(delegate);
         return delegate;
     }
 }
