@@ -72,12 +72,14 @@ public class ScriptClosureContextStack {
                     return dynamicObject;
                 }
             }
-        }
-        Object fallbackTarget = fallbackDynamicTargetThreadLocal.get();
-        if (fallbackTarget != originalDelegate) {
-            DynamicObject dynamicObject = resolveUnusedDynamicObject(fallbackTarget, usedDynamicObjects);
-            if (dynamicObject != null) {
-                return dynamicObject;
+            if (returnNextFound) {
+                Object fallbackTarget = fallbackDynamicTargetThreadLocal.get();
+                if (fallbackTarget != originalDelegate) {
+                    DynamicObject dynamicObject = resolveUnusedDynamicObject(fallbackTarget, usedDynamicObjects);
+                    if (dynamicObject != null) {
+                        return dynamicObject;
+                    }
+                }
             }
         }
         return null;
