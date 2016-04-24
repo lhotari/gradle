@@ -85,7 +85,7 @@ abstract class AbstractCodeQualityPlugin<T> implements Plugin<ProjectInternal> {
     private void configureExtensionRule() {
         extension.conventionMapping.with {
             sourceSets = { [] }
-            reportsDir = { project.extensions.getByType(ReportingExtension).file(reportName) }
+            reportsDir = { this.project.extensions.getByType(ReportingExtension).file(this.reportName) }
         }
 
         project.plugins.withType(basePlugin) {
