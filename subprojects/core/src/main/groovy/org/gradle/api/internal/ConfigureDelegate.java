@@ -20,7 +20,7 @@ import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingMethodException;
 import groovy.lang.MissingPropertyException;
 
-public class ConfigureDelegate extends GroovyObjectSupport {
+public class ConfigureDelegate extends GroovyObjectSupport implements DynamicObjectAware {
     private static final Object[] EMPTY_PARAMS = new Object[0];
 
     protected final DynamicObject _owner;
@@ -103,5 +103,10 @@ public class ConfigureDelegate extends GroovyObjectSupport {
         } finally {
             _configuring.set(isAlreadyConfiguring);
         }
+    }
+
+    @Override
+    public DynamicObject getAsDynamicObject() {
+        return _delegate;
     }
 }

@@ -188,6 +188,8 @@ public abstract class AbstractProject extends AbstractPluginAware implements Pro
         extensibleDynamicObject = new ExtensibleDynamicObject(this, Project.class, services.get(Instantiator.class));
         if (parent != null) {
             extensibleDynamicObject.setParent(parent.getInheritedScope());
+        } else {
+            extensibleDynamicObject.setParent(null);
         }
         extensibleDynamicObject.addObject(taskContainer.getTasksAsDynamicObject(), ExtensibleDynamicObject.Location.AfterConvention);
 
