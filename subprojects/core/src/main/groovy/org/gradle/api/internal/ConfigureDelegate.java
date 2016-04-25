@@ -18,7 +18,7 @@ package org.gradle.api.internal;
 
 import groovy.lang.GroovyObjectSupport;
 import groovy.lang.MissingMethodException;
-import groovy.lang.MissingPropertyException;
+import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 
 public class ConfigureDelegate extends GroovyObjectSupport implements DynamicObjectAware {
     private static final Object[] EMPTY_PARAMS = new Object[0];
@@ -94,30 +94,21 @@ public class ConfigureDelegate extends GroovyObjectSupport implements DynamicObj
         boolean isAlreadyConfiguring = _configuring.get();
         _configuring.set(true);
         try {
-            MissingPropertyException failure;
-            try {
-                return _delegate.getProperty(name);
-            } catch (MissingPropertyException e) {
-                if (!name.equals(e.getProperty())) {
-                    throw e;
-                }
-                failure = e;
+            GetPropertyResult result = new GetPropertyResult();
+            _delegate.getProperty(name, result);
+            if (result.isFound()) {
+                return result.getValue();
             }
 
-            // try the owner
-            try {
-                return _owner.getProperty(name);
-            } catch (MissingPropertyException e) {
-                if (!name.equals(e.getProperty())) {
-                    throw e;
-                }
-                // Ignore
+            result = new GetPropertyResult();
+            _owner.getProperty(name, result);
+            if (result.isFound()) {
+                return result.getValue();
             }
 
             if (isAlreadyConfiguring) {
-                throw failure;
+                throw new MissingPropertyExceptionNoStack(name, _delegate.getClass());
             }
-
             return _configure(name, EMPTY_PARAMS);
         } finally {
             _configuring.set(isAlreadyConfiguring);
