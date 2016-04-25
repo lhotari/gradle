@@ -17,7 +17,6 @@
 package org.gradle.api.internal;
 
 import groovy.lang.Closure;
-import groovy.lang.MissingPropertyException;
 import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.internal.plugins.DefaultConvention;
@@ -34,6 +33,7 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
     private final IConventionAware _source;
     private final Map<String, MappedPropertyImpl> _mappings = new HashMap<String, MappedPropertyImpl>();
     private final Set<String> existingProperties = new HashSet<String>();
+    private final Set<String> missingProperties = new HashSet<String>();
 
     /**
      * @see org.gradle.api.internal.AsmBackedClassGenerator.ClassBuilderImpl#mixInConventionAware()
@@ -55,13 +55,18 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
         if (existingProperties.contains(propertyName)) {
             return true;
         }
+        if (missingProperties.contains(propertyName)) {
+            return false;
+        }
+
         boolean exists = JavaReflectionUtil.propertyExists(_source, propertyName);
         if (exists) {
             existingProperties.add(propertyName);
+        } else {
+            missingProperties.add(propertyName);
         }
         return exists;
     }
-
 
     private MappedProperty map(String propertyName, Value<?> value) {
         if (!doesPropertyExist(propertyName)) {
