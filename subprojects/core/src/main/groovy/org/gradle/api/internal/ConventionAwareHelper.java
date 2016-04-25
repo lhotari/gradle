@@ -18,6 +18,7 @@ package org.gradle.api.internal;
 
 import groovy.lang.Closure;
 import groovy.lang.MissingPropertyException;
+import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.internal.plugins.DefaultConvention;
 import org.gradle.api.plugins.Convention;
@@ -104,7 +105,7 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
         if (value instanceof Closure) {
             map(name, (Closure) value);
         } else {
-            throw new MissingPropertyException(name, getClass());
+            throw new MissingPropertyExceptionNoStack(name, getClass());
         }
     }
 
