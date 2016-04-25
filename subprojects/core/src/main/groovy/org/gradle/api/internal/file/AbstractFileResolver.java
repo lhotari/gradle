@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
@@ -100,24 +101,33 @@ public abstract class AbstractFileResolver implements FileResolver {
                 // on Windows, File.getCanonicalFile() doesn't resolve symlinks
                 return file.getCanonicalFile();
             }
-            String[] segments = FILE_SEPARATOR_PATTERN.split(file.getPath());
-            List<String> path = new ArrayList<String>(segments.length);
-            for (String segment : segments) {
-                if (segment.equals("..")) {
-                    if (!path.isEmpty()) {
-                        path.remove(path.size() - 1);
+
+            File candidate;
+            String filePath = file.getPath();
+            List<String> path = null;
+            if (filePath.indexOf('.') > -1) {
+                String[] segments = FILE_SEPARATOR_PATTERN.split(filePath);
+                path = new ArrayList<String>(segments.length);
+                for (String segment : segments) {
+                    if (segment.equals("..")) {
+                        if (!path.isEmpty()) {
+                            path.remove(path.size() - 1);
+                        }
+                    } else if (!segment.equals(".") && segment.length() > 0) {
+                        path.add(segment);
                     }
-                } else if (!segment.equals(".") && segment.length() > 0) {
-                    path.add(segment);
                 }
+
+                String resolvedPath = CollectionUtils.join(File.separator, path);
+                boolean needLeadingSeparator = File.listRoots()[0].getPath().startsWith(File.separator);
+                if (needLeadingSeparator) {
+                    resolvedPath = File.separator + resolvedPath;
+                }
+                candidate = new File(resolvedPath);
+            } else {
+                candidate = file;
             }
 
-            String resolvedPath = CollectionUtils.join(File.separator, path);
-            boolean needLeadingSeparator = File.listRoots()[0].getPath().startsWith(File.separator);
-            if (needLeadingSeparator) {
-                resolvedPath = File.separator + resolvedPath;
-            }
-            File candidate = new File(resolvedPath);
             if (fileSystem.isCaseSensitive()) {
                 return candidate;
             }
@@ -130,6 +140,9 @@ public abstract class AbstractFileResolver implements FileResolver {
 
             // Canonical path is different to what we expected (eg there is a link somewhere in there). Normalise a segment at a time
             // TODO - start resolving only from where the expected and canonical paths are different
+            if (path == null) {
+                path = Arrays.asList(FILE_SEPARATOR_PATTERN.split(filePath));
+            }
             File current = File.listRoots()[0];
             for (int pos = 0; pos < path.size(); pos++) {
                 File child = findChild(current, path.get(pos));
