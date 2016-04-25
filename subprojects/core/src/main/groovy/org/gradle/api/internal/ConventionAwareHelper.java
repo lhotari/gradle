@@ -16,8 +16,10 @@
 
 package org.gradle.api.internal;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import groovy.lang.Closure;
-import groovy.lang.MissingPropertyException;
+import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.internal.plugins.DefaultConvention;
 import org.gradle.api.plugins.Convention;
@@ -27,13 +29,18 @@ import org.gradle.internal.reflect.JavaReflectionUtil;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 public class ConventionAwareHelper implements ConventionMapping, HasConvention {
+    private static Cache<Class<?>, Set<String>> allPropertyNamesCache = CacheBuilder.newBuilder().weakKeys().maximumSize(10000).build();
+
     //prefix internal fields with _ so that they don't get into the way of propertyMissing()
     private final Convention _convention;
     private final IConventionAware _source;
     private final Map<String, MappedPropertyImpl> _mappings = new HashMap<String, MappedPropertyImpl>();
+    private final Set<String> allPropertyNames;
 
     /**
      * @see org.gradle.api.internal.AsmBackedClassGenerator.ClassBuilderImpl#mixInConventionAware()
@@ -45,14 +52,32 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
     public ConventionAwareHelper(IConventionAware source, Convention convention) {
         this._source = source;
         this._convention = convention;
+        this.allPropertyNames = allPropertyNamesCached(source.getClass());
+    }
+
+    private static Set<String> allPropertyNamesCached(final Class<?> target) {
+        try {
+            return allPropertyNamesCache.get(target, new Callable<Set<String>>() {
+                @Override
+                public Set<String> call() throws Exception {
+                    return JavaReflectionUtil.allPropertyNames(target);
+                }
+            });
+        } catch (ExecutionException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
+        }
     }
 
     private static interface Value<T> {
         T getValue(Convention convention, IConventionAware conventionAwareObject);
     }
 
+    private boolean doesPropertyExist(String propertyName) {
+        return allPropertyNames.contains(propertyName);
+    }
+
     private MappedProperty map(String propertyName, Value<?> value) {
-        if (!JavaReflectionUtil.propertyExists(_source, propertyName)) {
+        if (!doesPropertyExist(propertyName)) {
             throw new InvalidUserDataException(
                     "You can't map a property that does not exist: propertyName=" + propertyName);
         }
@@ -93,7 +118,7 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
         if (value instanceof Closure) {
             map(name, (Closure) value);
         } else {
-            throw new MissingPropertyException(name, getClass());
+            throw new MissingPropertyExceptionNoStack(name, getClass());
         }
     }
 
