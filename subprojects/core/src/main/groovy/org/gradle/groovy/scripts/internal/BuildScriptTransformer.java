@@ -52,6 +52,7 @@ public class BuildScriptTransformer implements Transformer, Factory<BuildScriptD
         new StatementLabelsScriptTransformer().register(compilationUnit);
         new ModelBlockTransformer(scriptSource.getDisplayName(), scriptSource.getResource().getLocation().getURI()).register(compilationUnit);
         imperativeStatementDetectingTransformer.register(compilationUnit);
+        new ClosureExecutionInterceptingTransformer().register(compilationUnit);
     }
 
     @Override
