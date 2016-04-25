@@ -57,6 +57,10 @@ public class RulesVisitor extends RestrictiveCodeVisitor {
         }
     }
 
+    public static boolean hasRulesBlockAnnotation(ClassNode node) {
+        return !node.getAnnotations(ANNOTATION_CLASS_NODE).isEmpty();
+    }
+
     @Override
     public void visitBlockStatement(BlockStatement block) {
         block.setNodeMetaData(AST_NODE_METADATA_KEY, true);
