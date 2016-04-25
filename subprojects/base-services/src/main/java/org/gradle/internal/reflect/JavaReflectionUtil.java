@@ -102,21 +102,15 @@ public class JavaReflectionUtil {
     }
 
     private static Method findGetterMethod(Class<?> target, String property) {
-        try {
-            Method getterMethod = target.getMethod(toMethodName("get", property));
-            if (isGetter(getterMethod)) {
-                return getterMethod;
+        String getterMethodName = toMethodName("get", property);
+        String booleanGetterMethodName = toMethodName("is", property);
+        for (Method method : target.getMethods()) {
+            if (method.getName().equals(getterMethodName) && isGetter(method)) {
+                return method;
             }
-        } catch (java.lang.NoSuchMethodException e) {
-            // Ignore
-        }
-        try {
-            Method getterMethod = target.getMethod(toMethodName("is", property));
-            if (isBooleanGetter(getterMethod)) {
-                return getterMethod;
+            if (method.getName().equals(booleanGetterMethodName) && isBooleanGetter(method)) {
+                return method;
             }
-        } catch (java.lang.NoSuchMethodException e2) {
-            // Ignore
         }
         return null;
     }
