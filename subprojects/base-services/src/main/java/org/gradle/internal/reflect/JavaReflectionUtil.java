@@ -50,6 +50,29 @@ public class JavaReflectionUtil {
         return properties;
     }
 
+    public static Set<String> allPropertyNames(Class<?> target) {
+        Set<String> propertyNames = new HashSet<String>();
+        for (Method method : target.getMethods()) {
+            if (method.getName().startsWith("get") && isGetter(method)) {
+                String propertyName = method.getName().substring(3);
+                propertyName = Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
+                propertyNames.add(propertyName);
+            } else if (method.getName().startsWith("is") && isBooleanGetter(method)) {
+                String propertyName = method.getName().substring(2);
+                propertyName = Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
+                propertyNames.add(propertyName);
+            }
+        }
+
+        for (Field field : target.getFields()) {
+            if (!Modifier.isStatic(field.getModifiers()) && !field.isSynthetic()) {
+                propertyNames.add(field.getName());
+            }
+        }
+
+        return propertyNames;
+    }
+
     /**
      * Locates the property with the given name as a readable property. Searches only public properties.
      *
