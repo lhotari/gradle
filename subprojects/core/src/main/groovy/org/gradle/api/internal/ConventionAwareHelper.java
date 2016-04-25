@@ -24,7 +24,10 @@ import org.gradle.api.plugins.Convention;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.reflect.JavaReflectionUtil;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class ConventionAwareHelper implements ConventionMapping, HasConvention {
@@ -32,8 +35,7 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
     private final Convention _convention;
     private final IConventionAware _source;
     private final Map<String, MappedPropertyImpl> _mappings = new HashMap<String, MappedPropertyImpl>();
-    private final Set<String> existingProperties = new HashSet<String>();
-    private final Set<String> missingProperties = new HashSet<String>();
+    private final Set<String> allPropertyNames;
 
     /**
      * @see org.gradle.api.internal.AsmBackedClassGenerator.ClassBuilderImpl#mixInConventionAware()
@@ -45,6 +47,7 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
     public ConventionAwareHelper(IConventionAware source, Convention convention) {
         this._source = source;
         this._convention = convention;
+        this.allPropertyNames = JavaReflectionUtil.allPropertyNames(source.getClass());
     }
 
     private static interface Value<T> {
@@ -52,20 +55,7 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
     }
 
     private boolean doesPropertyExist(String propertyName) {
-        if (existingProperties.contains(propertyName)) {
-            return true;
-        }
-        if (missingProperties.contains(propertyName)) {
-            return false;
-        }
-
-        boolean exists = JavaReflectionUtil.propertyExists(_source, propertyName);
-        if (exists) {
-            existingProperties.add(propertyName);
-        } else {
-            missingProperties.add(propertyName);
-        }
-        return exists;
+        return allPropertyNames.contains(propertyName);
     }
 
     private MappedProperty map(String propertyName, Value<?> value) {
