@@ -56,6 +56,8 @@ public class BeanDynamicObject extends AbstractDynamicObject {
         }
     }
 
+    protected boolean directMetaPropertyLookup = true;
+
     public BeanDynamicObject(Object bean) {
         this(bean, null, true, true);
     }
@@ -239,7 +241,7 @@ public class BeanDynamicObject extends AbstractDynamicObject {
 
         @Nullable
         private MetaProperty lookupProperty(MetaClass metaClass, String name) {
-            if (metaClass instanceof MetaClassImpl) {
+            if (directMetaPropertyLookup && metaClass instanceof MetaClassImpl) {
                 // MetaClass.getMetaProperty(name) is very expensive when the property is not known. Instead, reach into the meta class to call a much more efficient lookup method
                 try {
                     return (MetaProperty) META_PROP_METHOD.invoke(metaClass, name, false);
