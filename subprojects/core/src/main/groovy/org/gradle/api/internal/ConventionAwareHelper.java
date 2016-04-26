@@ -16,6 +16,8 @@
 
 package org.gradle.api.internal;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import groovy.lang.Closure;
 import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 import org.gradle.api.InvalidUserDataException;
@@ -29,8 +31,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 public class ConventionAwareHelper implements ConventionMapping, HasConvention {
+    private static Cache<Class<?>, Set<String>> allPropertyNamesCache = CacheBuilder.newBuilder().weakKeys().maximumSize(10000).build();
+
     //prefix internal fields with _ so that they don't get into the way of propertyMissing()
     private final Convention _convention;
     private final IConventionAware _source;
@@ -47,7 +52,20 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
     public ConventionAwareHelper(IConventionAware source, Convention convention) {
         this._source = source;
         this._convention = convention;
-        this.allPropertyNames = JavaReflectionUtil.allPropertyNames(source.getClass());
+        this.allPropertyNames = allPropertyNamesCached(source.getClass());
+    }
+
+    private static Set<String> allPropertyNamesCached(final Class<?> target) {
+        try {
+            return allPropertyNamesCache.get(target, new Callable<Set<String>>() {
+                @Override
+                public Set<String> call() throws Exception {
+                    return JavaReflectionUtil.allPropertyNames(target);
+                }
+            });
+        } catch (ExecutionException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
+        }
     }
 
     private static interface Value<T> {
