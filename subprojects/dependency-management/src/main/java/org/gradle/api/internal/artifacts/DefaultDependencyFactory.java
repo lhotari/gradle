@@ -48,9 +48,9 @@ public class DefaultDependencyFactory implements DependencyFactory {
     public ClientModule createModule(Object dependencyNotation, Closure configureClosure) {
         ClientModule clientModule = clientModuleNotationParser.parseNotation(dependencyNotation);
         ModuleFactoryDelegate moduleFactoryDelegate = new ModuleFactoryDelegate(clientModule, this);
-        moduleFactoryDelegate.prepareDelegation(configureClosure);
         if (configureClosure != null) {
-            configureClosure.call();
+            Closure preparedClosure = moduleFactoryDelegate.prepareDelegation(configureClosure);
+            preparedClosure.call();
         }
         return clientModule;
     }
