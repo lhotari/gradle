@@ -42,7 +42,7 @@ ext.runtimeProjectPaths = runtimeProjects.collect { it.path }
 //Make sure there are no duplicates between buckets
 for (int bucket : buckets.keySet().collect{it as int}) {
     for (int other=bucket+1; other<=buckets.size(); other++) {
-        def duplicates = buckets["${bucket}"].intersect(buckets["${other}"])
+        def duplicates = buckets[bucket as String].intersect(buckets[other as String])
         assert duplicates == [] : "Duplicates were found between bucket ${bucket} and ${other}: ${duplicates}"
     }
 }
@@ -50,7 +50,7 @@ for (int bucket : buckets.keySet().collect{it as int}) {
 //Create appropriate build types for each bucket
 buildTypes.toArray().each { buildType ->
     buckets.each { String bucketName, List<String> projects ->
-        def projectTasks = tasksForProjects(buildType, projects)
+        def projectTasks = this.tasksForProjects(buildType, projects)
         buildTypes.create("${buildType.name + bucketName}") {
             tasks projectTasks as String[]
             projectProperties buildType.projectProperties
@@ -62,7 +62,7 @@ def tasksForProjects(buildType, List<String> projects) {
     List tasks = []
     projects.each { String p ->
         buildType.tasks.each { String t ->
-            String task = resolveTask(p, t)
+            String task = this.resolveTask(p, t)
             if (task) {
                 if (!task.contains(':')) {
                     tasks << "$p:${task}"
