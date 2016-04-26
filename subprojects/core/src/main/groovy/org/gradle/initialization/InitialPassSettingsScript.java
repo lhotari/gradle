@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package org.gradle.initialization
+package org.gradle.initialization;
 
-import org.gradle.api.internal.plugins.dsl.PluginRepositoryHandler
-import org.gradle.util.ConfigureUtil
+import groovy.lang.Closure;
+import org.gradle.api.internal.plugins.dsl.PluginRepositoryHandler;
+import org.gradle.util.ConfigureUtil;
 
 /**
- * Endows a {@link SettingsScript} with methods which can only be used when
- * processing top-level blocks on the initial pass through a script.
+ * Endows a {@link SettingsScript} with methods which can only be used when processing top-level blocks on the initial pass through a script.
  */
-abstract class InitialPassSettingsScript extends SettingsScript {
-
+public abstract class InitialPassSettingsScript extends SettingsScript {
     public PluginRepositoryHandler getPluginRepositoryHandler() {
         return __scriptServices.get(PluginRepositoryHandler.class);
     }
 
     public void pluginRepositories(Closure config) {
-        ConfigureUtil.configure(config, getPluginRepositoryHandler())
+        ConfigureUtil.configure(config, getPluginRepositoryHandler());
     }
 }

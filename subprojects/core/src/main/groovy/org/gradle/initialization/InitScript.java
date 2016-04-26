@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package org.gradle.initialization
+package org.gradle.initialization;
 
-import org.gradle.api.internal.plugins.dsl.PluginRepositoryHandler
-import org.gradle.util.ConfigureUtil
+import groovy.lang.Closure;
+import org.gradle.api.initialization.dsl.ScriptHandler;
+import org.gradle.groovy.scripts.DefaultScript;
 
-/**
- * Endows an {@link InitScript} with methods which can only be used when
- * processing top-level blocks on the initial pass through a script.
- */
-abstract class InitialPassInitScript extends InitScript {
-    public PluginRepositoryHandler getPluginRepositoryHandler() {
-        return __scriptServices.get(PluginRepositoryHandler.class);
+public abstract class InitScript extends DefaultScript {
+    public ScriptHandler getInitscript() {
+        return getBuildscript();
     }
 
-    public void pluginRepositories(Closure config) {
-        ConfigureUtil.configure(config, getPluginRepositoryHandler())
+    public void initscript(Closure configureClosure) {
+        buildscript(configureClosure);
+    }
+
+    public String toString() {
+        return "initialization script";
     }
 }
