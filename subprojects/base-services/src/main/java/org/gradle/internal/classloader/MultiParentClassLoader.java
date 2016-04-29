@@ -30,12 +30,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Note: It's usually a good idea to add a {@link CachingClassLoader} between this ClassLoader and any
  * ClassLoaders that use it as a parent, to prevent every path in the ClassLoader graph being searched.
  */
-public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHierarchy {
+public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHierarchy, NonThrowingClassLoader {
 
     private static final JavaMethod<ClassLoader, Package[]> GET_PACKAGES_METHOD = JavaReflectionUtil.method(ClassLoader.class, Package[].class, "getPackages");
     private static final JavaMethod<ClassLoader, Package> GET_PACKAGE_METHOD = JavaReflectionUtil.method(ClassLoader.class, Package.class, "getPackage", String.class);
 
-    private final List<ClassLoader> parents;
+    private final List<NonThrowingClassLoaderWrapper> parentWrappers;
 
     public MultiParentClassLoader(ClassLoader... parents) {
         this(Arrays.asList(parents));
@@ -43,40 +43,58 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
 
     public MultiParentClassLoader(Collection<? extends ClassLoader> parents) {
         super(null);
-        this.parents = new CopyOnWriteArrayList<ClassLoader>(parents);
+        this.parentWrappers = new CopyOnWriteArrayList<NonThrowingClassLoaderWrapper>();
+        for (ClassLoader parent : parents) {
+            addParent(parent);
+        }
     }
 
     public void addParent(ClassLoader parent) {
-        parents.add(parent);
+        parentWrappers.add(new NonThrowingClassLoaderWrapper(parent));
     }
 
     public List<ClassLoader> getParents() {
-        return ImmutableList.copyOf(parents);
+        ImmutableList.Builder<ClassLoader> parentsSnapshot = ImmutableList.builder();
+        for (NonThrowingClassLoaderWrapper parentWrapper : parentWrappers) {
+            parentsSnapshot.add(parentWrapper.getClassLoader());
+        }
+        return parentsSnapshot.build();
     }
 
     public void visit(ClassLoaderVisitor visitor) {
         visitor.visitSpec(new Spec());
-        for (ClassLoader parent : parents) {
-            visitor.visitParent(parent);
+        for (NonThrowingClassLoaderWrapper parentWrapper : parentWrappers) {
+            visitor.visitParent(parentWrapper.getClassLoader());
         }
+    }
+
+    @Override
+    public Class<?> loadClassOrReturnNull(String name) {
+        for (NonThrowingClassLoaderWrapper parentWrapper : parentWrappers) {
+            Class<?> result = parentWrapper.loadClassOrReturnNull(name);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        for (ClassLoader parent : parents) {
-            try {
-                return parent.loadClass(name);
-            } catch (ClassNotFoundException e) {
-                // Expected
-            }
+        Class<?> cl = loadClassOrReturnNull(name);
+        if (cl == null) {
+            throw new ClassNotFoundException(name + " not found.");
         }
-        throw new ClassNotFoundException(String.format("%s not found.", name));
+        if (resolve) {
+            resolveClass(cl);
+        }
+        return cl;
     }
 
     @Override
     protected Package getPackage(String name) {
-        for (ClassLoader parent : parents) {
-            Package p = GET_PACKAGE_METHOD.invoke(parent, name);
+        for (NonThrowingClassLoaderWrapper parentWrapper : parentWrappers) {
+            Package p = GET_PACKAGE_METHOD.invoke(parentWrapper.getClassLoader(), name);
             if (p != null) {
                 return p;
             }
@@ -87,8 +105,8 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
     @Override
     protected Package[] getPackages() {
         Set<Package> packages = new LinkedHashSet<Package>();
-        for (ClassLoader parent : parents) {
-            Package[] parentPackages = GET_PACKAGES_METHOD.invoke(parent);
+        for (NonThrowingClassLoaderWrapper parentWrapper : parentWrappers) {
+            Package[] parentPackages = GET_PACKAGES_METHOD.invoke(parentWrapper.getClassLoader());
             packages.addAll(Arrays.asList(parentPackages));
         }
         return packages.toArray(new Package[0]);
@@ -96,8 +114,8 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
 
     @Override
     public URL getResource(String name) {
-        for (ClassLoader parent : parents) {
-            URL resource = parent.getResource(name);
+        for (NonThrowingClassLoaderWrapper parentWrapper : parentWrappers) {
+            URL resource = parentWrapper.getClassLoader().getResource(name);
             if (resource != null) {
                 return resource;
             }
@@ -108,8 +126,8 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
         Set<URL> resources = new LinkedHashSet<URL>();
-        for (ClassLoader parent : parents) {
-            Enumeration<URL> parentResources = parent.getResources(name);
+        for (NonThrowingClassLoaderWrapper parentWrapper : parentWrappers) {
+            Enumeration<URL> parentResources = parentWrapper.getClassLoader().getResources(name);
             while (parentResources.hasMoreElements()) {
                 resources.add(parentResources.nextElement());
             }
@@ -140,11 +158,11 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
 
         MultiParentClassLoader that = (MultiParentClassLoader) o;
 
-        return parents.equals(that.parents);
+        return parentWrappers.equals(that.parentWrappers);
     }
 
     @Override
     public int hashCode() {
-        return parents.hashCode();
+        return parentWrappers.hashCode();
     }
 }

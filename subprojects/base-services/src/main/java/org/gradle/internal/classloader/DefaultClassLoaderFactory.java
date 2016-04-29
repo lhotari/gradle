@@ -97,6 +97,9 @@ public class DefaultClassLoaderFactory implements ClassLoaderFactory {
         if (spec instanceof CachingClassLoader.Spec) {
             return new CachingClassLoader(parent);
         }
+        if (spec instanceof MissingClassCachingClassLoader.Spec) {
+            return new MissingClassCachingClassLoader(parent);
+        }
         if (spec instanceof FilteringClassLoader.Spec) {
             FilteringClassLoader.Spec clSpec = (FilteringClassLoader.Spec) spec;
             return new FilteringClassLoader(parent, clSpec);

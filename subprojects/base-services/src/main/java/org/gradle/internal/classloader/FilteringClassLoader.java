@@ -27,8 +27,8 @@ import java.util.*;
  * A ClassLoader which hides all non-system classes, packages and resources. Allows certain non-system packages and classes to be declared as visible. By default, only the Java system classes,
  * packages and resources are visible.
  */
-public class FilteringClassLoader extends ClassLoader implements ClassLoaderHierarchy {
-    private static final ClassLoader EXT_CLASS_LOADER;
+public class FilteringClassLoader extends ClassLoader implements ClassLoaderHierarchy, NonThrowingClassLoader {
+    private static final NonThrowingClassLoaderWrapper EXT_CLASS_LOADER_WRAPPER;
     private static final Set<String> SYSTEM_PACKAGES = new HashSet<String>();
     private final Set<String> packageNames = new HashSet<String>();
     private final Set<String> packagePrefixes = new HashSet<String>();
@@ -37,11 +37,12 @@ public class FilteringClassLoader extends ClassLoader implements ClassLoaderHier
     private final Set<String> classNames = new HashSet<String>();
     private final Set<String> disallowedClassNames = new HashSet<String>();
     private final Set<String> disallowedPackagePrefixes = new HashSet<String>();
+    private final NonThrowingClassLoaderWrapper parentWrapper;
 
     static {
-        EXT_CLASS_LOADER = ClassLoader.getSystemClassLoader().getParent();
+        EXT_CLASS_LOADER_WRAPPER = new NonThrowingClassLoaderWrapper(new MissingClassCachingClassLoader(ClassLoader.getSystemClassLoader().getParent()));
         JavaMethod<ClassLoader, Package[]> method = JavaReflectionUtil.method(ClassLoader.class, Package[].class, "getPackages");
-        Package[] systemPackages = method.invoke(EXT_CLASS_LOADER);
+        Package[] systemPackages = method.invoke(EXT_CLASS_LOADER_WRAPPER.getClassLoader());
         for (Package p : systemPackages) {
             SYSTEM_PACKAGES.add(p.getName());
         }
@@ -49,10 +50,11 @@ public class FilteringClassLoader extends ClassLoader implements ClassLoaderHier
 
     public FilteringClassLoader(ClassLoader parent) {
         super(parent);
+        this.parentWrapper = new NonThrowingClassLoaderWrapper(parent);
     }
 
     public FilteringClassLoader(ClassLoader parent, Spec spec) {
-        super(parent);
+        this(parent);
         packageNames.addAll(spec.packageNames);
         packagePrefixes.addAll(spec.packagePrefixes);
         resourceNames.addAll(spec.resourceNames);
@@ -68,22 +70,35 @@ public class FilteringClassLoader extends ClassLoader implements ClassLoaderHier
     }
 
     @Override
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        try {
-            return EXT_CLASS_LOADER.loadClass(name);
-        } catch (ClassNotFoundException ignore) {
-            // ignore
-        }
+    public Class<?> loadClassOrReturnNull(String name) {
+        synchronized (this) {
+            Class<?> cl = findLoadedClass(name);
+            if (cl != null) {
+                return cl;
+            }
+            cl = EXT_CLASS_LOADER_WRAPPER.loadClassOrReturnNull(name);
+            if (cl != null) {
+                return cl;
+            }
 
-        if (!classAllowed(name)) {
+            if (!classAllowed(name)) {
+                return null;
+            }
+
+            cl = parentWrapper.loadClassOrReturnNull(name);
+            return cl;
+        }
+    }
+
+    @Override
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        Class<?> cl = loadClassOrReturnNull(name);
+        if (cl == null) {
             throw new ClassNotFoundException(name + " not found.");
         }
-
-        Class<?> cl = super.loadClass(name, false);
         if (resolve) {
             resolveClass(cl);
         }
-
         return cl;
     }
 
@@ -112,7 +127,7 @@ public class FilteringClassLoader extends ClassLoader implements ClassLoaderHier
         if (allowed(name)) {
             return super.getResource(name);
         }
-        return EXT_CLASS_LOADER.getResource(name);
+        return EXT_CLASS_LOADER_WRAPPER.getClassLoader().getResource(name);
     }
 
     @Override
@@ -120,7 +135,7 @@ public class FilteringClassLoader extends ClassLoader implements ClassLoaderHier
         if (allowed(name)) {
             return super.getResources(name);
         }
-        return EXT_CLASS_LOADER.getResources(name);
+        return EXT_CLASS_LOADER_WRAPPER.getClassLoader().getResources(name);
     }
 
     private boolean allowed(String resourceName) {

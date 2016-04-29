@@ -265,7 +265,7 @@ class FilteringClassLoaderTest extends Specification {
 
         //noinspection GroovyAccessibility
         then:
-        1 * parent.loadClass("good.Clazz", false) >> String
+        1 * parent.loadClass("good.Clazz") >> String
         0 * parent._
 
         when:
