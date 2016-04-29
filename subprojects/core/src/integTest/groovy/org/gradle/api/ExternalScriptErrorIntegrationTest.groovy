@@ -38,8 +38,8 @@ doStuff()
         fails()
 
         then:
-        failure.assertHasDescription('A problem occurred evaluating script.')
-                .assertHasCause('Could not find method doStuff() for arguments [] on root project')
+        failure.assertHasDescription('A problem occurred evaluating root project \'project\'.')
+                .assertHasCause("Could not find method doStuff() for arguments [] on script '${externalScript.absolutePath}.")
                 .assertHasFileName("Script '${externalScript}'")
                 .assertHasLineNumber(3)
     }
