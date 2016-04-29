@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,35 +16,30 @@
 
 package org.gradle.internal.classloader;
 
-import com.google.common.collect.MapMaker;
+import java.util.HashSet;
 
-import java.util.concurrent.ConcurrentMap;
-
-public class CachingClassLoader extends ClassLoader implements ClassLoaderHierarchy, NonThrowingClassLoader {
-    private static final Object MISSING_CLASS = new Object();
-    private final ConcurrentMap<String, Object> loadedClasses = new MapMaker().weakValues().makeMap();
+public class MissingClassCachingClassLoader extends ClassLoader implements ClassLoaderHierarchy, NonThrowingClassLoader {
+    private final HashSet<String> missingClassNames = new HashSet<String>();
     private final NonThrowingClassLoaderWrapper parentWrapper;
 
-    public CachingClassLoader(ClassLoader parent) {
+    public MissingClassCachingClassLoader(ClassLoader parent) {
         super(parent);
         this.parentWrapper = new NonThrowingClassLoaderWrapper(parent);
     }
 
     @Override
     public Class<?> loadClassOrReturnNull(String name) {
-        Object cachedValue = loadedClasses.get(name);
-        if (cachedValue instanceof Class) {
-            return (Class<?>) cachedValue;
-        } else if (cachedValue == MISSING_CLASS) {
-            return null;
+        synchronized (missingClassNames) {
+            if (missingClassNames.contains(name)) {
+                return null;
+            }
+            Class<?> result = parentWrapper.loadClassOrReturnNull(name);
+            if (result == null) {
+                missingClassNames.add(name);
+                return null;
+            }
+            return result;
         }
-        Class<?> result = parentWrapper.loadClassOrReturnNull(name);
-        if (result == null) {
-            loadedClasses.putIfAbsent(name, MISSING_CLASS);
-            return null;
-        }
-        loadedClasses.putIfAbsent(name, result);
-        return result;
     }
 
     @Override
@@ -80,15 +75,15 @@ public class CachingClassLoader extends ClassLoader implements ClassLoaderHierar
         if (this == o) {
             return true;
         }
-        if (!(o instanceof CachingClassLoader)) {
+        if (!(o instanceof MissingClassCachingClassLoader)) {
             return false;
         }
 
-        CachingClassLoader that = (CachingClassLoader) o;
-        return parentWrapper.getClassLoader().equals(that.parentWrapper.getClassLoader());
+        MissingClassCachingClassLoader that = (MissingClassCachingClassLoader) o;
+        return parentWrapper.equals(that.parentWrapper);
     }
 
     public int hashCode() {
-        return parentWrapper.getClassLoader().hashCode();
+        return parentWrapper.hashCode();
     }
 }

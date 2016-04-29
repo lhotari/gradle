@@ -24,17 +24,20 @@ import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.List;
 
-public class MutableURLClassLoader extends URLClassLoader implements ClassLoaderHierarchy {
+public class MutableURLClassLoader extends URLClassLoader implements ClassLoaderHierarchy, NonThrowingClassLoader {
+    private final NonThrowingClassLoaderWrapper parentWrapper;
+
     public MutableURLClassLoader(ClassLoader parent, URL... urls) {
         super(urls, parent);
+        this.parentWrapper = new NonThrowingClassLoaderWrapper(parent);
     }
 
     public MutableURLClassLoader(ClassLoader parent, Collection<URL> urls) {
-        super(urls.toArray(new URL[0]), parent);
+        this(parent, urls.toArray(new URL[0]));
     }
 
     public MutableURLClassLoader(ClassLoader parent, ClassPath classPath) {
-        super(classPath.getAsURLArray(), parent);
+        this(parent, classPath.getAsURLArray());
     }
 
     public MutableURLClassLoader(ClassLoader parent, Spec spec) {
@@ -45,6 +48,39 @@ public class MutableURLClassLoader extends URLClassLoader implements ClassLoader
         visitor.visitSpec(new Spec(CollectionUtils.toList(getURLs())));
         visitor.visitClassPath(getURLs());
         visitor.visitParent(getParent());
+    }
+
+    @Override
+    public Class<?> loadClassOrReturnNull(String name) {
+        synchronized (this) {
+            Class<?> cl = findLoadedClass(name);
+            if (cl != null) {
+                return cl;
+            }
+            cl = parentWrapper.loadClassOrReturnNull(name);
+            if (cl != null) {
+                return cl;
+
+            }
+            try {
+                cl = super.loadClass(name, false);
+            } catch (ClassNotFoundException e) {
+                return null;
+            }
+            return cl;
+        }
+    }
+
+    @Override
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        Class<?> cl = loadClassOrReturnNull(name);
+        if (cl == null) {
+            throw new ClassNotFoundException(name + " not found.");
+        }
+        if (resolve) {
+            resolveClass(cl);
+        }
+        return cl;
     }
 
     @Override

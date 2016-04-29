@@ -24,10 +24,7 @@ import org.gradle.cache.CacheRepository;
 import org.gradle.cache.PersistentCache;
 import org.gradle.internal.Factory;
 import org.gradle.internal.UncheckedException;
-import org.gradle.internal.classloader.ClassLoaderHierarchy;
-import org.gradle.internal.classloader.ClassLoaderSpec;
-import org.gradle.internal.classloader.ClassLoaderVisitor;
-import org.gradle.internal.classloader.FilteringClassLoader;
+import org.gradle.internal.classloader.*;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
 import org.gradle.internal.reflect.*;
@@ -116,6 +113,11 @@ public class WorkerProcessClassPathProvider implements ClassPathProvider, Closea
                         ClassLoaderHierarchy.class,
                         ClassLoaderVisitor.class,
                         ClassLoaderSpec.class,
+                        MissingClassCachingClassLoader.class,
+                        MissingClassCachingClassLoader.Spec.class,
+                        NonThrowingClassLoaderWrapper.class,
+                        NonThrowingClassLoaderWrapper.DirectNonThrowingClassLoader.class,
+                        NonThrowingClassLoader.class,
                         JavaReflectionUtil.class,
                         JavaMethod.class,
                         GradleException.class,
