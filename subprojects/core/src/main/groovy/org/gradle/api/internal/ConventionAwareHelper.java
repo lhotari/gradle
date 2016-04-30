@@ -19,6 +19,7 @@ package org.gradle.api.internal;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import groovy.lang.Closure;
+import groovy.lang.GroovyObjectSupport;
 import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.internal.plugins.DefaultConvention;
@@ -33,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
-public class ConventionAwareHelper implements ConventionMapping, HasConvention {
+public class ConventionAwareHelper extends GroovyObjectSupport implements ConventionMapping, HasConvention {
     private static Cache<Class<?>, Set<String>> allPropertyNamesCache = CacheBuilder.newBuilder().weakKeys().maximumSize(10000).build();
 
     //prefix internal fields with _ so that they don't get into the way of propertyMissing()
