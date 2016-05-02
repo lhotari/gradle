@@ -16,6 +16,8 @@
 
 package org.gradle.api.internal.plugins;
 
+import groovy.lang.GroovyObjectSupport;
+import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.plugins.Convention;
@@ -25,7 +27,7 @@ import org.gradle.internal.reflect.Instantiator;
 
 import java.util.*;
 
-public class DefaultConvention implements Convention, ExtensionContainerInternal {
+public class DefaultConvention extends GroovyObjectSupport implements Convention, ExtensionContainerInternal {
 
     private final Map<String, Object> plugins = new LinkedHashMap<String, Object>();
     private final DefaultConvention.ExtensionsDynamicObject extensionsDynamicObject = new ExtensionsDynamicObject();
@@ -133,15 +135,21 @@ public class DefaultConvention implements Convention, ExtensionContainerInternal
         return extensionsStorage.getAsMap();
     }
 
-    public Object propertyMissing(String name) {
-        return getByName(name);
+    @Override
+    public Object getProperty(String property) {
+        if (extensionsStorage.hasExtension(property)) {
+            return extensionsStorage.findByName(property);
+        } else {
+            throw new MissingPropertyExceptionNoStack(property, getClass());
+        }
     }
 
-    public void propertyMissing(String name, Object value) {
+    @Override
+    public void setProperty(String name, Object value) {
         extensionsStorage.checkExtensionIsNotReassigned(name);
         add(name, value);
     }
-    
+
     private class ExtensionsDynamicObject extends AbstractDynamicObject {
         @Override
         public String getDisplayName() {
