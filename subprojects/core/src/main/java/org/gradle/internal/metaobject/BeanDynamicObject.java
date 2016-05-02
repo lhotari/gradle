@@ -117,7 +117,7 @@ public class BeanDynamicObject extends AbstractDynamicObject {
         return !JavaReflectionUtil.hasDefaultToString(bean);
     }
 
-    private MetaClass getMetaClass() {
+    private MetaClass resolveMetaClass() {
         if (bean instanceof GroovyObject) {
             return ((GroovyObject) bean).getMetaClass();
         } else {
@@ -161,7 +161,7 @@ public class BeanDynamicObject extends AbstractDynamicObject {
         }
 
         public boolean hasProperty(String name) {
-            return includeProperties && lookupProperty(getMetaClass(), name) != null;
+            return includeProperties && lookupProperty(resolveMetaClass(), name) != null;
         }
 
         public void getProperty(String name, GetPropertyResult result) {
@@ -169,7 +169,7 @@ public class BeanDynamicObject extends AbstractDynamicObject {
                 return;
             }
 
-            MetaClass metaClass = getMetaClass();
+            MetaClass metaClass = resolveMetaClass();
 
             // First look for a property known to the meta-class
             MetaProperty property = lookupProperty(metaClass, name);
@@ -254,7 +254,7 @@ public class BeanDynamicObject extends AbstractDynamicObject {
                 return;
             }
 
-            MetaClass metaClass = getMetaClass();
+            MetaClass metaClass = resolveMetaClass();
             MetaProperty property = lookupProperty(metaClass, name);
             if (property != null) {
                 if (property instanceof MultipleSetterProperty) {
@@ -316,7 +316,7 @@ public class BeanDynamicObject extends AbstractDynamicObject {
             }
 
             Map<String, Object> properties = new HashMap<String, Object>();
-            List<MetaProperty> classProperties = getMetaClass().getProperties();
+            List<MetaProperty> classProperties = resolveMetaClass().getProperties();
             for (MetaProperty metaProperty : classProperties) {
                 if (metaProperty.getName().equals("properties")) {
                     properties.put("properties", properties);
@@ -334,11 +334,11 @@ public class BeanDynamicObject extends AbstractDynamicObject {
         }
 
         public boolean hasMethod(final String name, final Object... arguments) {
-            return lookupMethod(getMetaClass(), name, arguments) != null;
+            return lookupMethod(resolveMetaClass(), name, arguments) != null;
         }
 
         public void invokeMethod(String name, InvokeMethodResult result, Object... arguments) {
-            MetaClass metaClass = getMetaClass();
+            MetaClass metaClass = resolveMetaClass();
             MetaMethod metaMethod = lookupMethod(metaClass, name, arguments);
             if (metaMethod != null) {
                 result.result(metaMethod.doMethodInvoke(bean, arguments));

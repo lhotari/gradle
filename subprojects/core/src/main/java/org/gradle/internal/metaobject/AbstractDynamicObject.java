@@ -15,6 +15,7 @@
  */
 package org.gradle.internal.metaobject;
 
+import groovy.lang.GroovyObjectSupport;
 import groovy.lang.GroovyRuntimeException;
 import groovy.lang.MissingMethodException;
 import groovy.lang.MissingPropertyException;
@@ -27,7 +28,7 @@ import java.util.Map;
 /**
  * An empty {@link DynamicObject}.
  */
-public abstract class AbstractDynamicObject implements DynamicObject {
+public abstract class AbstractDynamicObject extends GroovyObjectSupport implements DynamicObject {
     public abstract String getDisplayName();
 
     @Override
@@ -165,6 +166,11 @@ public abstract class AbstractDynamicObject implements DynamicObject {
             return result.getResult();
         }
         throw methodMissingException(name, arguments);
+    }
+
+    @Override
+    public Object invokeMethod(String name, Object args) {
+        return invokeMethod(name, (Object[]) args);
     }
 
     public MissingMethodException methodMissingException(String name, Object... params) {
