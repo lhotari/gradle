@@ -189,10 +189,6 @@ public class DefaultConvention implements Convention, ExtensionContainerInternal
             }
         }
 
-        public Object propertyMissing(String name) {
-            return getProperty(name);
-        }
-
         @Override
         public void setProperty(String name, Object value, SetPropertyResult result) {
             extensionsStorage.checkExtensionIsNotReassigned(name);
@@ -203,10 +199,6 @@ public class DefaultConvention implements Convention, ExtensionContainerInternal
                     return;
                 }
             }
-        }
-
-        public void propertyMissing(String name, Object value) {
-            setProperty(name, value);
         }
 
         @Override
@@ -224,10 +216,6 @@ public class DefaultConvention implements Convention, ExtensionContainerInternal
             }
         }
 
-        public Object methodMissing(String name, Object args) {
-            return invokeMethod(name, (Object[])args);
-        }
-        
         @Override
         public boolean hasMethod(String name, Object... args) {
             if (extensionsStorage.isConfigureExtensionMethod(name, args)) {
