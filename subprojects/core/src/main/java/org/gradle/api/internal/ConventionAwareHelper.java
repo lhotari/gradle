@@ -17,7 +17,8 @@
 package org.gradle.api.internal;
 
 import groovy.lang.Closure;
-import groovy.lang.MissingPropertyException;
+import groovy.lang.GroovyObjectSupport;
+import org.codehaus.groovy.runtime.metaclass.MissingPropertyExceptionNoStack;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.internal.plugins.DefaultConvention;
 import org.gradle.api.plugins.Convention;
@@ -30,7 +31,8 @@ import java.util.concurrent.Callable;
 
 import static org.gradle.util.GUtil.uncheckedCall;
 
-public class ConventionAwareHelper implements ConventionMapping, HasConvention {
+public class ConventionAwareHelper extends GroovyObjectSupport implements ConventionMapping, HasConvention {
+
     //prefix internal fields with _ so that they don't get into the way of propertyMissing()
     private final Convention _convention;
     private final IConventionAware _source;
@@ -86,11 +88,17 @@ public class ConventionAwareHelper implements ConventionMapping, HasConvention {
         });
     }
 
-    public void propertyMissing(String name, Object value) {
-        if (value instanceof Closure) {
-            map(name, (Closure) value);
+    @Override
+    public Object getProperty(String property) {
+        throw new MissingPropertyExceptionNoStack(property, getClass());
+    }
+
+    @Override
+    public void setProperty(String property, Object newValue) {
+        if (newValue instanceof Closure) {
+            map(property, (Closure) newValue);
         } else {
-            throw new MissingPropertyException(name, getClass());
+            throw new MissingPropertyExceptionNoStack(property, getClass());
         }
     }
 
