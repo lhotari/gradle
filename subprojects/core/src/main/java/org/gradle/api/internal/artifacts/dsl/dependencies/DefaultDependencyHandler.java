@@ -93,6 +93,10 @@ public class DefaultDependencyHandler extends GroovyObjectSupport implements Dep
         return dependencyFactory.createProjectDependencyFromMap(projectFinder, notation);
     }
 
+    public Dependency project(String path) {
+        return dependencyFactory.createDependency(projectFinder.getProject(path));
+    }
+
     public Dependency module(Object notation, Closure configureClosure) {
         return dependencyFactory.createModule(notation, configureClosure);
     }
@@ -111,6 +115,7 @@ public class DefaultDependencyHandler extends GroovyObjectSupport implements Dep
 
     public Object methodMissing(String name, Object args) {
         Object[] argsArray = (Object[]) args;
+
         Configuration configuration = configurationContainer.findByName(name);
         if (configuration == null) {
             throw new MissingMethodException(name, this.getClass(), argsArray);
