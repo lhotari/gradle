@@ -18,9 +18,10 @@ package org.gradle.internal.metaobject;
 
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
+import org.gradle.api.internal.DynamicObjectAware;
 import org.gradle.api.internal.DynamicObjectUtil;
 
-public class ConfigureDelegate extends GroovyObjectSupport {
+public class ConfigureDelegate extends GroovyObjectSupport implements DynamicObjectAware {
     protected final DynamicObject _owner;
     protected final DynamicObject _delegate;
     private final ThreadLocal<Boolean> _configuring = new ThreadLocal<Boolean>() {
@@ -123,5 +124,10 @@ public class ConfigureDelegate extends GroovyObjectSupport {
         } finally {
             _configuring.set(isAlreadyConfiguring);
         }
+    }
+
+    @Override
+    public DynamicObject getAsDynamicObject() {
+        return _delegate;
     }
 }

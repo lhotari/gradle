@@ -76,6 +76,10 @@ public class RuleVisitor extends ExpressionReplacingVisitorSupport {
         this.sourceUnit = sourceUnit;
     }
 
+    public static boolean hasRuleVisitorMetadata(Statement closureCode) {
+        return closureCode.getNodeMetaData(AST_NODE_METADATA_LOCATION_KEY) != null;
+    }
+
     // Not part of a normal visitor, see ClosureCreationInterceptingVerifier
     public static void visitGeneratedClosure(ClassNode node) {
         MethodNode closureCallMethod = AstUtils.getGeneratedClosureImplMethod(node);
