@@ -22,10 +22,20 @@ import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
-import org.gradle.internal.metaobject.*;
+import org.gradle.internal.metaobject.AbstractDynamicObject;
+import org.gradle.internal.metaobject.BeanDynamicObject;
+import org.gradle.internal.metaobject.DynamicObject;
+import org.gradle.internal.metaobject.GetPropertyResult;
+import org.gradle.internal.metaobject.InvokeMethodResult;
+import org.gradle.internal.metaobject.SetPropertyResult;
 import org.gradle.internal.reflect.Instantiator;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DefaultConvention extends GroovyObjectSupport implements Convention, ExtensionContainerInternal {
 
@@ -137,7 +147,13 @@ public class DefaultConvention extends GroovyObjectSupport implements Convention
 
     @Override
     public Object getProperty(String property) {
-        if (extensionsStorage.hasExtension(property)) {
+        if (property.equals("plugins")) {
+            return getPlugins();
+        } else if (property.equals("extensionsAsDynamicObject")) {
+            return getExtensionsAsDynamicObject();
+        } else if (property.equals("asMap")) {
+            return getAsMap();
+        } else if (extensionsStorage.hasExtension(property)) {
             return extensionsStorage.findByName(property);
         } else {
             throw new MissingPropertyExceptionNoStack(property, getClass());
