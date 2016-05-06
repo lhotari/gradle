@@ -153,6 +153,8 @@ public class DefaultConvention extends GroovyObjectSupport implements Convention
             return getExtensionsAsDynamicObject();
         } else if (property.equals("asMap")) {
             return getAsMap();
+        } else if (property.equals("extraProperties")) {
+            return getExtraProperties();
         } else if (extensionsStorage.hasExtension(property)) {
             return extensionsStorage.findByName(property);
         } else {
