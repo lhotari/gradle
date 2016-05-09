@@ -18,8 +18,17 @@ package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.BuildListener;
 import org.gradle.BuildResult;
+import org.gradle.api.Task;
+import org.gradle.api.execution.TaskExecutionGraph;
+import org.gradle.api.execution.TaskExecutionGraphListener;
+import org.gradle.api.execution.TaskExecutionListener;
 import org.gradle.api.initialization.Settings;
+import org.gradle.api.internal.GradleInternal;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.tasks.TaskState;
+import org.gradle.execution.TaskGraphExecuter;
+import org.gradle.execution.taskgraph.TaskInfo;
+import org.gradle.internal.Cast;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,11 +41,40 @@ public class CachingTreeVisitorCleaner implements Closeable {
         this.gradle = gradle;
         buildListener = new CacheCleaner(cachingTreeVisitor);
         gradle.addBuildListener(buildListener);
+        CacheExpirationStrategy cacheExpirationStrategy = new CacheExpirationStrategy(cachingTreeVisitor);
+        gradle.getTaskGraph().addTaskExecutionGraphListener(cacheExpirationStrategy);
+        gradle.getTaskGraph().addTaskExecutionListener(cacheExpirationStrategy);
     }
 
     @Override
     public void close() throws IOException {
         gradle.removeListener(buildListener);
+    }
+
+    private static class CacheExpirationStrategy implements TaskExecutionGraphListener, TaskExecutionListener {
+        private final CachingTreeVisitor cachingTreeVisitor;
+
+        public CacheExpirationStrategy(CachingTreeVisitor cachingTreeVisitor) {
+            this.cachingTreeVisitor = cachingTreeVisitor;
+        }
+
+        @Override
+        public void graphPopulated(TaskExecutionGraph graph) {
+            TaskGraphExecuter graphExecuter = Cast.cast(TaskGraphExecuter.class, graph);
+            for(TaskInfo taskInfo : graphExecuter.getAllTaskInfos()) {
+
+            }
+        }
+
+        @Override
+        public void beforeExecute(Task task) {
+
+        }
+
+        @Override
+        public void afterExecute(Task task, TaskState state) {
+
+        }
     }
 
     private static class CacheCleaner implements BuildListener {
