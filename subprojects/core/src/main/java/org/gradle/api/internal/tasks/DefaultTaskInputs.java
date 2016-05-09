@@ -35,12 +35,14 @@ public class DefaultTaskInputs implements TaskInputs {
     private final FileResolver resolver;
     private final TaskMutator taskMutator;
     private final Map<String, Object> properties = new HashMap<String, Object>();
+    private final UnionFileCollection files;
 
     public DefaultTaskInputs(FileResolver resolver, TaskInternal task, TaskMutator taskMutator) {
         this.resolver = resolver;
         this.taskMutator = taskMutator;
         inputFiles = new DefaultConfigurableFileCollection(task + " input files", resolver, null);
         sourceFiles = new DefaultConfigurableFileCollection(task + " source files", resolver, null);
+        files = new UnionFileCollection(inputFiles, sourceFiles);
     }
 
     public boolean getHasInputs() {
@@ -48,7 +50,7 @@ public class DefaultTaskInputs implements TaskInputs {
     }
 
     public FileCollection getFiles() {
-        return new UnionFileCollection(inputFiles, sourceFiles);
+        return files;
     }
 
     public TaskInputs files(final Object... paths) {
