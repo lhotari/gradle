@@ -56,9 +56,14 @@ public abstract class AbstractFileTree extends AbstractFileCollection implements
     }
 
     public FileTree matching(Closure filterConfigClosure) {
+        PatternSet patternSet = createPatternSet(filterConfigClosure);
+        return matching(patternSet);
+    }
+
+    static PatternSet createPatternSet(Closure filterConfigClosure) {
         PatternSet patternSet = new PatternSet();
         ConfigureUtil.configure(filterConfigClosure, patternSet);
-        return matching(patternSet);
+        return patternSet;
     }
 
     public FileTree matching(PatternFilterable patterns) {
@@ -118,7 +123,7 @@ public abstract class AbstractFileTree extends AbstractFileCollection implements
         visit(visitor);
     }
 
-    private static class FilteredFileTreeImpl extends AbstractFileTree {
+    private static class FilteredFileTreeImpl extends AbstractFileTree implements Filtered<FileTree, FileTreeElement> {
         private final AbstractFileTree fileTree;
         private final Spec<FileTreeElement> spec;
 
@@ -163,6 +168,16 @@ public abstract class AbstractFileTree extends AbstractFileCollection implements
         @Override
         public void visitTreeOrBackingFile(FileVisitor visitor) {
             fileTree.visitTreeOrBackingFile(visitor);
+        }
+
+        @Override
+        public FileTree getUnfiltered() {
+            return fileTree;
+        }
+
+        @Override
+        public Spec<? super FileTreeElement> getFilter() {
+            return spec;
         }
     }
 }

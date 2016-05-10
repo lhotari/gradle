@@ -35,7 +35,12 @@ import org.gradle.util.GUtil;
 import org.gradle.util.GradleVersion;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public abstract class AbstractFileCollection implements FileCollectionInternal {
     /**
@@ -215,21 +220,7 @@ public abstract class AbstractFileCollection implements FileCollectionInternal {
     }
 
     public FileCollection filter(final Spec<? super File> filterSpec) {
-        return new AbstractFileCollection() {
-            @Override
-            public String getDisplayName() {
-                return AbstractFileCollection.this.getDisplayName();
-            }
-
-            @Override
-            public TaskDependency getBuildDependencies() {
-                return AbstractFileCollection.this.getBuildDependencies();
-            }
-
-            public Set<File> getFiles() {
-                return CollectionUtils.filter(AbstractFileCollection.this, new LinkedHashSet<File>(), filterSpec);
-            }
-        };
+        return new FilteredFileCollection(filterSpec);
     }
 
     protected String getCapDisplayName() {
@@ -240,6 +231,38 @@ public abstract class AbstractFileCollection implements FileCollectionInternal {
     public void registerWatchPoints(FileSystemSubset.Builder builder) {
         for (File file : getFiles()) {
             builder.add(file);
+        }
+    }
+
+    private class FilteredFileCollection extends AbstractFileCollection implements Filtered<FileCollection, File> {
+        private final Spec<? super File> filterSpec;
+
+        public FilteredFileCollection(Spec<? super File> filterSpec) {
+            this.filterSpec = filterSpec;
+        }
+
+        @Override
+        public String getDisplayName() {
+            return AbstractFileCollection.this.getDisplayName();
+        }
+
+        @Override
+        public TaskDependency getBuildDependencies() {
+            return AbstractFileCollection.this.getBuildDependencies();
+        }
+
+        public Set<File> getFiles() {
+            return CollectionUtils.filter(AbstractFileCollection.this, new LinkedHashSet<File>(), filterSpec);
+        }
+
+        @Override
+        public FileCollection getUnfiltered() {
+            return AbstractFileCollection.this;
+        }
+
+        @Override
+        public Spec<? super File> getFilter() {
+            return filterSpec;
         }
     }
 }

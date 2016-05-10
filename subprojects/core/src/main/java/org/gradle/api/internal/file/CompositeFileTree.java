@@ -71,17 +71,14 @@ public abstract class CompositeFileTree extends CompositeFileCollection implemen
     }
 
     private class FilteredFileTree extends CompositeFileTree {
-        private final Closure closure;
         private final PatternFilterable patterns;
 
         public FilteredFileTree(Closure closure) {
-            this.closure = closure;
-            patterns = null;
+            this(AbstractFileTree.createPatternSet(closure));
         }
 
         public FilteredFileTree(PatternFilterable patterns) {
             this.patterns = patterns;
-            closure = null;
         }
 
         @Override
@@ -94,11 +91,7 @@ public abstract class CompositeFileTree extends CompositeFileCollection implemen
             ResolvableFileCollectionResolveContext nestedContext = context.newContext();
             CompositeFileTree.this.visitContents(nestedContext);
             for (FileTree set : nestedContext.resolveAsFileTrees()) {
-                if (closure != null) {
-                    context.add(set.matching(closure));
-                } else {
-                    context.add(set.matching(patterns));
-                }
+                context.add(set.matching(patterns));
             }
         }
 
