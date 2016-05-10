@@ -19,19 +19,25 @@ package org.gradle.api.internal.changedetection.state;
 import org.gradle.BuildListener;
 import org.gradle.BuildResult;
 import org.gradle.api.Task;
+import org.gradle.api.Transformer;
 import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.execution.TaskExecutionGraphListener;
 import org.gradle.api.execution.TaskExecutionListener;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.initialization.Settings;
-import org.gradle.api.internal.GradleInternal;
+import org.gradle.api.internal.file.BackingFileExtractor;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.tasks.TaskState;
 import org.gradle.execution.TaskGraphExecuter;
 import org.gradle.execution.taskgraph.TaskInfo;
 import org.gradle.internal.Cast;
+import org.gradle.util.CollectionUtils;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CachingTreeVisitorCleaner implements Closeable {
     private final Gradle gradle;
@@ -62,8 +68,20 @@ public class CachingTreeVisitorCleaner implements Closeable {
         public void graphPopulated(TaskExecutionGraph graph) {
             TaskGraphExecuter graphExecuter = Cast.cast(TaskGraphExecuter.class, graph);
             for(TaskInfo taskInfo : graphExecuter.getAllTaskInfos()) {
-
+                Task task = taskInfo.getTask();
+                List<File> inputs = extractFiles(task.getInputs().getFiles());
+                List<File> outputs = extractFiles(task.getOutputs().getFiles());
             }
+        }
+
+        private List<File> extractFiles(FileCollection files) {
+            List<BackingFileExtractor.FileEntry> entries = new BackingFileExtractor().extractFilesOrDirectories(files);
+            return CollectionUtils.collect(entries, new Transformer<File, BackingFileExtractor.FileEntry>() {
+                @Override
+                public File transform(BackingFileExtractor.FileEntry fileEntry) {
+                    return fileEntry.getFile().getAbsoluteFile();
+                }
+            });
         }
 
         @Override
