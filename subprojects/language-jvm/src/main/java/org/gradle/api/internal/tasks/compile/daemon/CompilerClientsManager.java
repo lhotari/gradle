@@ -17,11 +17,14 @@ package org.gradle.api.internal.tasks.compile.daemon;
 
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.CompositeStoppable;
 
 import java.io.File;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -30,39 +33,64 @@ public class CompilerClientsManager {
     private static final Logger LOGGER = Logging.getLogger(CompilerDaemonManager.class);
 
     private final Lock lock = new ReentrantLock(true);
+    private final Condition waitClientCondition = lock.newCondition();
     private final LinkedList<CompilerDaemonClient> allClients = new LinkedList<CompilerDaemonClient>();
     private final LinkedList<CompilerDaemonClient> idleClients = new LinkedList<CompilerDaemonClient>();
+    private final int maxDaemons;
+    private final AtomicInteger daemonsStarting = new AtomicInteger(0);
     private boolean stopping;
 
     private CompilerDaemonStarter compilerDaemonStarter;
 
-    public CompilerClientsManager(CompilerDaemonStarter compilerDaemonStarter) {
+    public CompilerClientsManager(CompilerDaemonStarter compilerDaemonStarter, int maxDaemons) {
         this.compilerDaemonStarter = compilerDaemonStarter;
+        this.maxDaemons = maxDaemons;
     }
 
     public CompilerDaemonClient reserveClient(File workingDir, DaemonForkOptions forkOptions) {
+        boolean startNewClient = false;
         lock.lock();
         try {
-            CompilerDaemonClient client = reserveCompatibleIdleClient(forkOptions);
-            if (client != null) {
-                if (client.ping()) {
-                    return client;
-                } else {
-                    try {
-                        client.stop();
-                    } catch (Exception e) {
-                        // ignore exceptions
+            while (!stopping) {
+                CompilerDaemonClient client = reserveCompatibleIdleClient(forkOptions);
+                if (client != null) {
+                    if (client.ping()) {
+                        return client;
+                    } else {
+                        try {
+                            client.stop();
+                        } catch (Exception e) {
+                            // ignore exceptions
+                        }
+                        allClients.remove(client);
                     }
-                    allClients.remove(client);
+                }
+                if (maxDaemons <= 0 || allClients.size() + daemonsStarting.get() < maxDaemons) {
+                    daemonsStarting.incrementAndGet();
+                    startNewClient = true;
+                    break;
+                } else {
+                    // wait for suitable client to become idle
+                    waitClientCondition.await();
                 }
             }
+        } catch (InterruptedException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
         } finally {
             lock.unlock();
         }
         if (stopping) {
             throw new IllegalStateException("Stop has been requested.");
         }
-        return addNewClient(workingDir, forkOptions);
+
+        // start new clients concurrently
+        if (startNewClient) {
+            CompilerDaemonClient client = addNewClient(workingDir, forkOptions);
+            daemonsStarting.decrementAndGet();
+            return client;
+        }
+
+        throw new IllegalStateException("Should never reach this.");
     }
 
     private CompilerDaemonClient reserveCompatibleIdleClient(DaemonForkOptions forkOptions) {
@@ -103,6 +131,8 @@ public class CompilerClientsManager {
         try {
             if (allClients.remove(client)) {
                 idleClients.remove(client);
+                // signal a single waiting thread
+                waitClientCondition.signal();
             }
         } finally {
             lock.unlock();
@@ -117,6 +147,8 @@ public class CompilerClientsManager {
         try {
             if (allClients.contains(client)) {
                 idleClients.add(client);
+                // signal all waiting threads since the first waiting thread might not be able to use the available client
+                waitClientCondition.signalAll();
             }
         } finally {
             lock.unlock();
@@ -132,6 +164,7 @@ public class CompilerClientsManager {
             LOGGER.info("Stopped {} compiler daemon(s).", allClients.size());
             allClients.clear();
             idleClients.clear();
+            waitClientCondition.signalAll();
         } finally {
             lock.unlock();
         }

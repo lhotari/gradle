@@ -26,7 +26,7 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
     def options = Stub(DaemonForkOptions)
     def starter = Stub(CompilerDaemonStarter)
 
-    @Subject manager = new CompilerClientsManager(starter)
+    @Subject manager = new CompilerClientsManager(starter, 0)
 
     def "does not reserve idle client when it doesn't match"() {
         def noMatch = Stub(CompilerDaemonClient) {
@@ -78,7 +78,7 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
     }
 
     def "clients can be released for further use"() {
-        def client = Mock(CompilerDaemonClient) { isCompatibleWith(_) >> true; ping() >> true }
+        def client = Mock(CompilerDaemonClient) { isCompatibleWith(_) >> true; ping() >> true; isReuseable() >> true }
         starter.startDaemon(workingDir, options) >> client
 
         when:
