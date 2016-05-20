@@ -19,29 +19,33 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Nullable;
+import org.gradle.process.internal.worker.MultiRequestWorkerProcessBuilder;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.Set;
 
 public class DaemonForkOptions {
+    public static final int USE_DEFAULT_IDLE_TIMEOUT_VALUE = MultiRequestWorkerProcessBuilder.USE_DEFAULT_IDLE_TIMEOUT_VALUE;
     private final String minHeapSize;
     private final String maxHeapSize;
     private final Iterable<String> jvmArgs;
     private final Iterable<File> classpath;
     private final Iterable<String> sharedPackages;
+    private final int idleTimeout;
 
     public DaemonForkOptions(@Nullable String minHeapSize, @Nullable String maxHeapSize, Iterable<String> jvmArgs) {
-        this(minHeapSize, maxHeapSize, jvmArgs, Collections.<File>emptyList(), Collections.<String>emptyList());
+        this(minHeapSize, maxHeapSize, jvmArgs, Collections.<File>emptyList(), Collections.<String>emptyList(), USE_DEFAULT_IDLE_TIMEOUT_VALUE);
     }
 
     public DaemonForkOptions(@Nullable String minHeapSize, @Nullable String maxHeapSize, Iterable<String> jvmArgs, Iterable<File> classpath,
-                             Iterable<String> sharedPackages) {
+                             Iterable<String> sharedPackages, int timeout) {
         this.minHeapSize = minHeapSize;
         this.maxHeapSize = maxHeapSize;
         this.jvmArgs = jvmArgs;
         this.classpath = classpath;
         this.sharedPackages = sharedPackages;
+        this.idleTimeout = timeout;
     }
 
     public String getMinHeapSize() {
@@ -85,7 +89,15 @@ public class DaemonForkOptions {
         mergedClasspath.addAll(getNormalizedClasspath(other.classpath));
         Set<String> mergedAllowedPackages = getNormalizedSharedPackages(sharedPackages);
         mergedAllowedPackages.addAll(getNormalizedSharedPackages(other.sharedPackages));
-        return new DaemonForkOptions(mergedMinHeapSize, mergedMaxHeapSize, mergedJvmArgs, mergedClasspath, mergedAllowedPackages);
+        int timeout = mergeIdleTimeout(other.idleTimeout);
+        return new DaemonForkOptions(mergedMinHeapSize, mergedMaxHeapSize, mergedJvmArgs, mergedClasspath, mergedAllowedPackages, timeout);
+    }
+
+    private int mergeIdleTimeout(int timeout) {
+        if (this.idleTimeout == 0 || timeout == 0) {
+            return 0;
+        }
+        return Math.max(this.idleTimeout, timeout);
     }
 
     private int getHeapSizeMb(String heapSize) {
@@ -128,7 +140,11 @@ public class DaemonForkOptions {
         return Sets.newLinkedHashSet(allowedPackages);
     }
 
+    public int getIdleTimeout() {
+        return idleTimeout;
+    }
+
     public String toString() {
-        return Objects.toStringHelper(this).add("minHeapSize", minHeapSize).add("maxHeapSize", maxHeapSize).add("jvmArgs", jvmArgs).add("classpath", classpath).toString();
+        return Objects.toStringHelper(this).add("minHeapSize", minHeapSize).add("maxHeapSize", maxHeapSize).add("jvmArgs", jvmArgs).add("classpath", classpath).add("idleTimeout", idleTimeout).toString();
     }
 }

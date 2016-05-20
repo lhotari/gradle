@@ -49,6 +49,7 @@ public class CompilerDaemonStarter {
         javaCommand.setMaxHeapSize(forkOptions.getMaxHeapSize());
         javaCommand.setJvmArgs(forkOptions.getJvmArgs());
         javaCommand.setWorkingDir(workingDir);
+        builder.setIdleTimeout(forkOptions.getIdleTimeout());
         CompilerDaemonWorker daemonWorker = builder.build();
         WorkerProcess workerProcess = daemonWorker.start();
 

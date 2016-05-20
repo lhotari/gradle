@@ -21,6 +21,8 @@ import org.gradle.api.tasks.Optional;
 
 import java.util.List;
 
+import static org.gradle.api.internal.tasks.compile.daemon.DaemonForkOptions.USE_DEFAULT_IDLE_TIMEOUT_VALUE;
+
 /**
  * Fork options for compilation. Only take effect if {@code fork}
  * is {@code true}.

@@ -64,7 +64,7 @@ public class DaemonScalaCompiler<T extends ScalaJavaJointCompileSpec> extends Ab
     private DaemonForkOptions createScalaForkOptions(T spec) {
         ScalaForkOptions options = spec.getScalaCompileOptions().getForkOptions();
         return new DaemonForkOptions(options.getMemoryInitialSize(), options.getMemoryMaximumSize(),
-                options.getJvmArgs(), zincClasspath, SHARED_PACKAGES);
+                options.getJvmArgs(), zincClasspath, SHARED_PACKAGES, options.getIdleTimeout());
     }
 }
 

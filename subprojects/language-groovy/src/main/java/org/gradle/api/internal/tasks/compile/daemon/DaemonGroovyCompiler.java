@@ -54,6 +54,6 @@ public class DaemonGroovyCompiler extends AbstractDaemonCompiler<GroovyJavaJoint
         Collection<File> antFiles = classPathRegistry.getClassPath("ANT").getAsFiles();
         Iterable<File> groovyFiles = Iterables.concat(spec.getGroovyClasspath(), antFiles);
         return new DaemonForkOptions(options.getMemoryInitialSize(), options.getMemoryMaximumSize(),
-                options.getJvmArgs(), groovyFiles, SHARED_PACKAGES);
+                options.getJvmArgs(), groovyFiles, SHARED_PACKAGES, options.getIdleTimeout());
     }
 }

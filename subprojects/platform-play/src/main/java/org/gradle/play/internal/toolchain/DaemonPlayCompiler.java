@@ -39,6 +39,6 @@ public class DaemonPlayCompiler<T extends PlayCompileSpec> extends AbstractDaemo
     @Override
     protected DaemonForkOptions toDaemonOptions(PlayCompileSpec spec) {
         BaseForkOptions forkOptions = spec.getForkOptions();
-        return new DaemonForkOptions(forkOptions.getMemoryInitialSize(), forkOptions.getMemoryMaximumSize(), Collections.<String>emptyList(), compilerClasspath, classLoaderPackages);
+        return new DaemonForkOptions(forkOptions.getMemoryInitialSize(), forkOptions.getMemoryMaximumSize(), Collections.<String>emptyList(), compilerClasspath, classLoaderPackages, DaemonForkOptions.USE_DEFAULT_IDLE_TIMEOUT_VALUE);
     }
 }

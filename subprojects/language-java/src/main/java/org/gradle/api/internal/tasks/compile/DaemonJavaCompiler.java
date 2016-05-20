@@ -36,6 +36,6 @@ public class DaemonJavaCompiler extends AbstractDaemonCompiler<JavaCompileSpec> 
         ForkOptions forkOptions = spec.getCompileOptions().getForkOptions();
         return new DaemonForkOptions(
                 forkOptions.getMemoryInitialSize(), forkOptions.getMemoryMaximumSize(), forkOptions.getJvmArgs(),
-                Collections.<File>emptyList(), SHARED_PACKAGES);
+                Collections.<File>emptyList(), SHARED_PACKAGES, forkOptions.getIdleTimeout());
     }
 }
