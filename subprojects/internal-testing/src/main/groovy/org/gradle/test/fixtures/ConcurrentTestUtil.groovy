@@ -21,10 +21,7 @@ import org.junit.rules.ExternalResource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.AbstractExecutorService
-import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.Executor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
@@ -258,6 +255,13 @@ class ConcurrentTestUtil extends ExternalResource {
             threadsChanged.signalAll()
         } finally {
             lock.unlock()
+        }
+    }
+
+    void waitFor(CountDownLatch latch, boolean checkLatch = true) {
+        boolean result = latch.await(timeout, TimeUnit.MILLISECONDS)
+        if (checkLatch && !result) {
+            failed(new IllegalStateException("Timeout waiting for CountDownLatch to complete."))
         }
     }
 }

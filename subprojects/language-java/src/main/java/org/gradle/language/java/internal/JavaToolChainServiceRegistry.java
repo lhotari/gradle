@@ -35,6 +35,8 @@ import org.gradle.process.internal.worker.WorkerProcessFactory;
 import javax.tools.JavaCompiler;
 
 public class JavaToolChainServiceRegistry implements PluginServiceRegistry {
+    public static final String MAX_COMPILER_DAEMONS_SYSTEM_PROPERTY = "org.gradle.compile.workers.max";
+
     @Override
     public void registerGlobalServices(ServiceRegistration registration) {
     }
@@ -59,7 +61,8 @@ public class JavaToolChainServiceRegistry implements PluginServiceRegistry {
 
     private static class BuildSessionScopeCompileServices {
         CompilerDaemonManager createCompilerDaemonManager(WorkerProcessFactory workerFactory, StartParameter startParameter) {
-            return new CompilerDaemonManager(new CompilerClientsManager(new CompilerDaemonStarter(workerFactory, startParameter)));
+            int maxDaemons = Integer.parseInt(System.getProperty(MAX_COMPILER_DAEMONS_SYSTEM_PROPERTY, "0"));
+            return new CompilerDaemonManager(new CompilerClientsManager(new CompilerDaemonStarter(workerFactory, startParameter), maxDaemons));
         }
 
         Factory<JavaCompiler> createJavaHomeBasedJavaCompilerFactory() {
