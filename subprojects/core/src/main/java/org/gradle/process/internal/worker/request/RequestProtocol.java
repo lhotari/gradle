@@ -17,6 +17,7 @@
 package org.gradle.process.internal.worker.request;
 
 public interface RequestProtocol {
+    void ping();
     void run(String methodName, Class<?>[] paramTypes, Object[] args);
     void runThenStop(String methodName, Class<?>[] paramTypes, Object[] args);
     void stop();

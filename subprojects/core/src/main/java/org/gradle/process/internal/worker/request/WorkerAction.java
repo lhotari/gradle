@@ -25,22 +25,33 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class WorkerAction implements Action<WorkerProcessContext>, Serializable, RequestProtocol {
     private final String workerImplementationName;
+    private final int idleTimeout;
     private transient CountDownLatch completed;
+    private transient CountDownLatch idleTimeoutLatch;
     private transient ResponseProtocol responder;
     private transient Throwable failure;
     private transient Class<?> workerImplementation;
     private transient Object implementation;
+    private transient long lastAccessMillis;
+    private transient Lock lastAccessLock;
 
-    public WorkerAction(Class<?> workerImplementation) {
+    public WorkerAction(Class<?> workerImplementation, int idleTimeout) {
         this.workerImplementationName = workerImplementation.getName();
+        this.idleTimeout = idleTimeout;
     }
 
     @Override
     public void execute(WorkerProcessContext workerProcessContext) {
+        lastAccessMillis = System.currentTimeMillis();
         completed = new CountDownLatch(1);
+        idleTimeoutLatch = new CountDownLatch(1);
+        lastAccessLock = new ReentrantLock();
         try {
             workerImplementation = Class.forName(workerImplementationName);
             implementation = workerImplementation.newInstance();
@@ -53,16 +64,47 @@ public class WorkerAction implements Action<WorkerProcessContext>, Serializable,
         responder = connection.addOutgoing(ResponseProtocol.class);
         connection.connect();
 
+        waitForStopOrTimeout();
+    }
+
+    private void waitForStopOrTimeout() {
         try {
-            completed.await();
+            if (idleTimeout > 0) {
+                idleTimeoutLatch.await();
+                while (true) {
+                    if (completed.await(idleTimeout, TimeUnit.MILLISECONDS) || hasTimedOut()) {
+                        break;
+                    }
+                }
+            } else {
+                completed.await();
+            }
         } catch (InterruptedException e) {
             throw UncheckedException.throwAsUncheckedException(e);
+        }
+    }
+
+    private boolean hasTimedOut() {
+        lastAccessLock.lock();
+        try {
+            long sinceLastAccess = System.currentTimeMillis() - lastAccessMillis;
+            if (sinceLastAccess > idleTimeout) {
+                completed.countDown();
+                return true;
+            } else if (sinceLastAccess < 0) {
+                // negative duration, time has jumped, recover
+                lastAccessMillis = System.currentTimeMillis();
+            }
+            return false;
+        } finally {
+            lastAccessLock.unlock();
         }
     }
 
     @Override
     public void stop() {
         completed.countDown();
+        idleTimeoutLatch.countDown();
     }
 
     @Override
@@ -75,29 +117,51 @@ public class WorkerAction implements Action<WorkerProcessContext>, Serializable,
     }
 
     @Override
-    public void run(String methodName, Class<?>[] paramTypes, Object[] args) {
-        if (failure != null) {
-            responder.infrastructureFailed(failure);
-            return;
-        }
+    public void ping() {
+        lastAccessLock.lock();
         try {
-            Method method = workerImplementation.getDeclaredMethod(methodName, paramTypes);
-            Object result;
-            try {
-                result = method.invoke(implementation, args);
-            } catch (InvocationTargetException e) {
-                Throwable failure = e.getCause();
-                if (failure instanceof NoClassDefFoundError) {
-                    // Assume an infrastructure problem
-                    responder.infrastructureFailed(failure);
-                } else {
-                    responder.failed(failure);
-                }
+            lastAccessMillis = System.currentTimeMillis();
+            responder.completed(Boolean.valueOf(completed != null && completed.getCount() > 0));
+        } finally {
+            lastAccessLock.unlock();
+        }
+    }
+
+    @Override
+    public void run(String methodName, Class<?>[] paramTypes, Object[] args) {
+        lastAccessLock.lock();
+        try {
+            if (failure != null) {
+                responder.infrastructureFailed(failure);
                 return;
             }
-            responder.completed(result);
-        } catch (Throwable t) {
-            responder.infrastructureFailed(t);
+            try {
+                Method method = workerImplementation.getDeclaredMethod(methodName, paramTypes);
+                Object result;
+                try {
+                    result = method.invoke(implementation, args);
+                } catch (InvocationTargetException e) {
+                    Throwable failure = e.getCause();
+                    if (failure instanceof NoClassDefFoundError) {
+                        // Assume an infrastructure problem
+                        responder.infrastructureFailed(failure);
+                    } else {
+                        responder.failed(failure);
+                    }
+                    return;
+                }
+                responder.completed(result);
+            } catch (Throwable t) {
+                responder.infrastructureFailed(t);
+            }
+        } finally {
+            lastAccessMillis = System.currentTimeMillis();
+            lastAccessLock.unlock();
+            if (idleTimeout == 0) {
+                stop();
+            } else {
+                idleTimeoutLatch.countDown();
+            }
         }
     }
 }

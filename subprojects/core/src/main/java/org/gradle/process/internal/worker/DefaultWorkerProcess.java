@@ -28,6 +28,8 @@ import org.gradle.process.internal.ExecHandle;
 import org.gradle.process.internal.ExecHandleListener;
 
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -45,6 +47,8 @@ public class DefaultWorkerProcess implements WorkerProcess {
     private boolean running;
     private Throwable processFailure;
     private final long connectTimeout;
+    private List<Runnable> processStopListeners = new LinkedList<Runnable>();
+    private boolean stopping;
 
     public DefaultWorkerProcess(int connectTimeoutValue, TimeUnit connectTimeoutUnits) {
         connectTimeout = connectTimeoutUnits.toMillis(connectTimeoutValue);
@@ -97,8 +101,23 @@ public class DefaultWorkerProcess implements WorkerProcess {
             }
             running = false;
             condition.signalAll();
+            runProcessStopListeners();
         } finally {
             lock.unlock();
+        }
+    }
+
+    private void runProcessStopListeners() {
+        if (stopping) {
+            return;
+        }
+        for (Runnable processStopListener : processStopListeners) {
+            try {
+                processStopListener.run();
+            } catch (Exception e) {
+                // ignore exception
+                LOGGER.warn("Exception in running stop listener", e);
+            }
         }
     }
 
@@ -161,6 +180,7 @@ public class DefaultWorkerProcess implements WorkerProcess {
     }
 
     public ExecResult waitForStop() {
+        stopping = true;
         try {
             return execHandle.waitForFinish().assertNormalExitValue();
         } finally {
@@ -168,7 +188,28 @@ public class DefaultWorkerProcess implements WorkerProcess {
         }
     }
 
+    @Override
+    public void addProcessStopListener(Runnable runnable) {
+        lock.lock();
+        try {
+            processStopListeners.add(runnable);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void clearProcessStopListeners() {
+        lock.lock();
+        try {
+            processStopListeners.clear();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private void cleanup() {
+        stopping = true;
         CompositeStoppable stoppable;
         execHandle.abort();
         lock.lock();

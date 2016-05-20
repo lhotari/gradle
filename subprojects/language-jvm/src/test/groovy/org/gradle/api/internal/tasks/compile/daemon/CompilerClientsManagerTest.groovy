@@ -28,28 +28,27 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
 
     @Subject manager = new CompilerClientsManager(starter)
 
-    def "does not reserve idle client when no clients"() {
-        expect:
-        manager.reserveIdleClient(options) == null
-    }
-
-    def "does not reserve idle client when no matching client found"() {
+    def "does not reserve idle client when it doesn't match"() {
         def noMatch = Stub(CompilerDaemonClient) {
             isCompatibleWith(_) >> false
         }
+        manager.idleClients << noMatch
 
         expect:
-        manager.reserveIdleClient(options, [noMatch]) == null
+        manager.reserveClient(workingDir, options) != noMatch
     }
 
     def "reserves idle client when match found"() {
-        def noMatch = Stub(CompilerDaemonClient) { isCompatibleWith(_) >> false }
-        def match = Stub(CompilerDaemonClient) { isCompatibleWith(_) >> true }
+        def noMatch = Stub(CompilerDaemonClient) { isCompatibleWith(_) >> false; ping() >> true}
+        def match = Stub(CompilerDaemonClient) { isCompatibleWith(_) >> true; ping() >> true }
         def input = [noMatch, match]
+        manager.allClients.addAll(input)
+        manager.idleClients.addAll(input)
 
         expect:
-        manager.reserveIdleClient(options, input) == match
-        input == [noMatch] //match removed from input
+        manager.reserveClient(workingDir, options) == match
+        manager.idleClients.size() == 1
+        manager.idleClients.getFirst() == noMatch //match removed from input
     }
 
     def "reserves new client"() {
@@ -57,20 +56,20 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
         starter.startDaemon(workingDir, options) >> newClient
 
         when:
-        def client = manager.reserveNewClient(workingDir, options)
+        def client = manager.reserveClient(workingDir, options)
 
         then:
         newClient == client
     }
 
     def "can stop all created clients"() {
-        def client1 = Mock(CompilerDaemonClient)
-        def client2 = Mock(CompilerDaemonClient)
+        def client1 = Mock(CompilerDaemonClient) { ping() >> true }
+        def client2 = Mock(CompilerDaemonClient) { ping() >> true }
         starter.startDaemon(workingDir, options) >>> [client1, client2]
 
         when:
-        manager.reserveNewClient(workingDir, options)
-        manager.reserveNewClient(workingDir, options)
+        manager.reserveClient(workingDir, options)
+        manager.reserveClient(workingDir, options)
         manager.stop()
 
         then:
@@ -79,19 +78,19 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
     }
 
     def "clients can be released for further use"() {
-        def client = Mock(CompilerDaemonClient) { isCompatibleWith(_) >> true }
+        def client = Mock(CompilerDaemonClient) { isCompatibleWith(_) >> true; ping() >> true }
         starter.startDaemon(workingDir, options) >> client
 
         when:
-        manager.reserveNewClient(workingDir, options)
+        manager.reserveClient(workingDir, options)
 
         then:
-        manager.reserveIdleClient(options) == null
+        manager.idleClients.size == 0
 
         when:
         manager.release(client)
 
         then:
-        manager.reserveIdleClient(options) == client
+        manager.idleClients.getFirst() == client
     }
 }

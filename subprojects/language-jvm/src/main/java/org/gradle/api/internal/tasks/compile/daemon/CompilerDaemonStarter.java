@@ -20,6 +20,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.process.internal.JavaExecHandleBuilder;
 import org.gradle.process.internal.worker.MultiRequestWorkerProcessBuilder;
+import org.gradle.process.internal.worker.WorkerProcess;
 import org.gradle.process.internal.worker.WorkerProcessFactory;
 import org.gradle.util.Clock;
 
@@ -48,10 +49,10 @@ public class CompilerDaemonStarter {
         javaCommand.setMaxHeapSize(forkOptions.getMaxHeapSize());
         javaCommand.setJvmArgs(forkOptions.getJvmArgs());
         javaCommand.setWorkingDir(workingDir);
-        CompilerDaemonWorker worker = builder.build();
-        worker.start();
+        CompilerDaemonWorker daemonWorker = builder.build();
+        WorkerProcess workerProcess = daemonWorker.start();
 
-        CompilerDaemonClient client = new CompilerDaemonClient(forkOptions, worker);
+        CompilerDaemonClient client = new CompilerDaemonClient(forkOptions, daemonWorker, workerProcess);
 
         LOG.info("Started Gradle compiler daemon ({}) with fork options {}.", clock.getTime(), forkOptions);
 
