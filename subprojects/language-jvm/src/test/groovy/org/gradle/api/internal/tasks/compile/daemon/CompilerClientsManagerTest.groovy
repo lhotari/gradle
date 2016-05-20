@@ -19,6 +19,8 @@ package org.gradle.api.internal.tasks.compile.daemon
 import org.gradle.util.ConcurrentSpecification
 import spock.lang.Subject
 
+import java.util.concurrent.CountDownLatch
+
 class CompilerClientsManagerTest extends ConcurrentSpecification {
 
     def workingDir = new File("some-dir")
@@ -26,7 +28,7 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
     def options = Stub(DaemonForkOptions)
     def starter = Stub(CompilerDaemonStarter)
 
-    @Subject manager = new CompilerClientsManager(starter)
+    @Subject manager = new CompilerClientsManager(starter, 0)
 
     def "does not reserve idle client when it doesn't match"() {
         def noMatch = Stub(CompilerDaemonClient) {
@@ -63,8 +65,8 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
     }
 
     def "can stop all created clients"() {
-        def client1 = Mock(CompilerDaemonClient) { ping() >> true }
-        def client2 = Mock(CompilerDaemonClient) { ping() >> true }
+        def client1 = createClient()
+        def client2 = createClient()
         starter.startDaemon(workingDir, options) >>> [client1, client2]
 
         when:
@@ -78,7 +80,7 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
     }
 
     def "clients can be released for further use"() {
-        def client = Mock(CompilerDaemonClient) { isCompatibleWith(_) >> true; ping() >> true }
+        def client = createClient()
         starter.startDaemon(workingDir, options) >> client
 
         when:
@@ -92,5 +94,138 @@ class CompilerClientsManagerTest extends ConcurrentSpecification {
 
         then:
         manager.idleClients.getFirst() == client
+    }
+
+    private CompilerDaemonClient createClient() {
+        Mock(CompilerDaemonClient) { isCompatibleWith(_) >> true; ping() >> true; isReuseable() >> true }
+    }
+
+    def "idle client gets reused"() {
+        given:
+        def client1 = createClient()
+        def client2 = createClient()
+        starter.startDaemon(workingDir, options) >>> [client1, client2]
+
+        when:
+        def reservedClient1 = manager.reserveClient(workingDir, options)
+        then:
+        reservedClient1 == client1
+
+        when:
+        def reservedClient2 = manager.reserveClient(workingDir, options)
+        then:
+        reservedClient2 == client2
+
+        when:
+        manager.release(reservedClient1)
+        def reservedClient3 = manager.reserveClient(workingDir, options)
+        then:
+        reservedClient3 == client1
+    }
+
+    def "max clients blocks until client is available"() {
+        given:
+        manager = new CompilerClientsManager(starter, 2)
+        def client1 = createClient()
+        def client2 = createClient()
+        starter.startDaemon(workingDir, options) >>> [client1, client2]
+
+        when:
+        def reservedClient1 = manager.reserveClient(workingDir, options)
+        then:
+        reservedClient1 == client1
+
+        when:
+        def reservedClient2 = manager.reserveClient(workingDir, options)
+        then:
+        reservedClient2 == client2
+
+        when:
+        def reservedClient3
+        def reserveClientOperation = start {
+            start {
+                sleep(500)
+                manager.release(reservedClient1)
+            }
+            reservedClient3 = manager.reserveClient(workingDir, options)
+        }
+
+        then:
+        reserveClientOperation.completed()
+        reservedClient3 == client1
+    }
+
+    def "max clients blocks multiple waiting client requests"() {
+        given:
+        manager = new CompilerClientsManager(starter, 2)
+        def client1 = createClient()
+        def client2 = createClient()
+        starter.startDaemon(workingDir, options) >>> [client1, client2]
+        def reservedClient1 = manager.reserveClient(workingDir, options)
+        def reservedClient2 = manager.reserveClient(workingDir, options)
+        def waitLatch = new CountDownLatch(1)
+        def noMatch = Stub(CompilerDaemonClient) {
+            ping() >> true
+            isCompatibleWith(_) >> false
+            isReuseable() >> true
+        }
+
+        when:
+        def reservedClient3
+        def reserveClientOperation1 = start {
+            start {
+                for (int i = 0; i < 10; i++) {
+                    manager.release(noMatch)
+                }
+                sleep(500)
+                manager.release(reservedClient1)
+            }
+            waitFor waitLatch
+            reservedClient3 = manager.reserveClient(workingDir, options)
+        }
+        def reservedClient4
+        def reserveClientOperation2 = start {
+            start {
+                for (int i = 0; i < 10; i++) {
+                    manager.release(noMatch)
+                }
+                sleep(600)
+                manager.release(reservedClient2)
+            }
+            waitLatch.countDown()
+            reservedClient4 = manager.reserveClient(workingDir, options)
+        }
+
+        then:
+        reserveClientOperation1.completed()
+        reserveClientOperation2.completed()
+        reservedClient3 != null
+        reservedClient4 != null
+        reservedClient3 == client1 && reservedClient4 == client2 || reservedClient3 == client2 && reservedClient4 == client1
+    }
+
+    def "max clients blocks and discards client that replies false to ping - opens new connection after discarding"() {
+        given:
+        manager = new CompilerClientsManager(starter, 2)
+        def client1 = Mock(CompilerDaemonClient) { isCompatibleWith(_) >> true; ping() >>> false; isReuseable() >> true }
+        def client2 = createClient()
+        def client3 = createClient()
+        starter.startDaemon(workingDir, options) >>> [client1, client2, client3]
+        manager.reserveClient(workingDir, options)
+        manager.reserveClient(workingDir, options)
+
+        when:
+        def reservedClient3
+        def reserveClientOperation1 = start {
+            start {
+                sleep(500)
+                manager.release(client1)
+            }
+            reservedClient3 = manager.reserveClient(workingDir, options)
+        }
+
+        then:
+        reserveClientOperation1.completed()
+        reservedClient3 == client3
     }
 }
