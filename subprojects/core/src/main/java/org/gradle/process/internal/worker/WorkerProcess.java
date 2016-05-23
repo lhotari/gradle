@@ -32,4 +32,8 @@ public interface WorkerProcess {
     ObjectConnection getConnection();
 
     ExecResult waitForStop();
+
+    void addProcessStopListener(Runnable runnable);
+
+    void clearProcessStopListeners();
 }

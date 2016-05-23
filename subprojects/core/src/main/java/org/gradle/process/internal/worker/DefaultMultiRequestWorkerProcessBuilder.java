@@ -32,16 +32,23 @@ import java.lang.reflect.Proxy;
 import java.util.Set;
 
 class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWorkerProcessBuilder<WORKER> {
+    public static final String IDLE_TIMEOUT_SYSTEM_PROPERTY = "org.gradle.workerprocess.idletimeout";
+    private static final int DEFAULT_IDLE_TIMEOUT = Integer.parseInt(System.getProperty(IDLE_TIMEOUT_SYSTEM_PROPERTY, "-1"));
     private static final Method START_METHOD;
     private static final Method STOP_METHOD;
+    private static final Method PING_METHOD;
+    private static final Method GET_IDLE_TIMEOUT_METHOD;
     private final Class<WORKER> workerType;
     private final Class<?> workerImplementation;
     private final DefaultWorkerProcessBuilder workerProcessBuilder;
+    private int idleTimeout = USE_DEFAULT_IDLE_TIMEOUT_VALUE;
 
     static {
         try {
             START_METHOD = WorkerControl.class.getMethod("start");
             STOP_METHOD = WorkerControl.class.getMethod("stop");
+            PING_METHOD = WorkerControl.class.getMethod("ping");
+            GET_IDLE_TIMEOUT_METHOD = WorkerControl.class.getMethod("getIdleTimeout");
         } catch (NoSuchMethodException e) {
             throw UncheckedException.throwAsUncheckedException(e);
         }
@@ -51,7 +58,6 @@ class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWor
         this.workerType = workerType;
         this.workerImplementation = workerImplementation;
         this.workerProcessBuilder = workerProcessBuilder;
-        workerProcessBuilder.worker(new WorkerAction(workerImplementation));
         workerProcessBuilder.setImplementationClasspath(ClasspathUtil.getClasspath(workerImplementation.getClassLoader()));
     }
 
@@ -112,6 +118,8 @@ class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWor
 
     @Override
     public WORKER build() {
+        final int resolvedIdleTimeout = resolveIdleTimeout();
+        workerProcessBuilder.worker(new WorkerAction(workerImplementation, resolvedIdleTimeout));
         final WorkerProcess workerProcess = workerProcessBuilder.build();
         return workerType.cast(Proxy.newProxyInstance(workerType.getClassLoader(), new Class[]{workerType}, new InvocationHandler() {
             private Receiver receiver = new Receiver(getBaseName());
@@ -129,7 +137,7 @@ class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWor
                     workerProcess.getConnection().useJavaSerializationForParameters(workerImplementation.getClassLoader());
                     requestProtocol = workerProcess.getConnection().addOutgoing(RequestProtocol.class);
                     workerProcess.getConnection().connect();
-                    return null;
+                    return workerProcess;
                 }
                 if (method.equals(STOP_METHOD)) {
                     if (requestProtocol != null) {
@@ -141,7 +149,21 @@ class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWor
                         requestProtocol = null;
                     }
                 }
+                if (method.equals(PING_METHOD)) {
+                    if (requestProtocol != null) {
+                        requestProtocol.ping();
+                        return waitForResult();
+                    }
+                    return false;
+                }
+                if (method.equals(GET_IDLE_TIMEOUT_METHOD)) {
+                    return resolvedIdleTimeout;
+                }
                 requestProtocol.run(method.getName(), method.getParameterTypes(), args);
+                return waitForResult();
+            }
+
+            private Object waitForResult() throws Throwable {
                 boolean hasResult = receiver.awaitNextResult();
                 if (!hasResult) {
                     try {
@@ -157,5 +179,14 @@ class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWor
                 return receiver.getNextResult();
             }
         }));
+    }
+
+    private int resolveIdleTimeout() {
+        return idleTimeout == USE_DEFAULT_IDLE_TIMEOUT_VALUE ? DEFAULT_IDLE_TIMEOUT : idleTimeout;
+    }
+
+    @Override
+    public void setIdleTimeout(int idleTimeout) {
+        this.idleTimeout = idleTimeout;
     }
 }

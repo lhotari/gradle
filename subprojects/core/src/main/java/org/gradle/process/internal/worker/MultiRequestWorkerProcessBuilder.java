@@ -26,6 +26,21 @@ package org.gradle.process.internal.worker;
  * <p>The worker process must be explicitly started and stopped using the methods on {@link WorkerControl}.</p>
  */
 public interface MultiRequestWorkerProcessBuilder<T> extends WorkerProcessSettings {
+
+    int USE_DEFAULT_IDLE_TIMEOUT_VALUE = -9999;
+
+    /**
+     * <p>Sets the idle timeout for the compiler daemon in milliseconds</p>
+     *
+     * <p>When timeout value is 0, the forked process will not be reused.</p>
+     * <p>When timeout value < 0, the idle timeout is disabled.</p>
+     * <p>When timeout value == -9999 (USE_DEFAULT_IDLE_TIMEOUT_VALUE constant value), the value of the System property
+     * "org.gradle.workerprocess.idletimeout" gets used if it's set.</p>
+     *
+     * @param idleTimeout timeout in milliseconds
+     */
+    void setIdleTimeout(int idleTimeout);
+
     /**
      * Creates a worker.
      *
