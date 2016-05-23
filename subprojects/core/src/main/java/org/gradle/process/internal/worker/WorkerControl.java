@@ -20,6 +20,11 @@ import org.gradle.process.ExecResult;
 
 public interface WorkerControl {
     /**
+     * Checks if worker is alive
+     */
+    boolean ping();
+
+    /**
      * Starts the worker process, blocking until successfully started.
      */
     WorkerProcess start();
@@ -28,4 +33,10 @@ public interface WorkerControl {
      * Requests that the worker complete all work and stop. Blocks until the worker process has stopped.
      */
     ExecResult stop();
+
+    /**
+     * Returns the idle timeout used for this worker
+     * @return idle timeout in milliseconds
+     */
+    int getIdleTimeout();
 }

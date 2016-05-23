@@ -18,21 +18,26 @@ package org.gradle.api.internal.tasks.compile.daemon;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.language.base.internal.compile.CompileSpec;
 import org.gradle.language.base.internal.compile.Compiler;
+import org.gradle.process.internal.worker.WorkerProcess;
 
 class CompilerDaemonClient implements CompilerDaemon, Stoppable {
     private final DaemonForkOptions forkOptions;
-    private final CompilerDaemonWorker workerProcess;
+    private final CompilerDaemonWorker daemonWorker;
+    private final WorkerProcess workerProcess;
+    private final boolean reuseable;
 
-    public CompilerDaemonClient(DaemonForkOptions forkOptions, CompilerDaemonWorker workerProcess) {
+    public CompilerDaemonClient(DaemonForkOptions forkOptions, CompilerDaemonWorker daemonWorker, WorkerProcess workerProcess) {
         this.forkOptions = forkOptions;
+        this.daemonWorker = daemonWorker;
         this.workerProcess = workerProcess;
+        this.reuseable = daemonWorker.getIdleTimeout() != 0;
     }
 
     @Override
     public <T extends CompileSpec> CompileResult execute(Compiler<T> compiler, T spec) {
         // currently we just allow a single compilation thread at a time (per compiler daemon)
         // one problem to solve when allowing multiple threads is how to deal with memory requirements specified by compile tasks
-        return workerProcess.execute(compiler, spec);
+        return daemonWorker.execute(compiler, spec);
     }
 
     public boolean isCompatibleWith(DaemonForkOptions required) {
@@ -41,6 +46,19 @@ class CompilerDaemonClient implements CompilerDaemon, Stoppable {
 
     @Override
     public void stop() {
-        workerProcess.stop();
+        workerProcess.clearProcessStopListeners();
+        daemonWorker.stop();
+    }
+
+    public void addProcessStopListener(Runnable runnable) {
+        workerProcess.addProcessStopListener(runnable);
+    }
+
+    public boolean ping() {
+        return daemonWorker.ping();
+    }
+
+    public boolean isReuseable() {
+        return reuseable;
     }
 }

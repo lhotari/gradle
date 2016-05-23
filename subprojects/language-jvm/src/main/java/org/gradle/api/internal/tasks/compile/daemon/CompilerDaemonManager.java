@@ -37,10 +37,7 @@ public class CompilerDaemonManager implements CompilerDaemonFactory, Stoppable {
     public CompilerDaemon getDaemon(final File workingDir, final DaemonForkOptions forkOptions) {
         return new CompilerDaemon() {
             public <T extends CompileSpec> CompileResult execute(org.gradle.language.base.internal.compile.Compiler<T> compiler, T spec) {
-                CompilerDaemonClient client = clientsManager.reserveIdleClient(forkOptions);
-                if (client == null) {
-                    client = clientsManager.reserveNewClient(workingDir, forkOptions);
-                }
+                CompilerDaemonClient client = clientsManager.reserveClient(workingDir, forkOptions);
                 try {
                     return client.execute(compiler, spec);
                 } finally {

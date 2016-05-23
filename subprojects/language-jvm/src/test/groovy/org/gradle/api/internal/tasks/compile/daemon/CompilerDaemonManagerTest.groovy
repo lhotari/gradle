@@ -46,10 +46,7 @@ class CompilerDaemonManagerTest extends Specification {
         manager.getDaemon(workingDir, options).execute(compiler, compileSpec)
 
         then:
-        1 * clientsManager.reserveIdleClient(options) >> null
-
-        then:
-        1 * clientsManager.reserveNewClient(workingDir, options) >> client
+        1 * clientsManager.reserveClient(workingDir, options) >> client
 
         then:
         1 * client.execute(compiler, compileSpec)
@@ -64,7 +61,7 @@ class CompilerDaemonManagerTest extends Specification {
         manager.getDaemon(workingDir, options).execute(compiler, compileSpec)
 
         then:
-        1 * clientsManager.reserveIdleClient(options) >> client
+        1 * clientsManager.reserveClient(workingDir, options) >> client
 
         then:
         1 * client.execute(compiler, compileSpec)
@@ -79,7 +76,7 @@ class CompilerDaemonManagerTest extends Specification {
         manager.getDaemon(workingDir, options).execute(compiler, compileSpec)
 
         then:
-        1 * clientsManager.reserveIdleClient(options) >> client
+        1 * clientsManager.reserveClient(workingDir, options) >> client
 
         then:
         1 * client.execute(compiler, compileSpec) >> { throw new RuntimeException("Boo!") }

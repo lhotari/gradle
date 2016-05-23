@@ -20,17 +20,19 @@ import org.gradle.api.logging.Logging;
 import org.gradle.internal.concurrent.CompositeStoppable;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CompilerClientsManager {
 
     private static final Logger LOGGER = Logging.getLogger(CompilerDaemonManager.class);
 
-    private final Object lock = new Object();
-    private final List<CompilerDaemonClient> allClients = new ArrayList<CompilerDaemonClient>();
-    private final List<CompilerDaemonClient> idleClients = new ArrayList<CompilerDaemonClient>();
+    private final Lock lock = new ReentrantLock(true);
+    private final LinkedList<CompilerDaemonClient> allClients = new LinkedList<CompilerDaemonClient>();
+    private final LinkedList<CompilerDaemonClient> idleClients = new LinkedList<CompilerDaemonClient>();
+    private boolean stopping;
 
     private CompilerDaemonStarter compilerDaemonStarter;
 
@@ -38,45 +40,103 @@ public class CompilerClientsManager {
         this.compilerDaemonStarter = compilerDaemonStarter;
     }
 
-    public CompilerDaemonClient reserveIdleClient(DaemonForkOptions forkOptions) {
-        return reserveIdleClient(forkOptions, idleClients);
-    }
-
-    CompilerDaemonClient reserveIdleClient(DaemonForkOptions forkOptions, List<CompilerDaemonClient> clients) {
-        synchronized (lock) {
-            Iterator<CompilerDaemonClient> it = clients.iterator();
-            while(it.hasNext()) {
-                CompilerDaemonClient candidate = it.next();
-                if(candidate.isCompatibleWith(forkOptions)) {
-                    it.remove();
-                    return candidate;
+    public CompilerDaemonClient reserveClient(File workingDir, DaemonForkOptions forkOptions) {
+        lock.lock();
+        try {
+            CompilerDaemonClient client = reserveCompatibleIdleClient(forkOptions);
+            if (client != null) {
+                try {
+                    if (client.ping()) {
+                        return client;
+                    }
+                } catch (Exception e) {
+                    // ignore exception, client might have timed out
                 }
+                try {
+                    client.stop();
+                } catch (Exception e) {
+                    // ignore exceptions
+                }
+                allClients.remove(client);
             }
-            return null;
+        } finally {
+            lock.unlock();
         }
+        if (stopping) {
+            throw new IllegalStateException("Stop has been requested.");
+        }
+        return addNewClient(workingDir, forkOptions);
     }
 
-    public CompilerDaemonClient reserveNewClient(File workingDir, DaemonForkOptions forkOptions) {
-        //allow the daemon to be started concurrently
-        CompilerDaemonClient client = compilerDaemonStarter.startDaemon(workingDir, forkOptions);
-        synchronized (lock) {
+    private CompilerDaemonClient reserveCompatibleIdleClient(DaemonForkOptions forkOptions) {
+        Iterator<CompilerDaemonClient> it = idleClients.iterator();
+        while (it.hasNext()) {
+            CompilerDaemonClient candidate = it.next();
+            if (candidate.isCompatibleWith(forkOptions)) {
+                it.remove();
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private CompilerDaemonClient addNewClient(File workingDir, DaemonForkOptions forkOptions) {
+        // allow the daemon to be started concurrently
+        final CompilerDaemonClient client = compilerDaemonStarter.startDaemon(workingDir, forkOptions);
+        lock.lock();
+        try {
+            client.addProcessStopListener(new Runnable() {
+                @Override
+                public void run() {
+                    removeStoppedClient(client);
+                }
+            });
             allClients.add(client);
+        } finally {
+            lock.unlock();
         }
         return client;
     }
 
+    private void removeStoppedClient(CompilerDaemonClient client) {
+        if (stopping) {
+            return;
+        }
+        lock.lock();
+        try {
+            if (allClients.remove(client)) {
+                idleClients.remove(client);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public void release(CompilerDaemonClient client) {
-        synchronized (lock) {
-            idleClients.add(client);
+        if (!client.isReuseable()) {
+            return;
+        }
+        lock.lock();
+        try {
+            if (allClients.contains(client)) {
+                idleClients.add(client);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
     public void stop() {
-        synchronized (lock) {
+        stopping = true;
+        lock.lock();
+        try {
             LOGGER.debug("Stopping {} compiler daemon(s).", allClients.size());
             CompositeStoppable.stoppable(allClients).stop();
             LOGGER.info("Stopped {} compiler daemon(s).", allClients.size());
             allClients.clear();
+            idleClients.clear();
+        } finally {
+            lock.unlock();
         }
     }
 }
