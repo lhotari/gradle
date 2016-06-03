@@ -34,13 +34,13 @@ import java.util.List;
  */
 public class BootstrapSecurityManager extends SecurityManager {
     private boolean initialised;
-    private final URLClassLoader target;
+    private final ClassLoader target;
 
     public BootstrapSecurityManager() {
         this(null);
     }
 
-    BootstrapSecurityManager(URLClassLoader target) {
+    BootstrapSecurityManager(ClassLoader target) {
         this.target = target;
     }
 
@@ -61,11 +61,13 @@ public class BootstrapSecurityManager extends SecurityManager {
         resetSecurityManager();
 
         BootstrapSettings bootstrapSettings = new BootstrapSettings(System.in);
-        URLClassLoader systemClassLoader = resolveSystemClassLoader();
+        if (!bootstrapSettings.isEmpty()) {
+            ClassLoader systemClassLoader = resolveSystemClassLoader();
 
-        injectSystemClassPath(bootstrapSettings.classpathEntries, systemClassLoader);
+            injectSystemClassPath(bootstrapSettings.classpathEntries, systemClassLoader);
 
-        applySecurityManager(bootstrapSettings.securityManagerType, systemClassLoader);
+            applySecurityManager(bootstrapSettings.securityManagerType, systemClassLoader);
+        }
     }
 
     private void resetSecurityManager() {
@@ -73,7 +75,7 @@ public class BootstrapSecurityManager extends SecurityManager {
         System.setSecurityManager(null);
     }
 
-    private void applySecurityManager(String securityManagerType, URLClassLoader systemClassLoader) {
+    private void applySecurityManager(String securityManagerType, ClassLoader systemClassLoader) {
         if (securityManagerType.length() > 0) {
             System.setProperty("java.security.manager", securityManagerType);
             SecurityManager securityManager;
@@ -87,11 +89,21 @@ public class BootstrapSecurityManager extends SecurityManager {
         }
     }
 
-    private URLClassLoader resolveSystemClassLoader() {
-        return target != null ? target : (URLClassLoader) getClass().getClassLoader();
+    private ClassLoader resolveSystemClassLoader() {
+        return target != null ? target : getClass().getClassLoader();
     }
 
-    private void injectSystemClassPath(List<String> classpathEntries, URLClassLoader systemClassLoader) {
+    private void injectSystemClassPath(List<String> classpathEntries, ClassLoader systemClassLoader) {
+        if (!classpathEntries.isEmpty()) {
+            if (systemClassLoader instanceof URLClassLoader) {
+                injectClassPathToURLClassLoader(classpathEntries, (URLClassLoader) systemClassLoader);
+            } else {
+                throw new RuntimeException("Could not inject classpath entries to system classpath of type " + systemClassLoader.getClass().getName());
+            }
+        }
+    }
+
+    private void injectClassPathToURLClassLoader(List<String> classpathEntries, URLClassLoader systemClassLoader) {
         try {
             Method addUrlMethod = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
             addUrlMethod.setAccessible(true);
@@ -136,6 +148,10 @@ public class BootstrapSecurityManager extends SecurityManager {
                 entries.add(entry);
             }
             return entries;
+        }
+
+        boolean isEmpty() {
+            return classpathEntries.isEmpty() && securityManagerType.length() == 0;
         }
     }
 }
