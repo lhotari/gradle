@@ -120,6 +120,7 @@ public class WorkerProcessClassPathProvider implements ClassPathProvider, Closea
                 List<Class<?>> classes = Arrays.asList(
                         GradleWorkerMain.class,
                         BootstrapSecurityManager.class,
+                        BootstrapSecurityManager.BootstrapSettings.class,
                         EncodedStream.EncodedInput.class,
                         FilteringClassLoader.class,
                         FilteringClassLoader.Spec.class,
