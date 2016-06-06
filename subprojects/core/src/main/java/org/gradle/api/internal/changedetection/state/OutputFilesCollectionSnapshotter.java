@@ -16,15 +16,11 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.cache.StringInterner;
-import org.gradle.api.internal.changedetection.rules.ChangeType;
-import org.gradle.api.internal.changedetection.rules.FileChange;
-import org.gradle.api.internal.changedetection.rules.TaskStateChange;
 import org.gradle.internal.serialize.DefaultSerializerRegistry;
 import org.gradle.internal.serialize.SerializerRegistry;
+import org.gradle.util.ChangeListener;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -142,14 +138,25 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
         }
 
         @Override
-        public Iterator<TaskStateChange> iterateContentChangesSince(FileCollectionSnapshot oldSnapshot, String fileType, Set<ChangeFilter> filters) {
+        public ChangeIterator<String> iterateContentChangesSince(FileCollectionSnapshot oldSnapshot, Set<ChangeFilter> filters) {
             final OutputFilesSnapshot other = (OutputFilesSnapshot) oldSnapshot;
-            final Iterator<TaskStateChange> rootFileIdIterator = iterateRootFileIdChanges(other, fileType);
-            final Iterator<TaskStateChange> fileIterator = filesSnapshot.iterateContentChangesSince(other.filesSnapshot, fileType, filters);
-            return Iterators.concat(rootFileIdIterator, fileIterator);
+            final ChangeIterator<String> rootFileIdIterator = iterateRootFileIdChanges(other);
+            final ChangeIterator<String> fileIterator = filesSnapshot.iterateContentChangesSince(other.filesSnapshot, filters);
+
+            return new ChangeIterator<String>() {
+                public boolean next(final ChangeListener<String> listener) {
+                    if (rootFileIdIterator.next(listener)) {
+                        return true;
+                    }
+                    if (fileIterator.next(listener)) {
+                        return true;
+                    }
+                    return false;
+                }
+            };
         }
 
-        private Iterator<TaskStateChange> iterateRootFileIdChanges(final OutputFilesSnapshot other, final String fileType) {
+        private ChangeIterator<String> iterateRootFileIdChanges(final OutputFilesSnapshot other) {
             Map<String, Boolean> added = new HashMap<String, Boolean>(roots);
             added.keySet().removeAll(other.roots.keySet());
             final Iterator<String> addedIterator = added.keySet().iterator();
@@ -168,20 +175,22 @@ public class OutputFilesCollectionSnapshotter implements FileCollectionSnapshott
             }
             final Iterator<String> changedIterator = changed.iterator();
 
-            return new AbstractIterator<TaskStateChange>() {
-                @Override
-                protected TaskStateChange computeNext() {
+            return new ChangeIterator<String>() {
+                public boolean next(ChangeListener<String> listener) {
                     if (addedIterator.hasNext()) {
-                        return new FileChange(addedIterator.next(), ChangeType.ADDED, fileType);
+                        listener.added(addedIterator.next());
+                        return true;
                     }
                     if (removedIterator.hasNext()) {
-                        return new FileChange(removedIterator.next(), ChangeType.REMOVED, fileType);
+                        listener.removed(removedIterator.next());
+                        return true;
                     }
                     if (changedIterator.hasNext()) {
-                        return new FileChange(changedIterator.next(), ChangeType.MODIFIED, fileType);
+                        listener.changed(changedIterator.next());
+                        return true;
                     }
 
-                    return endOfData();
+                    return false;
                 }
             };
         }

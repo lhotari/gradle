@@ -16,21 +16,12 @@
 
 package org.gradle.api.internal.changedetection.state;
 
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.gradle.api.internal.changedetection.rules.ChangeType;
-import org.gradle.api.internal.changedetection.rules.FileChange;
-import org.gradle.api.internal.changedetection.rules.TaskStateChange;
+import org.gradle.util.ChangeListener;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
     final Map<String, IncrementalFileSnapshot> snapshots;
@@ -101,26 +92,27 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
         return snapshots.isEmpty();
     }
 
-
     @Override
-    public Iterator<TaskStateChange> iterateContentChangesSince(FileCollectionSnapshot oldSnapshot, final String fileType, final Set<ChangeFilter> filters) {
+    public ChangeIterator<String> iterateContentChangesSince(FileCollectionSnapshot oldSnapshot, final Set<ChangeFilter> filters) {
         final Map<String, IncrementalFileSnapshot> otherSnapshots = new HashMap<String, IncrementalFileSnapshot>(oldSnapshot.getSnapshots());
         final Iterator<String> currentFiles = snapshots.keySet().iterator();
         final boolean includeAdded = !filters.contains(ChangeFilter.IgnoreAddedFiles);
-        return new AbstractIterator<TaskStateChange>() {
+
+        return new ChangeIterator<String>() {
             private Iterator<String> removedFiles;
 
-            @Override
-            protected TaskStateChange computeNext() {
+            public boolean next(ChangeListener<String> listener) {
                 while (currentFiles.hasNext()) {
                     String currentFile = currentFiles.next();
                     IncrementalFileSnapshot otherFile = otherSnapshots.remove(currentFile);
                     if (otherFile == null) {
                         if (includeAdded) {
-                            return new FileChange(currentFile, ChangeType.ADDED, fileType);
+                            listener.added(currentFile);
+                            return true;
                         }
                     } else if (!snapshots.get(currentFile).isContentUpToDate(otherFile)) {
-                        return new FileChange(currentFile, ChangeType.MODIFIED, fileType);
+                        listener.changed(currentFile);
+                        return true;
                     }
                 }
 
@@ -130,10 +122,11 @@ class FileCollectionSnapshotImpl implements FileCollectionSnapshot {
                 }
 
                 if (removedFiles.hasNext()) {
-                    return new FileChange(removedFiles.next(), ChangeType.REMOVED, fileType);
+                    listener.removed(removedFiles.next());
+                    return true;
                 }
 
-                return endOfData();
+                return false;
             }
         };
     }
