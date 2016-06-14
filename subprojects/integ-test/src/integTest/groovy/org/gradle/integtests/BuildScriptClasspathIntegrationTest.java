@@ -210,8 +210,8 @@ public class BuildScriptClasspathIntegrationTest extends AbstractIntegrationTest
     @Test
     public void jarsOnBuildScriptClassPathCanChange() {
         testFile("settings.gradle").writelns(
-            "include 'child'"//,
-            //"new URL(\"jar:file://valid_jar_url_syntax.jar!/\").openConnection().setDefaultUseCaches(false)"
+            "include 'child'",
+            "new URL(\"jar:file://valid_jar_url_syntax.jar!/\").openConnection().setDefaultUseCaches(false)"
         );
         testFile("build.gradle").writelns(
             "buildscript {",
