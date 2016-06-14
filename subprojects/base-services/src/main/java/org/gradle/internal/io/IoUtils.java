@@ -17,9 +17,12 @@
 package org.gradle.internal.io;
 
 import org.gradle.api.Transformer;
+import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.CompositeStoppable;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.net.URL;
 
 public abstract class IoUtils {
 
@@ -30,6 +33,17 @@ public abstract class IoUtils {
             return transformer.transform(resource);
         } finally {
             CompositeStoppable.stoppable(resource).stop();
+        }
+    }
+
+    // disable URL caching which keeps Jar files opens
+    // Modifying open Jar files might cause JVM crashes on Unixes (jar/zip files are mmapped by default)
+    // On Windows, open Jar files keep file locks that can prevent modifications or deletion
+    public static void disableUrlCaching() {
+        try {
+            new URL("jar:file://any_valid_jar_url_syntax.jar!/").openConnection().setDefaultUseCaches(false);
+        } catch (IOException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
         }
     }
 }

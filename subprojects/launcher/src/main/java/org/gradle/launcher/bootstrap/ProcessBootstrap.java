@@ -24,6 +24,7 @@ import org.gradle.internal.classloader.DefaultClassLoaderFactory;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.installation.CurrentGradleInstallation;
+import org.gradle.internal.io.IoUtils;
 
 import java.lang.reflect.Method;
 
@@ -33,6 +34,7 @@ public class ProcessBootstrap {
      */
     public void run(String mainClassName, String[] args) {
         try {
+            IoUtils.disableUrlCaching();
             runNoExit(mainClassName, args);
             System.exit(0);
         } catch (Throwable throwable) {
