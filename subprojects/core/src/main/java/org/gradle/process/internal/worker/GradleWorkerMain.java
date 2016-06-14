@@ -17,6 +17,7 @@
 package org.gradle.process.internal.worker;
 
 import org.gradle.internal.classloader.FilteringClassLoader;
+import org.gradle.internal.io.IoUtils;
 import org.gradle.process.internal.streams.EncodedStream;
 
 import java.io.DataInputStream;
@@ -64,6 +65,7 @@ public class GradleWorkerMain {
 
     public static void main(String[] args) {
         try {
+            IoUtils.disableUrlCaching();
             new GradleWorkerMain().run();
             System.exit(0);
         } catch (Throwable throwable) {
