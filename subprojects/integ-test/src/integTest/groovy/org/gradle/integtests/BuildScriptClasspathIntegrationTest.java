@@ -19,9 +19,13 @@ import org.gradle.integtests.fixtures.AbstractIntegrationTest;
 import org.gradle.integtests.fixtures.executer.ArtifactBuilder;
 import org.gradle.integtests.fixtures.executer.ExecutionFailure;
 import org.gradle.test.fixtures.file.LeaksFileHandles;
+import org.gradle.test.fixtures.file.TestFile;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
+
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -201,6 +205,60 @@ public class BuildScriptClasspathIntegrationTest extends AbstractIntegrationTest
                 "}"
         );
         inTestDirectory().withTasks("hello").run();
+    }
+
+    @Test
+    public void jarsOnBuildScriptClassPathCanChange() {
+        testFile("settings.gradle").writelns(
+            "include 'child'"//,
+            //"new URL(\"jar:file://valid_jar_url_syntax.jar!/\").openConnection().setDefaultUseCaches(false)"
+        );
+        testFile("build.gradle").writelns(
+            "buildscript {",
+            "    repositories { flatDir { dirs 'repo' }}",
+            "    dependencies { classpath name: 'test', version: '1.3-BUILD-SNAPSHOT' }",
+            "}"
+        );
+        testFile("child/build.gradle").writelns(
+            "assert parent.buildscript.classLoader == buildscript.classLoader",
+            "task hello << ",
+            "{",
+            "    println new org.gradle.test.BuildClass().message()",
+            "}"
+        );
+
+        // do changes multiple times since the failure doesn't happen every time on Linux
+        for(int i = 0; i < 10; i++) {
+            ArtifactBuilder builder = artifactBuilder();
+            builder.sourceFile("org/gradle/test/BuildClass.java").writelns(
+                "package org.gradle.test;",
+                "public class BuildClass { " +
+                    "public String message() { return \"hello world\"; }" +
+                    "}"
+            );
+            File jarFile = testFile("repo/test-1.3-BUILD-SNAPSHOT.jar");
+            builder.buildJar(jarFile);
+            assertTrue(inTestDirectory().withTasks("hello").run().getOutput().contains("hello world"));
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException e) {
+            }
+            builder = artifactBuilder();
+            builder.sourceFile("org/gradle/test/BuildClass.java").writelns(
+                "package org.gradle.test;",
+                "public class BuildClass { " +
+                    "public String message() { return \"hello again\"; }" +
+                    "}"
+            );
+            builder.buildJar(jarFile);
+
+            assertTrue(inTestDirectory().withTasks("hello").run().getOutput().contains("hello again"));
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException e) {
+            }
+        }
     }
 
     @Test @Ignore
