@@ -4,6 +4,20 @@ import java.lang.management.ManagementFactory
 import java.math.RoundingMode
 
 gradle.buildFinished {
+    def treesnapshotCacheClazz
+
+    try {
+        treesnapshotCacheClazz = Class.forName("org.gradle.api.internal.changedetection.state.CachingTreeVisitor")
+    } catch (Exception e) {
+        // ignore, class not found
+    }
+
+    if(treesnapshotCacheClazz) {
+        def treesnapshotCache = gradle.getServices().get(treesnapshotCacheClazz)
+        // flush cache before measuring memory consumption
+        treesnapshotCache.clearCache()
+    }
+
     if (project.hasProperty('heapdump')) {
         boolean skipHeapDump = false
 
