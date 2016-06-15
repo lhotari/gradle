@@ -18,13 +18,17 @@ package org.gradle.test.fixtures.file;
 
 import groovy.lang.Closure;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.gradle.internal.os.OperatingSystem;
 import org.gradle.test.fixtures.ConcurrentTestUtil;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Random;
 import java.util.regex.Pattern;
 
@@ -95,13 +99,53 @@ abstract class AbstractTestDirectoryProvider implements TestRule, TestDirectoryP
                     });
                 }
             } catch (Exception e) {
+                String fileLockInformation = getFileLockInformation(dir);
                 if (suppressCleanupErrors) {
                     System.err.println("Couldn't delete test dir for " + displayName + " (test is holding files open)");
+                    if (fileLockInformation != null) {
+                        System.err.println(fileLockInformation);
+                    }
                     e.printStackTrace(System.err);
                 } else {
-                    throw e;
+                    if (e instanceof IOException && fileLockInformation != null) {
+                        throw new IOException(e.getMessage() + "\nFile lock information:\n" + fileLockInformation, e);
+                    } else {
+                        throw e;
+                    }
                 }
             }
+        }
+
+        private String getFileLockInformation(File file) {
+            if (OperatingSystem.current().isWindows()) {
+                try {
+                    // use SysInternals handle.exe if it can be found on the PATH
+                    File handleExe = OperatingSystem.current().findInPath("handle.exe");
+                    if (handleExe != null) {
+                        ProcessBuilder processBuilder = new ProcessBuilder(handleExe.getAbsolutePath().toString(), file.getAbsolutePath().toString());
+                        processBuilder.redirectErrorStream(true);
+                        final Process process = processBuilder.start();
+                        final StringWriter writer = new StringWriter();
+                        new Thread(new Runnable() {
+                            public void run() {
+                                try {
+                                    IOUtils.copy(process.getInputStream(), writer);
+                                } catch (IOException e) {
+                                    // ignore
+                                }
+                            }
+                        }).start();
+                        final int exitValue = process.waitFor();
+                        final String processOutput = writer.toString();
+                        if (exitValue == 0) {
+                            return processOutput;
+                        }
+                    }
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+            return null;
         }
     }
 
