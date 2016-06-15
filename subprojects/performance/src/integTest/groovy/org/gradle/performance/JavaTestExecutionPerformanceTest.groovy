@@ -16,11 +16,13 @@
 
 package org.gradle.performance
 
+import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.gradle.performance.measure.Duration.millis
 
 class JavaTestExecutionPerformanceTest extends AbstractCrossVersionPerformanceTest {
+    @Ignore
     @Unroll("#description build for #template")
     def "cleanTest test performance non regression test"() {
         given:
@@ -28,7 +30,7 @@ class JavaTestExecutionPerformanceTest extends AbstractCrossVersionPerformanceTe
         runner.testProject = template
         runner.tasksToRun = gradleTasks
         runner.maxExecutionTimeRegression = maxExecutionTimeRegression
-        runner.targetVersions = ['2.11', 'last']
+        runner.targetVersions = ['last']
         runner.useDaemon = true
         runner.gradleOpts = ['-Xms1G', '-Xmx1G']
 
@@ -51,7 +53,7 @@ class JavaTestExecutionPerformanceTest extends AbstractCrossVersionPerformanceTe
         runner.testProject = template
         runner.tasksToRun = gradleTasks
         runner.maxExecutionTimeRegression = maxExecutionTimeRegression
-        runner.targetVersions = ['2.11', 'last']
+        runner.targetVersions = ['last']
         runner.useDaemon = true
         runner.gradleOpts = ['-Xms1G', '-Xmx1G']
         runner.buildExperimentListener = new JavaOldModelSourceFileUpdater(10)
@@ -64,7 +66,7 @@ class JavaTestExecutionPerformanceTest extends AbstractCrossVersionPerformanceTe
 
         where:
         template          | size     | description              | gradleTasks | maxExecutionTimeRegression
-        'mediumWithJUnit' | 'medium' | 'incremental test build' | ['test']    | millis(1000)
+        //'mediumWithJUnit' | 'medium' | 'incremental test build' | ['test']    | millis(1000)
         'largeWithJUnit'  | 'large'  | 'incremental test build' | ['test']    | millis(1000)
     }
 }
