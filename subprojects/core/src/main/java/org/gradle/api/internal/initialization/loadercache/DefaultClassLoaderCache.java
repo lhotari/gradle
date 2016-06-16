@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import org.gradle.api.Nullable;
 import org.gradle.internal.classloader.ClassLoaderFactory;
+import org.gradle.internal.classloader.ClassLoaderUtil;
 import org.gradle.internal.classloader.ClassPathSnapshot;
 import org.gradle.internal.classloader.ClassPathSnapshotter;
 import org.gradle.internal.classloader.FilteringClassLoader;
@@ -168,11 +169,13 @@ public class DefaultClassLoaderCache implements ClassLoaderCache {
                         parent.release(loaderId);
                     }
                     bySpec.remove(spec);
+                    ClassLoaderUtil.closeClassLoader(classLoader);
                 }
             } else {
                 throw new IllegalStateException("Classloader '" + this + "' not used by '" + loaderId + "'");
             }
         }
+
     }
 
     // Used in org.gradle.api.internal.initialization.loadercache.ClassLoadersCachingIntegrationTest
