@@ -28,6 +28,8 @@ import org.gradle.internal.classloader.ClassPathSnapshotter;
 import org.gradle.internal.classloader.FilteringClassLoader;
 import org.gradle.internal.classpath.ClassPath;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Map;
 
 public class DefaultClassLoaderCache implements ClassLoaderCache {
@@ -168,9 +170,21 @@ public class DefaultClassLoaderCache implements ClassLoaderCache {
                         parent.release(loaderId);
                     }
                     bySpec.remove(spec);
+                    closeClassLoader(classLoader);
                 }
             } else {
                 throw new IllegalStateException("Classloader '" + this + "' not used by '" + loaderId + "'");
+            }
+        }
+
+    }
+
+    private static void closeClassLoader(ClassLoader classLoader) {
+        if (classLoader instanceof Closeable) {
+            try {
+                ((Closeable) classLoader).close();
+            } catch (IOException e) {
+                // ignore
             }
         }
     }
