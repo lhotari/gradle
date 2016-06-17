@@ -62,6 +62,7 @@ public class CachingTreeVisitor {
             DirectoryFileTree directoryFileTree = DirectoryFileTree.class.cast(((FileTreeAdapter) fileTree).getTree());
             treePath = directoryFileTree.getDir().getAbsolutePath();
             treePattern = directoryFileTree.getPatternSet();
+            /*
             if (isCacheablePath(treePath)) {
                 VisitedTreeCacheEntry cacheEntry = findOrCreateCacheEntry(treePath);
                 cacheEntry.lock();
@@ -87,6 +88,7 @@ public class CachingTreeVisitor {
                     cacheEntry.unlock();
                 }
             }
+            */
         }
         return doVisitTree(treePath, treePattern, fileTree, false);
     }
