@@ -25,6 +25,11 @@ class BuildScriptClasspathIntegrationSpec extends AbstractIntegrationSpec {
     @Unroll("jars on buildscript classpath can change (deleteIfExists: #deleteIfExists, loopNumber: #loopNumber)")
     def "jars on buildscript classpath can change"() {
         given:
+        executer.requireDaemon()
+        executer.requireIsolatedDaemons()
+        //executer.withBuildJvmOpts("-agentpath:/opt/yjp/bin/linux-x86-64/libyjpagent.so=delay=0,tracing")
+        executer.withBuildJvmOpts("-Xshare:off", "-Xverify:none", "-javaagent:/opt/btrace/build/btrace-agent.jar=scriptdir=/tmp/btrace-probes,stdout=false,noServer=true,unsafe=true,debug=false,scriptOutputFile=/tmp/gradle-btrace.btrace.out")
+
         buildFile << '''
             buildscript {
                 repositories { flatDir { dirs 'repo' }}
@@ -68,8 +73,10 @@ class BuildScriptClasspathIntegrationSpec extends AbstractIntegrationSpec {
         result.assertOutputContains("hello again")
 
         where:
-        deleteIfExists << [false, true] * 3
-        loopNumber << (1..6).toList()
+        //deleteIfExists << [false, true] * 3
+        //loopNumber << (1..6).toList()
+        deleteIfExists = false
+        loopNumber = 1
         sleepBefore = 1000L // fails on Linux when set to 1L
     }
 }
