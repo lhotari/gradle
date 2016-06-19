@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-class TreeVisitorCacheExpirationStrategy implements TaskExecutionGraphListener, TaskExecutionListener, BuildListener {
+public class TreeVisitorCacheExpirationStrategy implements TaskExecutionGraphListener, TaskExecutionListener, BuildListener {
     private final static Logger LOG = Logging.getLogger(TreeVisitorCacheExpirationStrategy.class);
     private final CachingTreeVisitor cachingTreeVisitor;
     private final Factory<OverlappingDirectoriesDetector> overlappingDirectoriesDetectorFactory;
