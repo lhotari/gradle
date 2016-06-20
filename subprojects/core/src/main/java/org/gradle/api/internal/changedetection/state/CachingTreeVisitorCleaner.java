@@ -19,10 +19,7 @@ package org.gradle.api.internal.changedetection.state;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.internal.Factory;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-public class CachingTreeVisitorCleaner implements Closeable {
+public class CachingTreeVisitorCleaner {
     private final Gradle gradle;
     private final TreeVisitorCacheExpirationStrategy cacheExpirationStrategy;
 
@@ -34,16 +31,8 @@ public class CachingTreeVisitorCleaner implements Closeable {
                 return new OverlappingDirectoriesDetector();
             }
         });
-        gradle.getTaskGraph().addTaskExecutionGraphListener(cacheExpirationStrategy);
-        gradle.getTaskGraph().addTaskExecutionListener(cacheExpirationStrategy);
-        gradle.addBuildListener(cacheExpirationStrategy);
+        gradle.getTaskGraph().addTaskExecutionGraphListener(cacheExpirationStrategy.getTaskExecutionGraphListener());
+        gradle.getTaskGraph().addTaskExecutionListener(cacheExpirationStrategy.getTaskExecutionListener());
+        gradle.addBuildListener(cacheExpirationStrategy.getBuildListener());
     }
-
-    @Override
-    public void close() throws IOException {
-        gradle.removeListener(cacheExpirationStrategy);
-        gradle.getTaskGraph().removeTaskExecutionGraphListener(cacheExpirationStrategy);
-        gradle.getTaskGraph().removeTaskExecutionListener(cacheExpirationStrategy);
-    }
-
 }
