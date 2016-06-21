@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import static org.gradle.util.WrapUtil.toList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 
 @RunWith(JMock.class)
@@ -81,6 +82,7 @@ public class CompositeFileTreeTest {
     @Test
     public void matchingWithPatternSetReturnsUnionOfFilteredSets() {
         final PatternSet patternSet = new PatternSet();
+        patternSet.include("**/*.java");
         final FileTreeInternal filtered1 = context.mock(FileTreeInternal.class);
         final FileTreeInternal filtered2 = context.mock(FileTreeInternal.class);
 
@@ -96,6 +98,13 @@ public class CompositeFileTreeTest {
         CompositeFileTree filteredCompositeSet = (CompositeFileTree) filtered;
 
         assertThat(toList(filteredCompositeSet.getSourceCollections()), equalTo(toList(filtered1, filtered2)));
+    }
+
+    @Test
+    public void matchingWithEmptyPatternSetWillReturnOriginal() {
+        final PatternSet patternSet = new PatternSet();
+        FileTree filtered = tree.matching(patternSet);
+        assertSame(filtered, tree);
     }
 
     @Test

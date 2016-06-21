@@ -22,6 +22,7 @@ import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
 import org.gradle.api.internal.file.collections.ResolvableFileCollectionResolveContext;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.tasks.util.PatternFilterable;
+import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.Cast;
 
 import java.util.Collection;
@@ -43,6 +44,9 @@ public abstract class CompositeFileTree extends CompositeFileCollection implemen
     }
 
     public FileTree matching(PatternFilterable patterns) {
+        if (patterns instanceof PatternSet && ((PatternSet) patterns).isEmpty()) {
+            return this;
+        }
         return new FilteredFileTree(patterns);
     }
 
