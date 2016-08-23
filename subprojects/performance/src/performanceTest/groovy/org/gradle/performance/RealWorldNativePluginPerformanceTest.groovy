@@ -25,6 +25,7 @@ import org.gradle.performance.fixture.BuildExperimentRunner
 import org.gradle.performance.fixture.LogFiles
 import org.gradle.performance.measure.MeasuredOperation
 import org.junit.experimental.categories.Category
+import spock.lang.IgnoreRest
 import spock.lang.Unroll
 
 @Category(NativePerformanceTest)
@@ -57,6 +58,7 @@ class RealWorldNativePluginPerformanceTest extends AbstractCrossVersionPerforman
         "nativeMonolithicOverlapping" | 4
     }
 
+    @IgnoreRest
     @Unroll('Project #buildSize native build #changeType')
     def "build with changes"(String buildSize, String changeType, String changedFile, Closure changeClosure, List<String> targetVersions) {
         given:
@@ -64,12 +66,13 @@ class RealWorldNativePluginPerformanceTest extends AbstractCrossVersionPerforman
         runner.testProject = "${buildSize}NativeMonolithic"
         runner.tasksToRun = ['build']
         runner.args = ["--parallel", "--max-workers=4"]
-        runner.targetVersions = targetVersions
+        runner.targetVersions = null // just profile the current version
         runner.useDaemon = true
         runner.gradleOpts = ["-Xms4g", "-Xmx4g"]
-        runner.warmUpRuns = 5
+        runner.warmUpRuns = 2
         //the content changing code below assumes an even number of runs
-        runner.runs = 10
+        runner.runs = 4
+        runner.honestProfiler.enabled = true
         if (runner.honestProfiler.enabled) {
             runner.honestProfiler.autoStartStop = false
         }
@@ -139,8 +142,8 @@ class RealWorldNativePluginPerformanceTest extends AbstractCrossVersionPerforman
         // header file change causes a single project, two source sets, some files to be recompiled.
         // recompile all sources causes all projects, all source sets, all files to be recompiled.
         buildSize | changeType              | changedFile                       | changeClosure        | targetVersions
-        "medium"  | 'source file change'    | 'modules/project5/src/src100_c.c' | this.&changeCSource  | ['3.1-20160823000016+0000']
-        "medium"  | 'header file change'    | 'modules/project1/src/src50_h.h'  | this.&changeHeader   | ['3.1-20160823000016+0000']
+        //"medium"  | 'source file change'    | 'modules/project5/src/src100_c.c' | this.&changeCSource  | ['3.1-20160823000016+0000']
+        //"medium"  | 'header file change'    | 'modules/project1/src/src50_h.h'  | this.&changeHeader   | ['3.1-20160823000016+0000']
         "medium"  | 'recompile all sources' | 'common.gradle'                   | this.&changeArgs     | ['3.1-20160823000016+0000']
     }
 
