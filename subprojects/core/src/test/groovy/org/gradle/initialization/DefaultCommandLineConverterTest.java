@@ -182,6 +182,13 @@ public class DefaultCommandLineConverterTest extends CommandLineConverterTestSup
         checkConversion("--rerun-tasks");
     }
 
+    @Test
+    public void withNoHistory() {
+        expectedNoHistory = true;
+        checkConversion("--no-history");
+    }
+
+
     @Test(expected = CommandLineArgumentException.class)
     public void withShowStacktraceAndShowFullStacktraceShouldThrowCommandLineArgumentEx() {
         checkConversion("-sf");

@@ -16,14 +16,17 @@
 package org.gradle.api.internal.changedetection.changes;
 
 import org.gradle.StartParameter;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.TaskExecutionHistory;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.changedetection.TaskArtifactState;
 import org.gradle.api.internal.changedetection.TaskArtifactStateRepository;
+import org.gradle.api.internal.file.collections.SimpleFileCollection;
 import org.gradle.api.internal.tasks.cache.TaskCacheKey;
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs;
 import org.gradle.internal.reflect.Instantiator;
 
+import java.io.File;
 import java.util.Collection;
 
 public class ShortCircuitTaskArtifactStateRepository implements TaskArtifactStateRepository {
@@ -39,6 +42,19 @@ public class ShortCircuitTaskArtifactStateRepository implements TaskArtifactStat
     }
 
     public TaskArtifactState getStateFor(final TaskInternal task) {
+        if (startParameter.isNoHistory()) {
+            return new NoHistoryArtifactState("Executed with '--no-history'.") {
+                @Override
+                public IncrementalTaskInputs getInputChanges() {
+                    return new RebuildIncrementalTaskInputs(task);
+                }
+
+                @Override
+                public FileCollection getOutputFiles() {
+                    return new SimpleFileCollection(new File[]{});
+                }
+            };
+        }
 
         if (!task.getOutputs().getHasOutput()) { // Only false if no declared outputs AND no Task.upToDateWhen spec. We force to true for incremental tasks.
             return new NoHistoryArtifactState();

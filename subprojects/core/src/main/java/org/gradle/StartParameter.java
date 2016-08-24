@@ -77,6 +77,7 @@ public class StartParameter implements LoggingConfiguration, Serializable {
     private List<File> initScripts = new ArrayList<File>();
     private boolean dryRun;
     private boolean rerunTasks;
+    private boolean noHistory;
     private boolean profile;
     private boolean continueOnFailure;
     private boolean offline;
@@ -222,6 +223,7 @@ public class StartParameter implements LoggingConfiguration, Serializable {
         p.continueOnFailure = continueOnFailure;
         p.offline = offline;
         p.rerunTasks = rerunTasks;
+        p.noHistory = noHistory;
         p.recompileScripts = recompileScripts;
         p.refreshDependencies = refreshDependencies;
         p.parallelProjectExecution = parallelProjectExecution;
@@ -615,6 +617,15 @@ public class StartParameter implements LoggingConfiguration, Serializable {
         this.rerunTasks = rerunTasks;
     }
 
+
+    public boolean isNoHistory() {
+        return noHistory;
+    }
+
+    public void setNoHistory(boolean noHistory) {
+        this.noHistory = noHistory;
+    }
+
     /**
      * Specifies whether the build scripts should be recompiled.
      */
@@ -726,6 +737,7 @@ public class StartParameter implements LoggingConfiguration, Serializable {
             + ", initScripts=" + initScripts
             + ", dryRun=" + dryRun
             + ", rerunTasks=" + rerunTasks
+            + ", noHistory=" + noHistory
             + ", recompileScripts=" + recompileScripts
             + ", offline=" + offline
             + ", refreshDependencies=" + refreshDependencies

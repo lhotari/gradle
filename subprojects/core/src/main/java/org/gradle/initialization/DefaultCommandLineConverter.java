@@ -41,6 +41,7 @@ public class DefaultCommandLineConverter extends AbstractCommandLineConverter<St
     private static final String SETTINGS_FILE = "c";
     private static final String DRY_RUN = "m";
     private static final String RERUN_TASKS = "rerun-tasks";
+    private static final String NO_HISTORY = "no-history";
     private static final String EXCLUDE_TASK = "x";
     private static final String PROFILE = "profile";
     private static final String CONTINUE = "continue";
@@ -82,6 +83,7 @@ public class DefaultCommandLineConverter extends AbstractCommandLineConverter<St
         parser.option(BUILD_FILE, "build-file").hasArgument().hasDescription("Specifies the build file.");
         parser.option(NO_PROJECT_DEPENDENCY_REBUILD, "no-rebuild").hasDescription("Do not rebuild project dependencies.");
         parser.option(RERUN_TASKS).hasDescription("Ignore previously cached task results.");
+        parser.option(NO_HISTORY).hasDescription("Ignore previously cached task results and don't cache task results.");
         parser.option(RECOMPILE_SCRIPTS).hasDescription("Force build script recompiling.");
         parser.option(EXCLUDE_TASK, "exclude-task").hasArguments().hasDescription("Specify a task to be excluded from execution.");
         parser.option(PROFILE).hasDescription("Profiles build execution time and generates a report in the <build_dir>/reports/profile directory.");
@@ -145,6 +147,10 @@ public class DefaultCommandLineConverter extends AbstractCommandLineConverter<St
 
         if (options.hasOption(RERUN_TASKS)) {
             startParameter.setRerunTasks(true);
+        }
+
+        if (options.hasOption(NO_HISTORY)) {
+            startParameter.setNoHistory(true);
         }
 
         if (options.hasOption(RECOMPILE_SCRIPTS)) {
