@@ -41,6 +41,8 @@ dependencies {
 
     compile "org.pegdown:pegdown:1.6.0"
     compile "org.jsoup:jsoup:1.6.3"
+    compile "com.fasterxml.jackson.core:jackson-core:2.6.6"
+    compile "com.fasterxml.jackson.core:jackson-databind:2.6.6"
 }
 
 apply from: '../gradle/compile.gradle'
