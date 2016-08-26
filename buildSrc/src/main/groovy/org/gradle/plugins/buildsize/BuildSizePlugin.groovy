@@ -154,7 +154,6 @@ class ReportingSession {
     int deepestRootDepth
     ResolvedComponentResult largestRoot
     int largestRootSize
-    Set<ComponentIdentifier> processedIds
 
     ReportingSession(BuildSizeTask task, JsonGenerator jsonGenerator) {
         this.task = task
@@ -194,13 +193,12 @@ class ReportingSession {
             jsonGenerator.writeEndArray()
 
             if (task.includeDependencyGraphs) {
-                processedIds = new HashSet()
-
+                def processedIds = [] as Set
                 jsonGenerator.writeFieldName('largest_dependency_graph')
                 jsonGenerator.writeStartObject()
                 jsonGenerator.writeNumberField('largest_size', largestRootSize)
                 jsonGenerator.writeFieldName('graph')
-                renderNode(largestRoot)
+                renderNode(largestRoot, processedIds)
                 jsonGenerator.writeEndObject()
 
                 jsonGenerator.writeFieldName('deepest_dependency_graph')
@@ -210,7 +208,7 @@ class ReportingSession {
                     jsonGenerator.writeBooleanField('largest_is_deepest', true)
                 } else {
                     jsonGenerator.writeFieldName('graph')
-                    renderNode(deepestRoot)
+                    renderNode(deepestRoot, processedIds)
                 }
                 jsonGenerator.writeEndObject()
             }
@@ -280,9 +278,7 @@ class ReportingSession {
     }
 
     GraphDepthAndSize calculateDependencyGraphDepthAndSize(ResolvedComponentResult resolvedComponentResult, int initialDepth, Set<ComponentIdentifier> processedIds) {
-        def nextProcessedIds = [] as Set
-        nextProcessedIds.addAll(processedIds)
-        nextProcessedIds.add(resolvedComponentResult.id)
+        processedIds.add(resolvedComponentResult.id)
         int maxDepth = initialDepth
         int totalSize = 1
         for (Object dependencyResultObject : Set.cast(resolvedComponentResult.dependencies)) {
@@ -290,7 +286,7 @@ class ReportingSession {
             if (dependencyResult instanceof ResolvedDependencyResult) {
                 ResolvedDependencyResult resolvedDependencyResult = ResolvedDependencyResult.cast(dependencyResult)
                 if (!processedIds.contains(resolvedDependencyResult.selected.id)) {
-                    GraphDepthAndSize subtreeResult = calculateDependencyGraphDepthAndSize(resolvedDependencyResult.selected, initialDepth + 1, nextProcessedIds)
+                    GraphDepthAndSize subtreeResult = calculateDependencyGraphDepthAndSize(resolvedDependencyResult.selected, initialDepth + 1, processedIds)
                     maxDepth = Math.max(maxDepth, subtreeResult.depth)
                     totalSize += subtreeResult.size
                 }
@@ -305,10 +301,8 @@ class ReportingSession {
         int size
     }
 
-    void renderNode(ResolvedComponentResult resolvedComponentResult) {
-        def nextProcessedIds = [] as Set
-        nextProcessedIds.addAll(processedIds)
-        nextProcessedIds.add(resolvedComponentResult.id)
+    void renderNode(ResolvedComponentResult resolvedComponentResult, Set<ComponentIdentifier> processedIds) {
+        processedIds.add(resolvedComponentResult.id)
 
         jsonGenerator.writeStartObject()
 
@@ -323,7 +317,7 @@ class ReportingSession {
             if (dependencyResult instanceof ResolvedDependencyResult) {
                 ResolvedDependencyResult resolvedDependencyResult = ResolvedDependencyResult.cast(dependencyResult)
                 if (!processedIds.contains(resolvedDependencyResult.selected.id)) {
-                    renderNode(resolvedDependencyResult.selected)
+                    renderNode(resolvedDependencyResult.selected, processedIds)
                 } else {
                     jsonGenerator.writeStartObject()
                     jsonGenerator.writeStringField('type', 'reference')
