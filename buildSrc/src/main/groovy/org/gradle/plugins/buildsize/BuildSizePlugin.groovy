@@ -186,10 +186,11 @@ class ReportingSession {
                 configurationInfo.resolutionStrategy = resolutionStrategyInfo
                 resolutionStrategyInfo.type = resolutionStrategy instanceof DefaultResolutionStrategy ? 'default' : 'custom'
                 resolutionStrategyInfo.forcedModulesCount = resolutionStrategy.forcedModules.size()
-                resolutionStrategyInfo.forcedModules = []
+                def forcedModulesList = []
+                resolutionStrategyInfo.forcedModules = forcedModulesList
                 for (ModuleVersionSelector moduleVersionSelector : resolutionStrategy.forcedModules) {
                     def moduleInfo = [:]
-                    resolutionStrategyInfo.forcedModules << moduleInfo
+                    forcedModulesList << moduleInfo
                     moduleInfo.group = maskGroupName(moduleVersionSelector.group)
                     moduleInfo.name = maskDependencyName(moduleVersionSelector.name)
                     moduleInfo.version = maskDependencyVersion(moduleVersionSelector.version)
