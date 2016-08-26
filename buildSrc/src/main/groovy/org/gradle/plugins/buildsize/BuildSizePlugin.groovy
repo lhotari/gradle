@@ -20,18 +20,18 @@ import com.fasterxml.jackson.core.JsonEncoding
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.ObjectMapper
-import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.result.ResolutionResult
+import org.gradle.api.artifacts.*
+import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.util.Path
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -50,20 +50,10 @@ class BuildSizeTask extends DefaultTask {
     File destination = new File(project.buildDir, "buildsizeinfo.json")
 
     Collection<String> sourceSetNames = ['main', 'test'] as Set
-    Collection<String> configurationNames = ['compile', 'runtime', 'agent', 'testAgent', 'classpath', 'jacocoAgent', 'compileClasspath', 'testCompileClasspath', 'testRuntimeClasspath', 'protobuf', 'testProtobuf'] as Set
+    Collection<String> configurationNames = ['compile', 'runtime', 'default', 'archives', 'agent', 'testAgent', 'classpath', 'jacocoAgent', 'compileClasspath', 'testCompileClasspath', 'testRuntimeClasspath', 'protobuf', 'testProtobuf'] as Set
     Collection<String> countedExtensions = ['java', 'groovy', 'scala', 'kt', 'properties', 'xml', 'xsd', 'xsl', 'html', 'js', 'css', 'scss', 'fxml', 'json'] as Set
     Counter counter = JavaCounter.INSTANCE
-    Map<String, Counter> overrideCounters = [:]
-
-    BuildSizeTask() {
-        initDefaults()
-    }
-
-    @CompileDynamic
-    initDefaults() {
-        // workaround Groovy STC bug
-        overrideCounters = ['xml': XmlCounter.INSTANCE, 'html': XmlCounter.INSTANCE, 'fxml': XmlCounter.INSTANCE, 'xsd': XmlCounter.INSTANCE, 'xsl': XmlCounter.INSTANCE]
-    }
+    Map<String, Counter> overrideCounters = Map.cast(['xml': XmlCounter.INSTANCE, 'html': XmlCounter.INSTANCE, 'fxml': XmlCounter.INSTANCE, 'xsd': XmlCounter.INSTANCE, 'xsl': XmlCounter.INSTANCE])
 
     @TaskAction
     void createReport() {
@@ -95,6 +85,7 @@ class ReportingSession {
     private final Map<String, String> projectNames = [:]
     private final Map<String, String> sourceSetNames = [:]
     private final Map<String, String> configurationNames = [:]
+    private final Map<String, String> configurationPaths = [:]
     private int nextProjectId = 1
     private int nextTestSourceSetId = 1
     private int nextOtherSourceSetId = 1
@@ -153,21 +144,29 @@ class ReportingSession {
 
     void writeProjectConfigurations(Project project) {
         for (Configuration configuration : project.configurations) {
-            String name = maskConfigurationName(configuration)
-            ResolutionResult result = configuration.getIncoming().getResolutionResult()
-            configuration.getResolvedConfiguration()
+            //ResolutionResult result = configuration.getIncoming().getResolutionResult()
+            //configuration.getResolvedConfiguration()
 
             def configurationInfo = [:]
-            configurationInfo.name = name
-            configurationInfo.objectInstanceId = System.identityHashCode(configuration)
+            configurationInfo.name = maskConfigurationName(configuration)
+            configurationInfo.project = resolvedMaskedProjectForConfiguration(configuration)
             configurationInfo.extendsFrom = configuration.getExtendsFrom().collect {
-                maskConfigurationName(it)
+                [configuration: maskConfigurationName(it), project: resolvedMaskedProjectForConfiguration(it)]
             }
+            configurationInfo.visible = configuration.visible
+            configurationInfo.transitive = configuration.transitive
             configurationInfo.excludeRulesCount = configuration.getExcludeRules().size()
+            configurationInfo.artifactsCount = configuration.artifacts.size()
             configuration.resolutionStrategy.with { resolutionStrategy ->
                 def resolutionStrategyInfo = [:]
                 configurationInfo.resolutionStrategy = resolutionStrategyInfo
+                resolutionStrategyInfo.type = resolutionStrategy.class.simpleName == 'DefaultResolutionStrategy' ? 'default' : 'custom'
                 resolutionStrategyInfo.forcedModulesCount = resolutionStrategy.forcedModules.size()
+                try {
+                    def rules = (Collection) resolutionStrategy.componentSelection.getMetaClass().getProperty(resolutionStrategy.componentSelection, "rules")
+                    resolutionStrategyInfo.componentSelectionRulesCount = rules.size()
+                } catch (e) {
+                }
                 try {
                     def rules = (Collection) resolutionStrategy.dependencySubstitution.getMetaClass().getAttribute(resolutionStrategy.dependencySubstitution, "substitutionRules")
                     resolutionStrategyInfo.dependencySubstitutionsCount = rules.size()
@@ -175,8 +174,38 @@ class ReportingSession {
                 }
             }
             configurationInfo.fileCount = configuration.getFiles().size()
-            configurationInfo.filesTotalSize = configuration.getFiles().sum { File file -> file.length() } ?: 0
+            configurationInfo.directoryCount = configuration.getFiles().count { File file -> file.directory } ?: 0
+            configurationInfo.filesTotalSize = configuration.getFiles().sum { File file -> file.file ? file.length() : 0 } ?: 0
             configurationInfo.lengthAsClasspath = configuration.getAsPath().length()
+
+            def dependenciesInfo = []
+            configurationInfo.dependencies = dependenciesInfo
+            for (Dependency dependency : configuration.dependencies) {
+                def dependencyInfo = [:]
+                dependenciesInfo << dependencyInfo
+                if (dependency instanceof SelfResolvingDependency) {
+                    if (dependency instanceof ProjectDependency) {
+                        dependencyInfo.type = "project"
+                        def projectDependency = ProjectDependency.cast(dependency)
+                        dependencyInfo.project = maskProjectName(projectDependency.dependencyProject)
+                        dependencyInfo.configuration = maskConfigurationName(projectDependency.projectConfiguration)
+                    } else if (dependency instanceof FileCollectionDependency) {
+                        Set<File> files = FileCollectionDependency.cast(dependency).resolve()
+                        dependencyInfo.type = "fileCollection"
+                        dependencyInfo.fileCount = files.count {
+                            it.file
+                        }
+                        dependencyInfo.directoryCount = files.count {
+                            it.directory
+                        }
+                    } else {
+                        dependencyInfo.type = "selfResolving"
+                    }
+                } else {
+
+                }
+            }
+
             jsonGenerator.writeObject(configurationInfo)
         }
     }
@@ -186,10 +215,14 @@ class ReportingSession {
     }
 
     String maskProjectName(Project project) {
-        String masked = projectNames.get(project.path)
+        maskProjectNameByPath(project.path)
+    }
+
+    String maskProjectNameByPath(String path) {
+        String masked = projectNames.get(path)
         if (!masked) {
             masked = "project${nextProjectId++}".toString()
-            projectNames.put(project.path, masked)
+            projectNames.put(path, masked)
         }
         masked
     }
@@ -201,11 +234,19 @@ class ReportingSession {
             if (name in task.configurationNames) {
                 masked = name
             } else {
-                masked = "configuration${nextConfigurationId++}".toString()
+                masked = "${name.toLowerCase().contains('test') ? 'testC' : 'c'}onfiguration${nextConfigurationId++}".toString()
             }
             configurationNames.put(name, masked)
         }
         masked
+    }
+
+    String resolvedMaskedProjectForConfiguration(Configuration configuration) {
+        ConfigurationInternal configurationInternal = (ConfigurationInternal) configuration
+        // the project path can be found from ConfigurationInternal.getPath() String by removing the last segment
+        Path path = configurationInternal.path ? new Path(configurationInternal.path) : null
+        def projectPath = path?.parent?.toString()
+        projectPath ? maskProjectNameByPath(projectPath) : null
     }
 
     String maskSourceSetName(String name) {
