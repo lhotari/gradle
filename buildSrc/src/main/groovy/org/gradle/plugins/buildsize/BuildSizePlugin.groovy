@@ -174,7 +174,13 @@ class ReportingSession {
             configurationInfo.name = maskConfigurationName(configuration)
             configurationInfo.project = resolvedMaskedProjectForConfiguration(configuration)
             configurationInfo.extendsFrom = configuration.getExtendsFrom().collect {
-                [configuration: maskConfigurationName(it), project: resolvedMaskedProjectForConfiguration(it)]
+                def result = [configuration: maskConfigurationName(it)]
+                // add name of project if it's in another project
+                def projectForConfiguration = resolvedMaskedProjectForConfiguration(it)
+                if(projectForConfiguration != configurationInfo.project) {
+                    result.project = projectForConfiguration
+                }
+                result
             }
             configurationInfo.visible = configuration.visible
             configurationInfo.transitive = configuration.transitive
