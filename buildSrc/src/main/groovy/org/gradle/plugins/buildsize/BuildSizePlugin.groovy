@@ -28,6 +28,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.result.ResolutionResult
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -153,8 +154,12 @@ class ReportingSession {
     void writeProjectConfigurations(Project project) {
         for (Configuration configuration : project.configurations) {
             String name = maskConfigurationName(configuration)
+            ResolutionResult result = configuration.getIncoming().getResolutionResult()
+            configuration.getResolvedConfiguration()
+
             def configurationInfo = [:]
             configurationInfo.name = name
+            configurationInfo.objectInstanceId = System.identityHashCode(configuration)
             configurationInfo.extendsFrom = configuration.getExtendsFrom().collect {
                 maskConfigurationName(it)
             }
@@ -198,7 +203,7 @@ class ReportingSession {
             } else {
                 masked = "configuration${nextConfigurationId++}".toString()
             }
-            configurationNames.put(configuration.name, masked)
+            configurationNames.put(name, masked)
         }
         masked
     }
