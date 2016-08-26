@@ -27,6 +27,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
+import org.gradle.api.internal.artifacts.ComponentSelectionRulesInternal
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultResolutionStrategy
 import org.gradle.api.internal.tasks.options.Option
@@ -184,10 +185,16 @@ class ReportingSession {
                 configurationInfo.resolutionStrategy = resolutionStrategyInfo
                 resolutionStrategyInfo.type = resolutionStrategy instanceof DefaultResolutionStrategy ? 'default' : 'custom'
                 resolutionStrategyInfo.forcedModulesCount = resolutionStrategy.forcedModules.size()
-                try {
-                    def rules = (Collection) resolutionStrategy.componentSelection.getMetaClass().getProperty(resolutionStrategy.componentSelection, "rules")
-                    resolutionStrategyInfo.componentSelectionRulesCount = rules.size()
-                } catch (e) {
+                resolutionStrategyInfo.forcedModules = []
+                for (ModuleVersionSelector moduleVersionSelector : resolutionStrategy.forcedModules) {
+                    def moduleInfo = [:]
+                    resolutionStrategyInfo.forcedModules << moduleInfo
+                    moduleInfo.group = maskGroupName(moduleVersionSelector.group)
+                    moduleInfo.name = maskDependencyName(moduleVersionSelector.name)
+                    moduleInfo.version = maskDependencyVersion(moduleVersionSelector.version)
+                }
+                if (resolutionStrategy.componentSelection instanceof ComponentSelectionRulesInternal) {
+                    resolutionStrategyInfo.componentSelectionRulesCount = ComponentSelectionRulesInternal.cast(resolutionStrategy.componentSelection).rules.size()
                 }
                 try {
                     def rules = (Collection) resolutionStrategy.dependencySubstitution.getMetaClass().getAttribute(resolutionStrategy.dependencySubstitution, "substitutionRules")
@@ -246,7 +253,7 @@ class ReportingSession {
                 dependencyInfo.excludesRulesCount = dependency.excludeRules.size()
                 def excludeRulesInfo = []
                 dependencyInfo.excludeRules = excludeRulesInfo
-                for(ExcludeRule excludeRule : dependency.excludeRules) {
+                for (ExcludeRule excludeRule : dependency.excludeRules) {
                     def excludeRuleInfo = [:]
                     excludeRulesInfo << excludeRuleInfo
                     excludeRuleInfo.group = maskGroupName(excludeRule.group)
@@ -266,7 +273,7 @@ class ReportingSession {
                 dependencyInfo.module_id = maskGeneric("client_module", dependency.id)
                 def subdependencies = []
                 dependencyInfo.dependencies = subdependencies
-                for(ModuleDependency subdependency : dependency.dependencies) {
+                for (ModuleDependency subdependency : dependency.dependencies) {
                     def subdependencyInfo = [:]
                     subdependencies << subdependencyInfo
                     fillInDependencyInfo(subdependency, subdependencyInfo)
