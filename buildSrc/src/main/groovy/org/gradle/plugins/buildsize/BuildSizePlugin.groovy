@@ -179,6 +179,7 @@ class ReportingSession {
             configurationInfo.visible = configuration.visible
             configurationInfo.transitive = configuration.transitive
             configurationInfo.excludeRulesCount = configuration.getExcludeRules().size()
+            configurationInfo.excludeRules = createExcludeRulesInfo(configuration.excludeRules)
             configurationInfo.artifactsCount = configuration.artifacts.size()
             configuration.resolutionStrategy.with { resolutionStrategy ->
                 def resolutionStrategyInfo = [:]
@@ -251,14 +252,7 @@ class ReportingSession {
                     dependencyInfo.configuration = maskConfigurationName(dependency.configuration)
                 }
                 dependencyInfo.excludesRulesCount = dependency.excludeRules.size()
-                def excludeRulesInfo = []
-                dependencyInfo.excludeRules = excludeRulesInfo
-                for (ExcludeRule excludeRule : dependency.excludeRules) {
-                    def excludeRuleInfo = [:]
-                    excludeRulesInfo << excludeRuleInfo
-                    excludeRuleInfo.group = maskGroupName(excludeRule.group)
-                    excludeRuleInfo.module = maskDependencyName(excludeRule.module)
-                }
+                dependencyInfo.excludeRules = createExcludeRulesInfo(dependency.excludeRules)
             }
             if (dependency instanceof ExternalDependency) {
                 dependencyInfo.type = 'external'
@@ -280,6 +274,21 @@ class ReportingSession {
                 }
             }
         }
+    }
+
+    def createExcludeRulesInfo(Iterable<ExcludeRule> excludeRules) {
+        def excludeRulesInfo = []
+        for (ExcludeRule excludeRule : excludeRules) {
+            excludeRulesInfo << createExcludeRuleInfo(excludeRule)
+        }
+        excludeRulesInfo
+    }
+
+    def createExcludeRuleInfo(ExcludeRule excludeRule) {
+        def excludeRuleInfo = [:]
+        excludeRuleInfo.group = maskGroupName(excludeRule.group)
+        excludeRuleInfo.module = maskDependencyName(excludeRule.module)
+        excludeRuleInfo
     }
 
     String maskGeneric(String prefix, String name) {
