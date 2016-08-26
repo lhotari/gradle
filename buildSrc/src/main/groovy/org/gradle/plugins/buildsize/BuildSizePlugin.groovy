@@ -141,6 +141,16 @@ class ReportingSession {
     }
 
     public void run() {
+        task.logger.with {
+            lifecycle "Writing build-size report JSON to ${task.destination}"
+            if (task.maskResults) {
+                lifecycle "The resulting names are masked with hashes and hashing salt ${task.maskingSalt}"
+                lifecycle "Use --masking-salt=${task.maskingSalt} to produce similar masking of names. The default salt is based on the root directory's absolute path name."
+            } else {
+                lifecycle "The resulting names aren't masked."
+            }
+        }
+
         jsonGenerator.writeStartObject()
         try {
             jsonGenerator.writeFieldName('projects')
