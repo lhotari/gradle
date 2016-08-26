@@ -33,6 +33,7 @@ import org.gradle.api.internal.tasks.options.Option
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.Path
 
@@ -54,7 +55,7 @@ class BuildSizeTask extends DefaultTask {
     @Input
     Collection<String> unmaskedSourceSetNames = ['main', 'test'] as Set
     @Input
-    Collection<String> unmaskedConfigurationNames = ['compile', 'compileOnly', 'testCompileOnly', 'runtime', 'testRuntime',
+    Collection<String> unmaskedConfigurationNames = ['compile', 'testCompile', 'compileOnly', 'testCompileOnly', 'runtime', 'testRuntime',
                                                      'default', 'archives',
                                                      'agent', 'testAgent', 'jacocoAgent',
                                                      'classpath', 'compileClasspath', 'testCompileClasspath', 'testRuntimeClasspath',
@@ -243,8 +244,11 @@ class ReportingSession {
     }
 
     String maskConfigurationName(Configuration configuration) {
-        String name = configuration.name
-        if (!task.maskResults) {
+        maskConfigurationName(configuration.name)
+    }
+
+    String maskConfigurationName(String name) {
+        if (!name || !task.maskResults) {
             return name
         }
         String masked = configurationNames.get(name)
@@ -299,7 +303,7 @@ class ReportingSession {
     }
 
     void writeProjectSourceSets(Project subproject) {
-        getJavaPluginConvention(subproject).sourceSets.each { sourceSet ->
+        getJavaPluginConvention(subproject).sourceSets.each { SourceSet sourceSet ->
             long totalSizeInBytes = 0
             long sourceCodeSizeInBytes = 0
             int totalLoc = 0
@@ -357,19 +361,25 @@ class ReportingSession {
             grandTotalFileCount += fileCount
             grandTotalSourceFileCount += sourceFileCount
 
-            jsonGenerator.with {
-                writeStartObject()
-                writeStringField("name", maskSourceSetName(sourceSet.name))
-                writeNumberField("fileCount", fileCount)
-                writeNumberField("totalSize", totalSizeInBytes)
-                writeNumberField("sourceCodeSize", sourceCodeSizeInBytes)
-                writeNumberField("totalLoc", totalLoc)
-                writeObjectField("loc", locCounts)
-                writeObjectField("sourceFileCounts", sourceFileCounts)
-                writeObjectField("packagesPerExtension", packagesPerExtension.collectEntries { k, v -> [k, v.size()] })
-                writeObjectField("totalPackages", allPackages.size())
-                writeEndObject()
-            }
+            def sourceSetInfo = [:]
+
+            sourceSetInfo.name = maskSourceSetName(sourceSet.name)
+            sourceSetInfo.fileCount = fileCount
+            sourceSetInfo.totalSize = totalSizeInBytes
+            sourceSetInfo.sourceCodeSize = sourceCodeSizeInBytes
+            sourceSetInfo.totalLoc = totalLoc
+            sourceSetInfo.loc = locCounts
+            sourceSetInfo.sourceFileCounts = sourceFileCounts
+            sourceSetInfo.packagesPerExtension = packagesPerExtension.collectEntries { k, v -> [k, v.size()] }
+            sourceSetInfo.totalPackages = allPackages.size()
+
+            sourceSetInfo.compileClasspathConfigurationName = maskConfigurationName(sourceSet.compileClasspathConfigurationName)
+            sourceSetInfo.compileConfigurationName = maskConfigurationName(sourceSet.compileConfigurationName)
+            sourceSetInfo.compileOnlyConfigurationName = maskConfigurationName(sourceSet.compileOnlyConfigurationName)
+            sourceSetInfo.runtimeConfigurationName = maskConfigurationName(sourceSet.runtimeConfigurationName)
+
+
+            jsonGenerator.writeObject(sourceSetInfo)
         }
     }
 
