@@ -38,6 +38,7 @@ import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultCa
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultResolutionStrategy
 import org.gradle.api.internal.tasks.options.Option
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.specs.Specs
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSet
@@ -78,6 +79,11 @@ class BuildSizeTask extends DefaultTask {
 
     LocCounter defaultLocCounter = DefaultLocCounter.INSTANCE
     Map<String, LocCounter> overriddenLocCounters = Map.cast(['xml': XmlLocCounter.INSTANCE, 'html': XmlLocCounter.INSTANCE, 'fxml': XmlLocCounter.INSTANCE, 'xsd': XmlLocCounter.INSTANCE, 'xsl': XmlLocCounter.INSTANCE])
+
+    BuildSizeTask() {
+        // execute this task always
+        getOutputs().upToDateWhen(Specs.SATISFIES_NONE)
+    }
 
     @TaskAction
     void createReport() {
