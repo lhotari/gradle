@@ -394,6 +394,11 @@ class ReportingSession {
     }
 }
 
+/*
+ * LOC counting classes copied originally from https://github.com/aalmiray/stats-gradle-plugin
+ * This is a stripped down version with just C-style and XML-style comment detection
+ */
+
 @CompileStatic
 interface LocCounter {
     Pattern EMPTY = ~/^\s*$/
