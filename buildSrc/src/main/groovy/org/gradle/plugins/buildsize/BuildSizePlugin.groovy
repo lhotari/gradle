@@ -86,7 +86,7 @@ class BuildSizeTask extends DefaultTask {
 
     @Option(option = "masking-salt", description = "Apply salt (int value) to masking so that hashes aren't detectable")
     public void setMaskingSaltOption(String maskingSaltString) {
-        if(maskingSaltString != null) {
+        if (maskingSaltString != null) {
             this.maskingSalt = Integer.parseInt(maskingSaltString)
         }
     }
@@ -218,7 +218,9 @@ class ReportingSession {
                 dependencyInfo.type = "project"
                 def projectDependency = ProjectDependency.cast(dependency)
                 dependencyInfo.project = maskProjectName(projectDependency.dependencyProject)
-                dependencyInfo.configuration = maskConfigurationName(projectDependency.projectConfiguration)
+                if (projectDependency.projectConfiguration && projectDependency.projectConfiguration != 'default') {
+                    dependencyInfo.configuration = maskConfigurationName(projectDependency.projectConfiguration)
+                }
             } else if (dependency instanceof FileCollectionDependency) {
                 Set<File> files = FileCollectionDependency.cast(dependency).resolve()
                 dependencyInfo.type = "fileCollection"
@@ -232,14 +234,14 @@ class ReportingSession {
                 dependencyInfo.type = "selfResolving"
             }
         } else {
-            if(dependency instanceof ModuleDependency) {
+            if (dependency instanceof ModuleDependency) {
                 dependencyInfo.group = maskGroupName(dependency.group)
                 dependencyInfo.name = maskDependencyName(dependency.name)
                 dependencyInfo.version = maskDependencyVersion(dependency.version)
                 dependencyInfo.type = 'module'
                 dependencyInfo.transitive = dependency.transitive
                 dependencyInfo.excludesRulesCount = dependency.excludeRules.size()
-                if(dependency.configuration && dependency.configuration != 'default') {
+                if (dependency.configuration && dependency.configuration != 'default') {
                     dependencyInfo.configuration = maskConfigurationName(dependency.configuration)
                 }
             }
@@ -247,7 +249,7 @@ class ReportingSession {
     }
 
     String maskGeneric(String prefix, String name) {
-        if(task.maskResults) {
+        if (task.maskResults) {
             name ? "${prefix}_${hashId(name)}".toString() : ''
         } else {
             name
@@ -335,7 +337,7 @@ class ReportingSession {
     String hashId(String source) {
         int hash = source.hashCode()
         int salt = task.maskingSalt
-        if(salt != 0) {
+        if (salt != 0) {
             hash = 31 * hash + salt
         }
         Integer.toHexString(hash)
