@@ -218,7 +218,7 @@ class ReportingSession {
                 dependencyInfo.type = "project"
                 def projectDependency = ProjectDependency.cast(dependency)
                 dependencyInfo.project = maskProjectName(projectDependency.dependencyProject)
-                if (projectDependency.projectConfiguration && projectDependency.projectConfiguration != 'default') {
+                if (projectDependency.projectConfiguration && projectDependency.projectConfiguration.name != 'default') {
                     dependencyInfo.configuration = maskConfigurationName(projectDependency.projectConfiguration)
                 }
             } else if (dependency instanceof FileCollectionDependency) {
@@ -240,9 +240,36 @@ class ReportingSession {
                 dependencyInfo.version = maskDependencyVersion(dependency.version)
                 dependencyInfo.type = 'module'
                 dependencyInfo.transitive = dependency.transitive
-                dependencyInfo.excludesRulesCount = dependency.excludeRules.size()
                 if (dependency.configuration && dependency.configuration != 'default') {
                     dependencyInfo.configuration = maskConfigurationName(dependency.configuration)
+                }
+                dependencyInfo.excludesRulesCount = dependency.excludeRules.size()
+                def excludeRulesInfo = []
+                dependencyInfo.excludeRules = excludeRulesInfo
+                for(ExcludeRule excludeRule : dependency.excludeRules) {
+                    def excludeRuleInfo = [:]
+                    excludeRulesInfo << excludeRuleInfo
+                    excludeRuleInfo.group = maskGroupName(excludeRule.group)
+                    excludeRuleInfo.module = maskDependencyName(excludeRule.module)
+                }
+            }
+            if (dependency instanceof ExternalDependency) {
+                dependencyInfo.type = 'external'
+                dependencyInfo.force = dependency.force
+            }
+            if (dependency instanceof ExternalModuleDependency) {
+                dependencyInfo.type = 'external_module'
+                dependencyInfo.changing = dependency.changing
+            }
+            if (dependency instanceof ClientModule) {
+                dependencyInfo.type = 'client_module'
+                dependencyInfo.module_id = maskGeneric("client_module", dependency.id)
+                def subdependencies = []
+                dependencyInfo.dependencies = subdependencies
+                for(ModuleDependency subdependency : dependency.dependencies) {
+                    def subdependencyInfo = [:]
+                    subdependencies << subdependencyInfo
+                    fillInDependencyInfo(subdependency, subdependencyInfo)
                 }
             }
         }
