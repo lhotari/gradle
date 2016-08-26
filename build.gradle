@@ -20,6 +20,7 @@ import org.gradle.cleanup.EmptyDirectoryCheck
 defaultTasks 'assemble'
 apply plugin: 'java-base'
 apply plugin: 'build-types'
+apply plugin: 'project-report'
 archivesBaseName = 'gradle'
 
 buildTypes {
