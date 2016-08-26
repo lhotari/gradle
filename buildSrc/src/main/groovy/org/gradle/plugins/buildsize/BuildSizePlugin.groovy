@@ -29,7 +29,9 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.*
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultResolutionStrategy
+import org.gradle.api.internal.tasks.options.Option
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.Path
@@ -49,12 +51,22 @@ class BuildSizePlugin implements Plugin<Project> {
 class BuildSizeTask extends DefaultTask {
     @OutputFile
     File destination = new File(project.buildDir, "buildsizeinfo.json")
+    @Input
+    Collection<String> unmaskedSourceSetNames = ['main', 'test'] as Set
+    @Input
+    Collection<String> unmaskedConfigurationNames = ['compile', 'compileOnly', 'testCompileOnly', 'runtime', 'testRuntime',
+                                                     'default', 'archives',
+                                                     'agent', 'testAgent', 'jacocoAgent',
+                                                     'classpath', 'compileClasspath', 'testCompileClasspath', 'testRuntimeClasspath',
+                                                     'protobuf', 'testProtobuf',
+                                                     'checkstyle', 'codenarc'] as Set
+    @Input
+    Collection<String> locCountExtensions = ['java', 'groovy', 'scala', 'kt', 'properties', 'xml', 'xsd', 'xsl', 'html', 'js', 'css', 'scss', 'fxml', 'json'] as Set
+    @Input
+    boolean maskResults = true
 
-    Collection<String> sourceSetNames = ['main', 'test'] as Set
-    Collection<String> configurationNames = ['compile', 'runtime', 'default', 'archives', 'agent', 'testAgent', 'classpath', 'jacocoAgent', 'compileClasspath', 'testCompileClasspath', 'testRuntimeClasspath', 'protobuf', 'testProtobuf'] as Set
-    Collection<String> countedExtensions = ['java', 'groovy', 'scala', 'kt', 'properties', 'xml', 'xsd', 'xsl', 'html', 'js', 'css', 'scss', 'fxml', 'json'] as Set
-    Counter counter = JavaCounter.INSTANCE
-    Map<String, Counter> overrideCounters = Map.cast(['xml': XmlCounter.INSTANCE, 'html': XmlCounter.INSTANCE, 'fxml': XmlCounter.INSTANCE, 'xsd': XmlCounter.INSTANCE, 'xsl': XmlCounter.INSTANCE])
+    LocCounter defaultLocCounter = DefaultLocCounter.INSTANCE
+    Map<String, LocCounter> overriddenLocCounters = Map.cast(['xml': XmlLocCounter.INSTANCE, 'html': XmlLocCounter.INSTANCE, 'fxml': XmlLocCounter.INSTANCE, 'xsd': XmlLocCounter.INSTANCE, 'xsl': XmlLocCounter.INSTANCE])
 
     @TaskAction
     void createReport() {
@@ -62,8 +74,11 @@ class BuildSizeTask extends DefaultTask {
         session.run()
     }
 
-    JavaPluginConvention getJavaPluginConvention(Project p) {
-        p.convention.getPlugin(JavaPluginConvention)
+    @Option(option = "no-mask-results", description = "Don't mask results")
+    public void setNoMaskResults(boolean flagPassed) {
+        if (flagPassed) {
+            this.maskResults = false
+        }
     }
 
     private static JsonGenerator createJsonGenerator(File file) {
@@ -216,6 +231,9 @@ class ReportingSession {
     }
 
     String maskProjectNameByPath(String path) {
+        if (!task.maskResults) {
+            return path
+        }
         String masked = projectNames.get(path)
         if (!masked) {
             masked = path == ':' ? 'project_root' : "project_${hashId(path)}".toString()
@@ -226,9 +244,12 @@ class ReportingSession {
 
     String maskConfigurationName(Configuration configuration) {
         String name = configuration.name
+        if (!task.maskResults) {
+            return name
+        }
         String masked = configurationNames.get(name)
         if (!masked) {
-            if (name in task.configurationNames) {
+            if (name in task.unmaskedConfigurationNames) {
                 masked = name
             } else {
                 masked = "${name.toLowerCase().contains('test') ? 'testC' : 'c'}onfiguration_${hashId(name)}".toString()
@@ -247,9 +268,12 @@ class ReportingSession {
     }
 
     String maskSourceSetName(String name) {
+        if (!task.maskResults) {
+            return name
+        }
         String masked = sourceSetNames.get(name)
         if (!masked) {
-            if (name in task.sourceSetNames) {
+            if (name in task.unmaskedSourceSetNames) {
                 masked = name
             } else if (name.toLowerCase().contains('test')) {
                 masked = "otherTests_${hashId(name)}".toString()
@@ -275,7 +299,7 @@ class ReportingSession {
     }
 
     void writeProjectSourceSets(Project subproject) {
-        task.getJavaPluginConvention(subproject).sourceSets.each { sourceSet ->
+        getJavaPluginConvention(subproject).sourceSets.each { sourceSet ->
             long totalSizeInBytes = 0
             long sourceCodeSizeInBytes = 0
             int totalLoc = 0
@@ -308,11 +332,11 @@ class ReportingSession {
                         def fileSize = file.length()
                         totalSizeInBytes += fileSize
                         String extension = fileExtension(file.name)
-                        if (extension in task.countedExtensions) {
+                        if (extension in task.locCountExtensions) {
                             sourceFileCount++
                             sourceCodeSizeInBytes += fileSize
 
-                            Counter counterToUse = task.overrideCounters.get(extension) ?: task.counter
+                            LocCounter counterToUse = task.overriddenLocCounters.get(extension) ?: task.defaultLocCounter
                             Integer currentLoc = locCounts.get(extension) ?: 0
                             def fileLoc = counterToUse.count(file, packageCallback.curry(extension))
                             locCounts.put(extension, currentLoc + fileLoc)
@@ -354,10 +378,14 @@ class ReportingSession {
             packageNames
         }
     }
+
+    JavaPluginConvention getJavaPluginConvention(Project p) {
+        p.convention.getPlugin(JavaPluginConvention)
+    }
 }
 
 @CompileStatic
-interface Counter {
+interface LocCounter {
     Pattern EMPTY = ~/^\s*$/
     Pattern SLASH_SLASH = ~/^\s*\/\/.*/
     Pattern SLASH_STAR_STAR_SLASH = ~/^(.*)\/\*(.*)\*\/(.*)$/
@@ -367,8 +395,8 @@ interface Counter {
 }
 
 @CompileStatic
-class JavaCounter implements Counter {
-    static final JavaCounter INSTANCE = new JavaCounter()
+class DefaultLocCounter implements LocCounter {
+    static final DefaultLocCounter INSTANCE = new DefaultLocCounter()
 
     @Override
     int count(File file,
@@ -414,8 +442,8 @@ class JavaCounter implements Counter {
 }
 
 @CompileStatic
-class XmlCounter implements Counter {
-    static final XmlCounter INSTANCE = new XmlCounter()
+class XmlLocCounter implements LocCounter {
+    static final XmlLocCounter INSTANCE = new XmlLocCounter()
     static final Pattern OPEN_CARET_CLOSE_CARET = ~/^(.*)<!--(.*)-->(.*)$/
 
     @Override
