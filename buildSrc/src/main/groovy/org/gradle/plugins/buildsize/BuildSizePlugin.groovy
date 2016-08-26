@@ -23,12 +23,18 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.transform.CompileStatic
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
+import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
+import org.gradle.api.artifacts.cache.ArtifactResolutionControl
+import org.gradle.api.artifacts.cache.DependencyResolutionControl
+import org.gradle.api.artifacts.cache.ModuleResolutionControl
 import org.gradle.api.internal.artifacts.ComponentSelectionRulesInternal
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
+import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
+import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultCachePolicy
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultResolutionStrategy
 import org.gradle.api.internal.tasks.options.Option
 import org.gradle.api.plugins.JavaPluginConvention
@@ -38,6 +44,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.Path
 
+import java.util.concurrent.TimeUnit
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -177,7 +184,7 @@ class ReportingSession {
                 def result = [configuration: maskConfigurationName(it)]
                 // add name of project if it's in another project
                 def projectForConfiguration = resolvedMaskedProjectForConfiguration(it)
-                if(projectForConfiguration != configurationInfo.project) {
+                if (projectForConfiguration != configurationInfo.project) {
                     result.project = projectForConfiguration
                 }
                 result
@@ -226,7 +233,139 @@ class ReportingSession {
             resolutionStrategyInfo.dependencySubstitutionsCount = rules.size()
         } catch (e) {
         }
+
+        ResolutionStrategyInternal resolutionStrategyInternal = ResolutionStrategyInternal.cast(resolutionStrategy)
+        if (resolutionStrategyInternal.cachePolicy instanceof DefaultCachePolicy) {
+            DefaultCachePolicy cachePolicy = DefaultCachePolicy.cast(resolutionStrategyInternal.cachePolicy)
+            def cachePolicyInfo = [:]
+            cachePolicyInfo.cacheDynamicVersionsFor = resolveCacheDynamicVersionsFor(cachePolicy)
+            cachePolicyInfo.cacheChangingModulesFor = resolveCacheChangingModulesFor(cachePolicy)
+            cachePolicyInfo.cacheMissingArtifactsFor = resolveCacheMissingArtifactsFor(cachePolicy)
+            resolutionStrategyInfo.cachePolicy = cachePolicyInfo
+        }
+
         resolutionStrategyInfo
+    }
+
+    int resolveCacheDynamicVersionsFor(DefaultCachePolicy cachePolicy) {
+        List<Action<? super DependencyResolutionControl>> dependencyCacheRules = List.cast(cachePolicy.getMetaClass().getAttribute(cachePolicy, 'dependencyCacheRules'))
+        Integer cacheSeconds = null
+        for (Action<? super DependencyResolutionControl> rule : dependencyCacheRules) {
+            rule.execute(new DependencyResolutionControl() {
+                @Override
+                ModuleIdentifier getRequest() {
+                    return null
+                }
+
+                @Override
+                Set<ModuleVersionIdentifier> getCachedResult() {
+                    return null
+                }
+
+                @Override
+                void cacheFor(int value, TimeUnit units) {
+                    cacheSeconds = TimeUnit.SECONDS.convert((long) value, units).toInteger()
+                }
+
+                @Override
+                void useCachedResult() {
+
+                }
+
+                @Override
+                void refresh() {
+                    true
+                }
+            })
+            if (cacheSeconds != null) {
+                break
+            }
+        }
+        cacheSeconds ?: 0
+    }
+
+    int resolveCacheChangingModulesFor(DefaultCachePolicy cachePolicy) {
+        List<Action<? super ModuleResolutionControl>> moduleCacheRules = List.cast(cachePolicy.getMetaClass().getAttribute(cachePolicy, 'moduleCacheRules'))
+        Integer cacheSeconds = null
+        for (Action<? super ModuleResolutionControl> rule : moduleCacheRules) {
+            rule.execute(new ModuleResolutionControl() {
+                @Override
+                boolean isChanging() {
+                    return true
+                }
+
+                @Override
+                ModuleVersionIdentifier getRequest() {
+                    return null
+                }
+
+                @Override
+                ResolvedModuleVersion getCachedResult() {
+                    return null
+                }
+
+                @Override
+                void cacheFor(int value, TimeUnit units) {
+                    cacheSeconds = TimeUnit.SECONDS.convert((long) value, units).toInteger()
+                }
+
+                @Override
+                void useCachedResult() {
+
+                }
+
+                @Override
+                void refresh() {
+
+                }
+            })
+            if (cacheSeconds != null) {
+                break
+            }
+        }
+        cacheSeconds ?: 0
+    }
+
+    int resolveCacheMissingArtifactsFor(DefaultCachePolicy cachePolicy) {
+        List<Action<? super ArtifactResolutionControl>> artifactCacheRules = List.cast(cachePolicy.getMetaClass().getAttribute(cachePolicy, 'artifactCacheRules'))
+        Integer cacheSeconds = null
+        for (Action<? super ArtifactResolutionControl> rule : artifactCacheRules) {
+            rule.execute(new ArtifactResolutionControl() {
+                @Override
+                boolean belongsToChangingModule() {
+                    return false
+                }
+
+                @Override
+                ArtifactIdentifier getRequest() {
+                    return null
+                }
+
+                @Override
+                File getCachedResult() {
+                    return null
+                }
+
+                @Override
+                void cacheFor(int value, TimeUnit units) {
+                    cacheSeconds = TimeUnit.SECONDS.convert((long) value, units).toInteger()
+                }
+
+                @Override
+                void useCachedResult() {
+
+                }
+
+                @Override
+                void refresh() {
+
+                }
+            })
+            if (cacheSeconds != null) {
+                break
+            }
+        }
+        cacheSeconds ?: 0
     }
 
     Map<String, Object> createDependencyInfo(Dependency dependency) {
