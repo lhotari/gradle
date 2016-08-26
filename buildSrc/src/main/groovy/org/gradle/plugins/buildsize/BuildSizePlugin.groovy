@@ -28,6 +28,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
+import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.DefaultResolutionStrategy
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -86,10 +87,6 @@ class ReportingSession {
     private final Map<String, String> sourceSetNames = [:]
     private final Map<String, String> configurationNames = [:]
     private final Map<String, String> configurationPaths = [:]
-    private int nextProjectId = 1
-    private int nextTestSourceSetId = 1
-    private int nextOtherSourceSetId = 1
-    private int nextConfigurationId = 1
     long grandTotalSizeInBytes = 0
     long grandTotalSourceCodeSizeInBytes = 0
     int grandTotalLoc = 0
@@ -160,7 +157,7 @@ class ReportingSession {
             configuration.resolutionStrategy.with { resolutionStrategy ->
                 def resolutionStrategyInfo = [:]
                 configurationInfo.resolutionStrategy = resolutionStrategyInfo
-                resolutionStrategyInfo.type = resolutionStrategy.class.simpleName == 'DefaultResolutionStrategy' ? 'default' : 'custom'
+                resolutionStrategyInfo.type = resolutionStrategy instanceof DefaultResolutionStrategy ? 'default' : 'custom'
                 resolutionStrategyInfo.forcedModulesCount = resolutionStrategy.forcedModules.size()
                 try {
                     def rules = (Collection) resolutionStrategy.componentSelection.getMetaClass().getProperty(resolutionStrategy.componentSelection, "rules")
@@ -221,7 +218,7 @@ class ReportingSession {
     String maskProjectNameByPath(String path) {
         String masked = projectNames.get(path)
         if (!masked) {
-            masked = "project${nextProjectId++}".toString()
+            masked = path == ':' ? 'project_root' : "project_${hashId(path)}".toString()
             projectNames.put(path, masked)
         }
         masked
@@ -234,7 +231,7 @@ class ReportingSession {
             if (name in task.configurationNames) {
                 masked = name
             } else {
-                masked = "${name.toLowerCase().contains('test') ? 'testC' : 'c'}onfiguration${nextConfigurationId++}".toString()
+                masked = "${name.toLowerCase().contains('test') ? 'testC' : 'c'}onfiguration_${hashId(name)}".toString()
             }
             configurationNames.put(name, masked)
         }
@@ -255,13 +252,17 @@ class ReportingSession {
             if (name in task.sourceSetNames) {
                 masked = name
             } else if (name.toLowerCase().contains('test')) {
-                masked = "otherTests${nextTestSourceSetId++}".toString()
+                masked = "otherTests_${hashId(name)}".toString()
             } else {
-                masked = "otherSource${nextOtherSourceSetId++}".toString()
+                masked = "otherSource_${hashId(name)}".toString()
             }
             sourceSetNames.put(name, masked)
         }
         masked
+    }
+
+    String hashId(String source) {
+        Integer.toHexString(source.hashCode())
     }
 
     String fileExtension(String filename) {
