@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonEncoding
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.ObjectMapper
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
@@ -31,6 +32,8 @@ import org.gradle.api.artifacts.*
 import org.gradle.api.artifacts.cache.ArtifactResolutionControl
 import org.gradle.api.artifacts.cache.DependencyResolutionControl
 import org.gradle.api.artifacts.cache.ModuleResolutionControl
+import org.gradle.api.artifacts.component.ComponentIdentifier
+import org.gradle.api.artifacts.result.*
 import org.gradle.api.internal.artifacts.ComponentSelectionRulesInternal
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
 import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
@@ -75,6 +78,8 @@ class BuildSizeTask extends DefaultTask {
     @Input
     boolean maskResults = true
     @Input
+    boolean includeDependencyGraphs = true
+    @Input
     int maskingSalt = project.rootDir.absolutePath.toString().hashCode()
 
     LocCounter defaultLocCounter = DefaultLocCounter.INSTANCE
@@ -102,6 +107,13 @@ class BuildSizeTask extends DefaultTask {
     public void setMaskingSaltOption(String maskingSaltString) {
         if (maskingSaltString != null) {
             this.maskingSalt = Integer.parseInt(maskingSaltString)
+        }
+    }
+
+    @Option(option = "no-dependency-graphs", description = "Don't include dependency graphs")
+    public void setNoDependencyGraphs(boolean flagPassed) {
+        if (flagPassed) {
+            this.includeDependencyGraphs = false
         }
     }
 
@@ -220,9 +232,75 @@ class ReportingSession {
 
             configurationInfo.dependencies = createDependenciesInfo(configuration.dependencies)
 
+            if (task.includeDependencyGraphs) {
+                configurationInfo.resolutionResult = createResolutionResultInfo(configuration)
+            }
+
             jsonGenerator.writeObject(configurationInfo)
         }
     }
+
+    Map<String, Object> createResolutionResultInfo(Configuration configuration) {
+        def resolutionResultInfo = [:]
+
+        ResolutionResult resolutionResult = configuration.getIncoming().getResolutionResult()
+        DependencyNodeResult nodeResult = renderNode(resolutionResult.root, 1, [] as Set)
+        resolutionResultInfo.root = nodeResult.resultInfo
+        resolutionResultInfo.maxDepth = nodeResult.treeDepth
+
+        resolutionResultInfo
+    }
+
+    DependencyNodeResult renderNode(ResolvedComponentResult resolvedComponentResult, int initialTreeDepth, Set<ComponentIdentifier> processedIds) {
+        def nextProcessedIds = [] as Set
+        nextProcessedIds.addAll(processedIds)
+        nextProcessedIds.add(resolvedComponentResult.id)
+        def componentResultInfo = [:]
+        componentResultInfo.type = 'resolved'
+        componentResultInfo.putAll(createModuleVersionInfo(resolvedComponentResult.moduleVersion))
+        componentResultInfo.selectionReason = resolvedComponentResult.selectionReason.description
+        def dependencies = []
+        componentResultInfo.dependencies = dependencies
+        int maxDepth = initialTreeDepth
+        for (Object dependencyResultObject : Set.cast(resolvedComponentResult.dependencies)) {
+            DependencyResult dependencyResult = DependencyResult.cast(dependencyResultObject)
+            // workaround STC bug
+            DependencyNodeResult childNode
+            if (dependencyResult instanceof ResolvedDependencyResult) {
+                ResolvedDependencyResult resolvedDependencyResult = ResolvedDependencyResult.cast(dependencyResult)
+                if (!processedIds.contains(resolvedDependencyResult.selected.id)) {
+                    childNode = renderNode(resolvedDependencyResult.selected, initialTreeDepth + 1, nextProcessedIds)
+                } else {
+                    def circularNodeInfo = Map.cast([type: 'circular'])
+                    circularNodeInfo.putAll(createModuleVersionInfo(resolvedDependencyResult.selected.moduleVersion))
+                    childNode = new DependencyNodeResult(Map.cast(circularNodeInfo), initialTreeDepth + 1)
+                }
+            } else if (dependencyResult instanceof UnresolvedDependencyResult) {
+                UnresolvedDependencyResult unresolvedDependencyResult = UnresolvedDependencyResult.cast(dependencyResult)
+                childNode = new DependencyNodeResult(Map.cast([type: 'unresolved', attemptedReason: unresolvedDependencyResult.attemptedReason.description]), initialTreeDepth + 1)
+            } else {
+                childNode = new DependencyNodeResult(Map.cast([type: 'unknown']), initialTreeDepth + 1)
+            }
+            maxDepth = Math.max(maxDepth, childNode.treeDepth)
+            dependencies << childNode.resultInfo
+        }
+        new DependencyNodeResult(componentResultInfo, maxDepth)
+    }
+
+    Map<String, Object> createModuleVersionInfo(ModuleVersionIdentifier moduleVersion) {
+        def moduleVersionInfo = [:]
+        moduleVersionInfo.group = maskGroupName(moduleVersion.group)
+        moduleVersionInfo.name = maskDependencyName(moduleVersion.name)
+        moduleVersionInfo.version = maskDependencyVersion(moduleVersion.version)
+        moduleVersionInfo
+    }
+
+    @Canonical
+    static class DependencyNodeResult {
+        Map<String, Object> resultInfo
+        int treeDepth
+    }
+
 
     List<Map<String, Object>> createDependenciesInfo(Iterable<? extends Dependency> dependencies) {
         dependencies.collect { Dependency it -> createDependencyInfo(it) }
