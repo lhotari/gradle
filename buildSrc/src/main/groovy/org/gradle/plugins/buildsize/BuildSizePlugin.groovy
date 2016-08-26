@@ -65,6 +65,8 @@ class BuildSizeTask extends DefaultTask {
     Collection<String> locCountExtensions = ['java', 'groovy', 'scala', 'kt', 'properties', 'xml', 'xsd', 'xsl', 'html', 'js', 'css', 'scss', 'fxml', 'json'] as Set
     @Input
     boolean maskResults = true
+    @Input
+    int maskingSalt = project.rootDir.absolutePath.toString().hashCode()
 
     LocCounter defaultLocCounter = DefaultLocCounter.INSTANCE
     Map<String, LocCounter> overriddenLocCounters = Map.cast(['xml': XmlLocCounter.INSTANCE, 'html': XmlLocCounter.INSTANCE, 'fxml': XmlLocCounter.INSTANCE, 'xsd': XmlLocCounter.INSTANCE, 'xsl': XmlLocCounter.INSTANCE])
@@ -79,6 +81,13 @@ class BuildSizeTask extends DefaultTask {
     public void setNoMaskResults(boolean flagPassed) {
         if (flagPassed) {
             this.maskResults = false
+        }
+    }
+
+    @Option(option = "masking-salt", description = "Apply salt (int value) to masking so that hashes aren't detectable")
+    public void setMaskingSaltOption(String maskingSaltString) {
+        if(maskingSaltString != null) {
+            this.maskingSalt = Integer.parseInt(maskingSaltString)
         }
     }
 
@@ -196,31 +205,65 @@ class ReportingSession {
             for (Dependency dependency : configuration.dependencies) {
                 def dependencyInfo = [:]
                 dependenciesInfo << dependencyInfo
-                if (dependency instanceof SelfResolvingDependency) {
-                    if (dependency instanceof ProjectDependency) {
-                        dependencyInfo.type = "project"
-                        def projectDependency = ProjectDependency.cast(dependency)
-                        dependencyInfo.project = maskProjectName(projectDependency.dependencyProject)
-                        dependencyInfo.configuration = maskConfigurationName(projectDependency.projectConfiguration)
-                    } else if (dependency instanceof FileCollectionDependency) {
-                        Set<File> files = FileCollectionDependency.cast(dependency).resolve()
-                        dependencyInfo.type = "fileCollection"
-                        dependencyInfo.fileCount = files.count {
-                            it.file
-                        }
-                        dependencyInfo.directoryCount = files.count {
-                            it.directory
-                        }
-                    } else {
-                        dependencyInfo.type = "selfResolving"
-                    }
-                } else {
-
-                }
+                fillInDependencyInfo(dependency, dependencyInfo)
             }
 
             jsonGenerator.writeObject(configurationInfo)
         }
+    }
+
+    void fillInDependencyInfo(Dependency dependency, Map<String, Object> dependencyInfo) {
+        if (dependency instanceof SelfResolvingDependency) {
+            if (dependency instanceof ProjectDependency) {
+                dependencyInfo.type = "project"
+                def projectDependency = ProjectDependency.cast(dependency)
+                dependencyInfo.project = maskProjectName(projectDependency.dependencyProject)
+                dependencyInfo.configuration = maskConfigurationName(projectDependency.projectConfiguration)
+            } else if (dependency instanceof FileCollectionDependency) {
+                Set<File> files = FileCollectionDependency.cast(dependency).resolve()
+                dependencyInfo.type = "fileCollection"
+                dependencyInfo.fileCount = files.count {
+                    it.file
+                }
+                dependencyInfo.directoryCount = files.count {
+                    it.directory
+                }
+            } else {
+                dependencyInfo.type = "selfResolving"
+            }
+        } else {
+            if(dependency instanceof ModuleDependency) {
+                dependencyInfo.group = maskGroupName(dependency.group)
+                dependencyInfo.name = maskDependencyName(dependency.name)
+                dependencyInfo.version = maskDependencyVersion(dependency.version)
+                dependencyInfo.type = 'module'
+                dependencyInfo.transitive = dependency.transitive
+                dependencyInfo.excludesRulesCount = dependency.excludeRules.size()
+                if(dependency.configuration && dependency.configuration != 'default') {
+                    dependencyInfo.configuration = maskConfigurationName(dependency.configuration)
+                }
+            }
+        }
+    }
+
+    String maskGeneric(String prefix, String name) {
+        if(task.maskResults) {
+            name ? "${prefix}_${hashId(name)}".toString() : ''
+        } else {
+            name
+        }
+    }
+
+    String maskGroupName(String group) {
+        maskGeneric("group", group)
+    }
+
+    String maskDependencyName(String name) {
+        maskGeneric("name", name)
+    }
+
+    String maskDependencyVersion(String version) {
+        maskGeneric("version", version)
     }
 
     private int pathDepth(File file) {
@@ -290,7 +333,12 @@ class ReportingSession {
     }
 
     String hashId(String source) {
-        Integer.toHexString(source.hashCode())
+        int hash = source.hashCode()
+        int salt = task.maskingSalt
+        if(salt != 0) {
+            hash = 31 * hash + salt
+        }
+        Integer.toHexString(hash)
     }
 
     String fileExtension(String filename) {
