@@ -181,47 +181,50 @@ class ReportingSession {
             configurationInfo.excludeRulesCount = configuration.getExcludeRules().size()
             configurationInfo.excludeRules = createExcludeRulesInfo(configuration.excludeRules)
             configurationInfo.artifactsCount = configuration.artifacts.size()
-            configuration.resolutionStrategy.with { resolutionStrategy ->
-                def resolutionStrategyInfo = [:]
-                configurationInfo.resolutionStrategy = resolutionStrategyInfo
-                resolutionStrategyInfo.type = resolutionStrategy instanceof DefaultResolutionStrategy ? 'default' : 'custom'
-                resolutionStrategyInfo.forcedModulesCount = resolutionStrategy.forcedModules.size()
-                def forcedModulesList = []
-                resolutionStrategyInfo.forcedModules = forcedModulesList
-                for (ModuleVersionSelector moduleVersionSelector : resolutionStrategy.forcedModules) {
-                    def moduleInfo = [:]
-                    forcedModulesList << moduleInfo
-                    moduleInfo.group = maskGroupName(moduleVersionSelector.group)
-                    moduleInfo.name = maskDependencyName(moduleVersionSelector.name)
-                    moduleInfo.version = maskDependencyVersion(moduleVersionSelector.version)
-                }
-                if (resolutionStrategy.componentSelection instanceof ComponentSelectionRulesInternal) {
-                    resolutionStrategyInfo.componentSelectionRulesCount = ComponentSelectionRulesInternal.cast(resolutionStrategy.componentSelection).rules.size()
-                }
-                try {
-                    def rules = (Collection) resolutionStrategy.dependencySubstitution.getMetaClass().getAttribute(resolutionStrategy.dependencySubstitution, "substitutionRules")
-                    resolutionStrategyInfo.dependencySubstitutionsCount = rules.size()
-                } catch (e) {
-                }
-            }
+
+            configurationInfo.resolutionStrategy = createResolutionStrategyInfo(configuration.resolutionStrategy)
+
             configurationInfo.fileCount = configuration.getFiles().size()
             configurationInfo.directoryCount = configuration.getFiles().count { File file -> file.directory } ?: 0
             configurationInfo.filesTotalSize = configuration.getFiles().sum { File file -> file.file ? file.length() : 0 } ?: 0
             configurationInfo.lengthAsClasspath = configuration.getAsPath().length()
 
-            def dependenciesInfo = []
-            configurationInfo.dependencies = dependenciesInfo
-            for (Dependency dependency : configuration.dependencies) {
-                def dependencyInfo = [:]
-                dependenciesInfo << dependencyInfo
-                fillInDependencyInfo(dependency, dependencyInfo)
-            }
+            configurationInfo.dependencies = createDependenciesInfo(configuration.dependencies)
 
             jsonGenerator.writeObject(configurationInfo)
         }
     }
 
-    void fillInDependencyInfo(Dependency dependency, Map<String, Object> dependencyInfo) {
+    List<Map<String, Object>> createDependenciesInfo(Iterable<? extends Dependency> dependencies) {
+        dependencies.collect { Dependency it -> createDependencyInfo(it) }
+    }
+
+    def createResolutionStrategyInfo(ResolutionStrategy resolutionStrategy) {
+        def resolutionStrategyInfo = [:]
+        resolutionStrategyInfo.type = resolutionStrategy instanceof DefaultResolutionStrategy ? 'default' : 'custom'
+        resolutionStrategyInfo.forcedModulesCount = resolutionStrategy.forcedModules.size()
+        def forcedModulesList = []
+        resolutionStrategyInfo.forcedModules = forcedModulesList
+        for (ModuleVersionSelector moduleVersionSelector : resolutionStrategy.forcedModules) {
+            def moduleInfo = [:]
+            forcedModulesList << moduleInfo
+            moduleInfo.group = maskGroupName(moduleVersionSelector.group)
+            moduleInfo.name = maskDependencyName(moduleVersionSelector.name)
+            moduleInfo.version = maskDependencyVersion(moduleVersionSelector.version)
+        }
+        if (resolutionStrategy.componentSelection instanceof ComponentSelectionRulesInternal) {
+            resolutionStrategyInfo.componentSelectionRulesCount = ComponentSelectionRulesInternal.cast(resolutionStrategy.componentSelection).rules.size()
+        }
+        try {
+            def rules = (Collection) resolutionStrategy.dependencySubstitution.getMetaClass().getAttribute(resolutionStrategy.dependencySubstitution, "substitutionRules")
+            resolutionStrategyInfo.dependencySubstitutionsCount = rules.size()
+        } catch (e) {
+        }
+        resolutionStrategyInfo
+    }
+
+    Map<String, Object> createDependencyInfo(Dependency dependency) {
+        def dependencyInfo = [:]
         if (dependency instanceof SelfResolvingDependency) {
             if (dependency instanceof ProjectDependency) {
                 dependencyInfo.type = "project"
@@ -266,15 +269,10 @@ class ReportingSession {
             if (dependency instanceof ClientModule) {
                 dependencyInfo.type = 'client_module'
                 dependencyInfo.module_id = maskGeneric("client_module", dependency.id)
-                def subdependencies = []
-                dependencyInfo.dependencies = subdependencies
-                for (ModuleDependency subdependency : dependency.dependencies) {
-                    def subdependencyInfo = [:]
-                    subdependencies << subdependencyInfo
-                    fillInDependencyInfo(subdependency, subdependencyInfo)
-                }
+                dependencyInfo.dependencies = createDependenciesInfo(dependency.dependencies)
             }
         }
+        dependencyInfo
     }
 
     def createExcludeRulesInfo(Iterable<ExcludeRule> excludeRules) {
