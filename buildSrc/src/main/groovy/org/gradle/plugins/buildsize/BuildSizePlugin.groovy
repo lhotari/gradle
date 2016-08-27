@@ -263,7 +263,7 @@ class ReportingSession {
             if (task.includeDependencyGraphs) {
                 task.logger.lifecycle "Traversing dependency graph of configuration ${project.absoluteProjectPath(configuration.name)}"
                 ResolvedComponentResult root = configuration.incoming.resolutionResult.root
-                GraphDepthAndSize result = calculateDependencyGraphDepthAndSize(root, 1, [] as Set)
+                GraphDepthAndSize result = calculateDependencyGraphDepthAndSize(root, 1, [] as Set, [:])
                 if (result.depth > deepestRootDepth) {
                     deepestRoot = root
                     deepestRootDepth = result.depth
@@ -277,22 +277,31 @@ class ReportingSession {
         }
     }
 
-    GraphDepthAndSize calculateDependencyGraphDepthAndSize(ResolvedComponentResult resolvedComponentResult, int initialDepth, Set<ComponentIdentifier> processedIds) {
-        processedIds.add(resolvedComponentResult.id)
+    GraphDepthAndSize calculateDependencyGraphDepthAndSize(ResolvedComponentResult resolvedComponentResult, int initialDepth, Set<ComponentIdentifier> parentIds, Map<ComponentIdentifier, GraphDepthAndSize> calculated) {
+        GraphDepthAndSize result = calculated.get(resolvedComponentResult.id)
+        if (result != null) {
+            return result
+        }
+        Set<ComponentIdentifier> childParentIds = new LinkedHashSet<>(parentIds)
+        childParentIds.add(resolvedComponentResult.id)
         int maxDepth = initialDepth
         int totalSize = 1
         for (Object dependencyResultObject : Set.cast(resolvedComponentResult.dependencies)) {
             DependencyResult dependencyResult = DependencyResult.cast(dependencyResultObject)
             if (dependencyResult instanceof ResolvedDependencyResult) {
                 ResolvedDependencyResult resolvedDependencyResult = ResolvedDependencyResult.cast(dependencyResult)
-                if (!processedIds.contains(resolvedDependencyResult.selected.id)) {
-                    GraphDepthAndSize subtreeResult = calculateDependencyGraphDepthAndSize(resolvedDependencyResult.selected, initialDepth + 1, processedIds)
+                if (!childParentIds.contains(resolvedDependencyResult.selected.id)) {
+                    GraphDepthAndSize subtreeResult = calculateDependencyGraphDepthAndSize(resolvedDependencyResult.selected, initialDepth + 1, childParentIds, calculated)
                     maxDepth = Math.max(maxDepth, subtreeResult.depth)
                     totalSize += subtreeResult.size
+                } else {
+                    task.logger.lifecycle "Circular result ${resolvedDependencyResult.selected.id} referenced from ${(childParentIds as List).reverse().join('->')}"
                 }
             }
         }
-        new GraphDepthAndSize(maxDepth, totalSize)
+        result = new GraphDepthAndSize(maxDepth, totalSize)
+        calculated.put(resolvedComponentResult.id, result)
+        result
     }
 
     @Canonical
