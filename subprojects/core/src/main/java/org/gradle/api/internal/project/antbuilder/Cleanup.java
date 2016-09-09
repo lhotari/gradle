@@ -15,7 +15,8 @@
  */
 package org.gradle.api.internal.project.antbuilder;
 
-import org.gradle.internal.classloader.ClassLoaderUtils;
+import org.gradle.api.internal.classloading.GroovySystemLoader;
+import org.gradle.internal.classloader.GradleClassLoader;
 import org.gradle.internal.classpath.ClassPath;
 
 import java.lang.ref.PhantomReference;
@@ -24,12 +25,21 @@ import java.lang.ref.ReferenceQueue;
 public class Cleanup extends PhantomReference<CachedClassLoader> {
     private final ClassPath key;
     private final ClassLoader classLoader;
+    private final GroovySystemLoader groovySystemForClassLoader;
+    private final GroovySystemLoader gradleApiGroovyLoader;
+    private final GroovySystemLoader antBuilderGroovyLoader;
 
     public Cleanup(ClassPath classPath,
                    CachedClassLoader cachedClassLoader,
                    ReferenceQueue<CachedClassLoader> referenceQueue,
-                   ClassLoader classLoader) {
+                   ClassLoader classLoader,
+                   GroovySystemLoader groovySystemForClassLoader,
+                   GroovySystemLoader gradleApiGroovyLoader,
+                   GroovySystemLoader antBuilderGroovyLoader) {
         super(cachedClassLoader, referenceQueue);
+        this.groovySystemForClassLoader = groovySystemForClassLoader;
+        this.gradleApiGroovyLoader = gradleApiGroovyLoader;
+        this.antBuilderGroovyLoader = antBuilderGroovyLoader;
         this.key = classPath;
         this.classLoader = classLoader;
     }
@@ -39,6 +49,8 @@ public class Cleanup extends PhantomReference<CachedClassLoader> {
     }
 
     public void cleanup() {
-        ClassLoaderUtils.tryClose(classLoader);
+        groovySystemForClassLoader.shutdown();
+        gradleApiGroovyLoader.discardTypesFrom(classLoader);
+        antBuilderGroovyLoader.discardTypesFrom(classLoader);
     }
 }
