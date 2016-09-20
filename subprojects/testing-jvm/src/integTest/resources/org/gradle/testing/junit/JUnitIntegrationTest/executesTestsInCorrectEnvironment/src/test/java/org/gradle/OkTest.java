@@ -69,8 +69,12 @@ public class OkTest {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                out.println("stdout from a shutdown hook.");
-                Logger.getLogger("test-logger").info("info from a shutdown hook.");
+                try {
+                    out.println("stdout from a shutdown hook.");
+                    Logger.getLogger("test-logger").info("info from a shutdown hook.");
+                } catch (Exception e) {
+                    // ignore
+                }
             }
         });
     }

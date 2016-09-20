@@ -39,6 +39,7 @@ import org.gradle.launcher.daemon.server.Daemon;
 import org.gradle.launcher.daemon.server.DaemonServices;
 import org.gradle.launcher.daemon.server.MasterExpirationStrategy;
 import org.gradle.launcher.daemon.server.expiry.DaemonExpirationStrategy;
+import org.gradle.process.internal.shutdown.ShutdownHookActionRegister;
 import org.gradle.process.internal.streams.EncodedStream;
 
 import java.io.ByteArrayInputStream;
@@ -164,7 +165,7 @@ public class DaemonMain extends EntryPoint {
         }
         final PrintStream log = result;
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        ShutdownHookActionRegister.addAction(new Runnable() {
             public void run() {
                 //just in case we have a bug related to logging,
                 //printing some exit info directly to file:
