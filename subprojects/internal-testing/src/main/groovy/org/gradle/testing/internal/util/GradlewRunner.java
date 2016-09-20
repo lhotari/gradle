@@ -46,7 +46,11 @@ public class GradlewRunner {
             final Process finalProcess = process;
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 public void run() {
-                    finalProcess.destroy();
+                    try {
+                        finalProcess.destroy();
+                    } catch (Exception e) {
+                        // ignore
+                    }
                 }
             }));
             forwardAsync(process.getInputStream(), System.out);
