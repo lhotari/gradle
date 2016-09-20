@@ -16,16 +16,19 @@
 
 package org.gradle.api.internal.changedetection.state
 
+import org.gradle.cache.CacheAccess
 import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache
+import org.gradle.internal.concurrent.DefaultExecutorFactory
 import spock.lang.Specification
 
 class InMemoryTaskArtifactCacheTest extends Specification {
-    def cacheFactory = new InMemoryTaskArtifactCache()
+    def cacheFactory = new InMemoryTaskArtifactCache(new DefaultExecutorFactory(), 0L)
     def target = Mock(MultiProcessSafePersistentIndexedCache)
+    def cacheAccess = Mock(CacheAccess)
 
     def "caches result from backing cache"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
@@ -49,7 +52,7 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
     def "caches null result from backing cache"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
@@ -73,7 +76,7 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
     def "caches result of putting item"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
@@ -87,10 +90,12 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
         when:
         cache.put("key", "new value")
+        Thread.sleep(100L)
 
         then:
+        1 * cacheAccess.useCache('Running batched updates', _) >> { String operationDisplayName, Runnable action -> action.run() }
         1 * target.put("key", "new value")
-        0 * target._
+        0 * _._
 
         when:
         result = cache.get("key")
@@ -104,7 +109,7 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
     def "caches result of removing item"() {
         given:
-        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target)
+        def cache = cacheFactory.decorate("path/fileSnapshots.bin", "fileSnapshots", target, cacheAccess)
 
         when:
         def result = cache.get("key")
@@ -118,10 +123,12 @@ class InMemoryTaskArtifactCacheTest extends Specification {
 
         when:
         cache.remove("key")
+        Thread.sleep(100L)
 
         then:
+        1 * cacheAccess.useCache('Running batched updates', _) >> { String operationDisplayName, Runnable action -> action.run() }
         1 * target.remove("key")
-        0 * target._
+        0 * _._
 
         when:
         result = cache.get("key")

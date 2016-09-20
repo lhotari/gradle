@@ -25,6 +25,7 @@ import org.gradle.api.internal.hash.Hasher;
 import org.gradle.cache.CacheAccess;
 import org.gradle.cache.PersistentIndexedCache;
 import org.gradle.cache.PersistentStore;
+import org.gradle.cache.internal.ThreadSafeCache;
 import org.gradle.internal.resource.TextResource;
 import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
@@ -90,7 +91,11 @@ public class CachingFileSnapshotter implements FileSnapshotter {
     }
 
     public FileSnapshotter createThreadSafeWrapper() {
-        return new CacheAccessingFileSnapshotter(this, cacheAccess);
+        if (this.cache instanceof ThreadSafeCache) {
+            return this;
+        } else {
+            return new CacheAccessingFileSnapshotter(this, cacheAccess);
+        }
     }
 
     public static class FileInfo implements FileSnapshot {

@@ -53,18 +53,34 @@ public class DefaultTaskArtifactStateCacheAccess implements TaskArtifactStateCac
     }
 
     public <T> T useCache(String operationDisplayName, Factory<? extends T> action) {
-        return cache.useCache(operationDisplayName, action);
+        if (inMemoryDecorator instanceof NoOpDecorator) {
+            return cache.useCache(operationDisplayName, action);
+        } else {
+            return action.create();
+        }
     }
 
     public void useCache(String operationDisplayName, Runnable action) {
-        cache.useCache(operationDisplayName, action);
+        if (inMemoryDecorator instanceof NoOpDecorator) {
+            cache.useCache(operationDisplayName, action);
+        } else {
+            action.run();
+        }
     }
 
     public <T> T longRunningOperation(String operationDisplayName, Factory<? extends T> action) {
-        return cache.longRunningOperation(operationDisplayName, action);
+        if (inMemoryDecorator instanceof NoOpDecorator) {
+            return cache.longRunningOperation(operationDisplayName, action);
+        } else {
+            return action.create();
+        }
     }
 
     public void longRunningOperation(String operationDisplayName, Runnable action) {
-        cache.longRunningOperation(operationDisplayName, action);
+        if (inMemoryDecorator instanceof NoOpDecorator) {
+            cache.longRunningOperation(operationDisplayName, action);
+        } else {
+            action.run();
+        }
     }
 }
