@@ -22,6 +22,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.internal.TrueTimeProvider;
 import org.gradle.internal.classpath.DefaultClassPath;
+import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.logging.LoggingManagerInternal;
 import org.gradle.internal.logging.services.LoggingServiceRegistry;
 import org.gradle.internal.nativeintegration.ProcessEnvironment;
@@ -127,7 +128,7 @@ public class DaemonMain extends EntryPoint {
             DaemonExpirationStrategy expirationStrategy = daemonServices.get(MasterExpirationStrategy.class);
             daemon.stopOnExpiration(expirationStrategy, parameters.getPeriodicCheckIntervalMs());
         } finally {
-            daemon.stop();
+            CompositeStoppable.stoppable(daemon, daemonServices).stop();
         }
     }
 
