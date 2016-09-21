@@ -43,7 +43,19 @@ class TestableDaemon extends AbstractDaemonFixture {
             return
         }
         throw new AssertionError("""Timeout waiting for daemon with pid ${context.pid} to reach state ${state}.
-Current registry state is ${lastRegistryState} and current log state is ${lastLogState}.""")
+Current registry state is ${lastRegistryState} and current log state is ${lastLogState}. jstack:\n${dumpStacks(context.pid)}""")
+    }
+
+    def dumpStacks(pid) {
+        try {
+            def jstackExecutable = org.gradle.internal.jvm.Jvm.current().getExecutable("jstack")
+            if (jstackExecutable.isFile()) {
+                return [jstackExecutable.getAbsolutePath(), pid].execute().text
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        null
     }
 
     @Override
