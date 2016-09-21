@@ -25,13 +25,18 @@ import org.gradle.api.internal.cache.HeapProportionalCacheSizer;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
+import org.gradle.cache.internal.AsyncCacheAccess;
+import org.gradle.cache.internal.AsyncCacheAccessDecoratedCache;
 import org.gradle.cache.internal.CacheDecorator;
 import org.gradle.cache.internal.FileLock;
 import org.gradle.cache.internal.MultiProcessSafePersistentIndexedCache;
+import org.gradle.internal.UncheckedException;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 public class InMemoryTaskArtifactCache implements CacheDecorator {
     private final static Logger LOG = Logging.getLogger(InMemoryTaskArtifactCache.class);
@@ -75,61 +80,75 @@ public class InMemoryTaskArtifactCache implements CacheDecorator {
 
     private final Map<String, FileLock.State> states = new HashMap<String, FileLock.State>();
 
-    public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original) {
-        final Cache<Object, Object> data = loadData(cacheId, cacheName);
+    public <K, V> MultiProcessSafePersistentIndexedCache<K, V> decorate(final String cacheId, String cacheName, final MultiProcessSafePersistentIndexedCache<K, V> original, final AsyncCacheAccess asyncCacheAccess) {
+        return new InMemoryDecoratedCache<K, V>(asyncCacheAccess, original, loadData(cacheId, cacheName), cacheId);
+    }
 
-        return new MultiProcessSafePersistentIndexedCache<K, V>() {
-            public void close() {
-                original.close();
-            }
+    private class InMemoryDecoratedCache<K, V> extends AsyncCacheAccessDecoratedCache<K, V> {
+        private final Cache<Object, Object> data;
+        private final String cacheId;
 
-            public V get(K key) {
-                assert key instanceof String || key instanceof Long || key instanceof File : "Unsupported key type: " + key;
-                Object value = data.getIfPresent(key);
-                if (value == NULL) {
-                    return null;
-                }
-                if (value != null) {
-                    return (V) value;
-                }
-                V out = original.get(key);
-                data.put(key, out == null ? NULL : out);
-                return out;
-            }
+        public InMemoryDecoratedCache(AsyncCacheAccess asyncCacheAccess, MultiProcessSafePersistentIndexedCache<K, V> original, Cache<Object, Object> data, String cacheId) {
+            super(asyncCacheAccess, original);
+            this.data = data;
+            this.cacheId = cacheId;
+        }
 
-            public void put(K key, V value) {
-                original.put(key, value);
-                data.put(key, value);
-            }
-
-            public void remove(K key) {
-                data.put(key, NULL);
-                original.remove(key);
-            }
-
-            public void onStartWork(String operationDisplayName, FileLock.State currentCacheState) {
-                boolean outOfDate = false;
-                synchronized (lock) {
-                    FileLock.State previousState = states.get(cacheId);
-                    if (previousState == null) {
-                        outOfDate = true;
-                    } else if (currentCacheState.hasBeenUpdatedSince(previousState)) {
-                        LOG.info("Invalidating in-memory cache of {}", cacheId);
-                        outOfDate = true;
+        public V get(final K key) {
+            assert key instanceof String || key instanceof Long || key instanceof File : "Unsupported key type: " + key;
+            Object value;
+            try {
+                value = data.get(key, new Callable<Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        Object out = InMemoryDecoratedCache.super.get(key);
+                        return out == null ? NULL : out;
                     }
-                }
+                });
+            } catch (ExecutionException e) {
+                throw UncheckedException.throwAsUncheckedException(e);
+            }
+            if (value == NULL) {
+                return null;
+            } else {
+                return (V) value;
+            }
+        }
 
-                if (outOfDate) {
-                    data.invalidateAll();
+        public void put(final K key, final V value) {
+            data.put(key, value);
+            super.put(key, value);
+        }
+
+        public void remove(final K key) {
+            data.put(key, NULL);
+            super.remove(key);
+        }
+
+        public void onStartWork(String operationDisplayName, FileLock.State currentCacheState) {
+            boolean outOfDate = false;
+            synchronized (lock) {
+                FileLock.State previousState = states.get(cacheId);
+                if (previousState == null) {
+                    outOfDate = true;
+                } else if (currentCacheState.hasBeenUpdatedSince(previousState)) {
+                    LOG.info("Invalidating in-memory cache of {}", cacheId);
+                    outOfDate = true;
                 }
             }
 
-            public void onEndWork(FileLock.State currentCacheState) {
-                synchronized (lock) {
-                    states.put(cacheId, currentCacheState);
-                }
+            if (outOfDate) {
+                data.invalidateAll();
             }
-        };
+            super.onStartWork(operationDisplayName, currentCacheState);
+        }
+
+        public void onEndWork(FileLock.State currentCacheState) {
+            synchronized (lock) {
+                states.put(cacheId, currentCacheState);
+            }
+            super.onEndWork(currentCacheState);
+        }
     }
 
     private Cache<Object, Object> loadData(String cacheId, String cacheName) {

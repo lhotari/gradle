@@ -27,6 +27,8 @@ import org.gradle.internal.Factories;
 import org.gradle.internal.Factory;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.CompositeStoppable;
+import org.gradle.internal.concurrent.ExecutorFactory;
+import org.gradle.internal.concurrent.StoppableExecutor;
 import org.gradle.internal.serialize.Serializer;
 
 import java.io.File;
@@ -49,6 +51,7 @@ public class DefaultCacheAccess implements CacheCoordinator {
     private final File baseDir;
     private final FileLockManager lockManager;
     private final CacheInitializationAction initializationAction;
+    private final ExecutorFactory executorFactory;
     private final FileAccess fileAccess = new UnitOfWorkFileAccess();
     private final Set<MultiProcessSafePersistentIndexedCache> caches = new HashSet<MultiProcessSafePersistentIndexedCache>();
     private final Lock lock = new ReentrantLock();
@@ -60,14 +63,26 @@ public class DefaultCacheAccess implements CacheCoordinator {
     private boolean contended;
     private final CacheAccessOperationsStack operations;
     private int cacheClosedCount;
+    private StoppableExecutor cacheUpdateExecutor;
+    private CacheAccessWorker _cacheAccessWorker;
 
-    public DefaultCacheAccess(String cacheDisplayName, File lockTarget, File baseDir, FileLockManager lockManager, CacheInitializationAction initializationAction) {
+    public DefaultCacheAccess(String cacheDisplayName, File lockTarget, File baseDir, FileLockManager lockManager, CacheInitializationAction initializationAction, ExecutorFactory executorFactory) {
         this.cacheDisplayName = cacheDisplayName;
         this.lockTarget = lockTarget;
         this.baseDir = baseDir;
         this.lockManager = lockManager;
         this.initializationAction = initializationAction;
+        this.executorFactory = executorFactory;
         this.operations = new CacheAccessOperationsStack();
+    }
+
+    private synchronized CacheAccessWorker getCacheAccessWorker() {
+        if (_cacheAccessWorker == null) {
+            _cacheAccessWorker = new CacheAccessWorker(this, 1024, 5000L, 10000L);
+            cacheUpdateExecutor = executorFactory.create("Cache update executor");
+            cacheUpdateExecutor.execute(_cacheAccessWorker);
+        }
+        return _cacheAccessWorker;
     }
 
     public void open(LockOptions lockOptions) {
@@ -149,6 +164,12 @@ public class DefaultCacheAccess implements CacheCoordinator {
     }
 
     public void close() {
+        if (_cacheAccessWorker != null) {
+            _cacheAccessWorker.stop();
+        }
+        if (cacheUpdateExecutor != null) {
+            cacheUpdateExecutor.stop();
+        }
         lock.lock();
         try {
             // Take ownership
@@ -323,7 +344,9 @@ public class DefaultCacheAccess implements CacheCoordinator {
 
         MultiProcessSafePersistentIndexedCache<K, V> indexedCache = new DefaultMultiProcessSafePersistentIndexedCache<K, V>(indexedCacheFactory, fileAccess);
         CacheDecorator decorator = parameters.getCacheDecorator();
-        indexedCache = decorator == null ? indexedCache : decorator.decorate(cacheFile.getAbsolutePath(), parameters.getCacheName(), indexedCache);
+        if (decorator != null) {
+            indexedCache = decorator.decorate(cacheFile.getAbsolutePath(), parameters.getCacheName(), indexedCache, getCacheAccessWorker());
+        }
 
         lock.lock();
         try {
