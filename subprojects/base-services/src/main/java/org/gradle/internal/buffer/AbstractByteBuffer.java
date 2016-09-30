@@ -18,6 +18,7 @@ package org.gradle.internal.buffer;
 
 import org.gradle.internal.UncheckedException;
 
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +41,7 @@ import java.util.LinkedList;
  *
  * This is not thread-safe, it is intended to be used by a single Thread.
  */
-public abstract class AbstractByteBuffer {
+public abstract class AbstractByteBuffer implements Closeable {
     private LinkedList<AbstractBufferChunk> chunks = new LinkedList<AbstractBufferChunk>();
     private AbstractBufferChunk currentWriteChunk;
     private AbstractBufferChunk currentReadChunk;
@@ -270,6 +271,13 @@ public abstract class AbstractByteBuffer {
         prepareRetainAfterReading();
         int bytesUnread = (getCurrentReadChunk() != null) ? getCurrentReadChunk().bytesUnread() : 0;
         if (bytesUnread == 0) {
+            if (currentReadChunk != null && currentReadChunk != currentWriteChunk && readMode != ReadMode.RETAIN_AFTER_READING) {
+                try {
+                    currentReadChunk.close();
+                } catch (IOException e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
+                }
+            }
             if (readMode == ReadMode.REMOVE_AFTER_READING && !chunks.isEmpty()) {
                 currentReadChunk = chunks.removeFirst();
                 bytesUnread = getCurrentReadChunk().bytesUnread();
@@ -328,11 +336,42 @@ public abstract class AbstractByteBuffer {
     }
 
     public void clear() {
+        try {
+            closeChunks(false);
+        } catch (IOException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
+        }
         chunks.clear();
         currentReadChunk = null;
         totalBytesUnreadInList = 0;
         currentWriteChunk.clear();
         totalBytesUnreadInIterator = 0;
         readIterator = null;
+    }
+
+    @Override
+    public void close() throws IOException {
+        closeChunks(true);
+    }
+
+    private void closeChunks(boolean includeAll) throws IOException {
+        if (currentReadChunk != currentWriteChunk) {
+            closeChunk(currentReadChunk);
+        }
+        for (AbstractBufferChunk chunk : chunks) {
+            if (chunk != currentReadChunk) {
+                closeChunk(chunk);
+            }
+        }
+        if (includeAll && currentWriteChunk != null) {
+            closeChunk(currentWriteChunk);
+        }
+    }
+
+
+    protected void closeChunk(AbstractBufferChunk chunk) throws IOException {
+        if (chunk != null) {
+            chunk.close();
+        }
     }
 }

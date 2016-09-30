@@ -108,4 +108,9 @@ class StreamByteBufferChunk extends AbstractBufferChunk {
     public void clear() {
         used = pointer = 0;
     }
+
+    @Override
+    public void close() throws IOException {
+
+    }
 }

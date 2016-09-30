@@ -16,12 +16,13 @@
 
 package org.gradle.internal.buffer;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-abstract class AbstractBufferChunk {
+abstract class AbstractBufferChunk implements Closeable {
     public abstract void writeTo(OutputStream target) throws IOException;
 
     public abstract int readFrom(InputStream inputStream, int limit) throws IOException;

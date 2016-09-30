@@ -185,14 +185,10 @@ class MemoryMappedFileBufferChunk extends AbstractBufferChunk implements Closeab
 
     @Override
     public void close() {
-        mappedByteBuffer.clear();
-        file.delete();
+        if (!nioBufferReturned) {
+            file.delete();
+        } else {
+            file.deleteOnExit();
+        }
     }
-
-    //CHECKSTYLE:OFF
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-    }
-    //CHECKSTYLE:ON
 }
