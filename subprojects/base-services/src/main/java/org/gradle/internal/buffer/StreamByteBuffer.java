@@ -62,8 +62,8 @@ public class StreamByteBuffer {
         this.nextChunkSize = chunkSize;
         this.maxChunkSize = Math.max(chunkSize, MAX_CHUNK_SIZE);
         currentWriteChunk = new StreamByteBufferChunk(nextChunkSize);
-        output = new StreamByteBufferOutputStream();
-        input = new StreamByteBufferInputStream();
+        output = new StreamByteBufferOutputStream(this);
+        input = new StreamByteBufferInputStream(this);
     }
 
     public static StreamByteBuffer of(InputStream inputStream) throws IOException {
@@ -100,7 +100,7 @@ public class StreamByteBuffer {
 
     public void writeTo(OutputStream target) throws IOException {
         while (prepareRead() != -1) {
-            currentReadChunk.writeTo(target);
+            getCurrentReadChunk().writeTo(target);
         }
     }
 
@@ -109,7 +109,7 @@ public class StreamByteBuffer {
         while (bytesLeft > 0) {
             int spaceLeft = allocateSpace();
             int limit = Math.min(spaceLeft, bytesLeft);
-            int readBytes = currentWriteChunk.readFrom(inputStream, limit);
+            int readBytes = getCurrentWriteChunk().readFrom(inputStream, limit);
             if (readBytes == -1) {
                 throw new EOFException("Unexpected EOF");
             }
@@ -120,7 +120,7 @@ public class StreamByteBuffer {
     public void readFully(InputStream inputStream) throws IOException {
         while (true) {
             int len = allocateSpace();
-            int readBytes = currentWriteChunk.readFrom(inputStream, len);
+            int readBytes = getCurrentWriteChunk().readFrom(inputStream, len);
             if (readBytes == -1) {
                 break;
             }
@@ -232,39 +232,39 @@ public class StreamByteBuffer {
 
     public int totalBytesUnread() {
         int total = totalBytesUnreadInList;
-        if (currentReadChunk != null) {
-            total += currentReadChunk.bytesUnread();
+        if (getCurrentReadChunk() != null) {
+            total += getCurrentReadChunk().bytesUnread();
         }
-        if (currentWriteChunk != currentReadChunk && currentWriteChunk != null) {
-            total += currentWriteChunk.bytesUnread();
+        if (getCurrentWriteChunk() != getCurrentReadChunk() && getCurrentWriteChunk() != null) {
+            total += getCurrentWriteChunk().bytesUnread();
         }
         return total;
     }
 
     protected int allocateSpace() {
-        int spaceLeft = currentWriteChunk.spaceLeft();
+        int spaceLeft = getCurrentWriteChunk().spaceLeft();
         if (spaceLeft == 0) {
-            chunks.add(currentWriteChunk);
-            totalBytesUnreadInList += currentWriteChunk.bytesUnread();
+            chunks.add(getCurrentWriteChunk());
+            totalBytesUnreadInList += getCurrentWriteChunk().bytesUnread();
             currentWriteChunk = new StreamByteBufferChunk(nextChunkSize);
             if (nextChunkSize < maxChunkSize) {
                 nextChunkSize = Math.min(nextChunkSize * 2, maxChunkSize);
             }
-            spaceLeft = currentWriteChunk.spaceLeft();
+            spaceLeft = getCurrentWriteChunk().spaceLeft();
         }
         return spaceLeft;
     }
 
     protected int prepareRead() {
-        int bytesUnread = (currentReadChunk != null) ? currentReadChunk.bytesUnread() : 0;
+        int bytesUnread = (getCurrentReadChunk() != null) ? getCurrentReadChunk().bytesUnread() : 0;
         if (bytesUnread == 0) {
             if (!chunks.isEmpty()) {
                 currentReadChunk = chunks.removeFirst();
-                bytesUnread = currentReadChunk.bytesUnread();
+                bytesUnread = getCurrentReadChunk().bytesUnread();
                 totalBytesUnreadInList -= bytesUnread;
-            } else if (currentReadChunk != currentWriteChunk) {
-                currentReadChunk = currentWriteChunk;
-                bytesUnread = currentReadChunk.bytesUnread();
+            } else if (getCurrentReadChunk() != getCurrentWriteChunk()) {
+                currentReadChunk = getCurrentWriteChunk();
+                bytesUnread = getCurrentReadChunk().bytesUnread();
             } else {
                 bytesUnread = -1;
             }
@@ -272,197 +272,16 @@ public class StreamByteBuffer {
         return bytesUnread;
     }
 
-    class StreamByteBufferChunk {
-        private int pointer;
-        private byte[] buffer;
-        private int size;
-        private int used;
-
-        public StreamByteBufferChunk(int size) {
-            this.size = size;
-            buffer = new byte[size];
-        }
-
-        public ByteBuffer readToNioBuffer() {
-            if (pointer < used) {
-                ByteBuffer result;
-                if (pointer > 0 || used < size) {
-                    result = ByteBuffer.wrap(buffer, pointer, used - pointer);
-                } else {
-                    result = ByteBuffer.wrap(buffer);
-                }
-                pointer = used;
-                return result;
-            }
-
-            return null;
-        }
-
-        public boolean write(byte b) {
-            if (used < size) {
-                buffer[used++] = b;
-                return true;
-            }
-
-            return false;
-        }
-
-        public void write(byte[] b, int off, int len) {
-            System.arraycopy(b, off, buffer, used, len);
-            used = used + len;
-        }
-
-        public void read(byte[] b, int off, int len) {
-            System.arraycopy(buffer, pointer, b, off, len);
-            pointer = pointer + len;
-        }
-
-        public void writeTo(OutputStream target) throws IOException {
-            if (pointer < used) {
-                target.write(buffer, pointer, used - pointer);
-                pointer = used;
-            }
-        }
-
-        public void reset() {
-            pointer = 0;
-        }
-
-        public int bytesUsed() {
-            return used;
-        }
-
-        public int bytesUnread() {
-            return used - pointer;
-        }
-
-        public int read() {
-            if (pointer < used) {
-                return buffer[pointer++] & 0xff;
-            }
-
-            return -1;
-        }
-
-        public int spaceLeft() {
-            return size - used;
-        }
-
-        public int readFrom(InputStream inputStream, int len) throws IOException {
-            int readBytes = inputStream.read(buffer, used, len);
-            if(readBytes > 0) {
-                used += readBytes;
-            }
-            return readBytes;
-        }
+    StreamByteBufferChunk getCurrentWriteChunk() {
+        return currentWriteChunk;
 
         public void clear() {
             used = pointer = 0;
         }
     }
 
-    class StreamByteBufferOutputStream extends OutputStream {
-        private boolean closed;
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            if (b == null) {
-                throw new NullPointerException();
-            }
-
-            if ((off < 0) || (off > b.length) || (len < 0)
-                    || ((off + len) > b.length) || ((off + len) < 0)) {
-                throw new IndexOutOfBoundsException();
-            }
-
-            if (len == 0) {
-                return;
-            }
-
-            int bytesLeft = len;
-            int currentOffset = off;
-            while (bytesLeft > 0) {
-                int spaceLeft = allocateSpace();
-                int writeBytes = Math.min(spaceLeft, bytesLeft);
-                currentWriteChunk.write(b, currentOffset, writeBytes);
-                bytesLeft -= writeBytes;
-                currentOffset += writeBytes;
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            closed = true;
-        }
-
-        public boolean isClosed() {
-            return closed;
-        }
-
-        @Override
-        public void write(int b) throws IOException {
-            allocateSpace();
-            currentWriteChunk.write((byte) b);
-        }
-
-        public StreamByteBuffer getBuffer() {
-            return StreamByteBuffer.this;
-        }
-    }
-
-    class StreamByteBufferInputStream extends InputStream {
-        @Override
-        public int read() throws IOException {
-            prepareRead();
-            return currentReadChunk.read();
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            return readImpl(b, off, len);
-        }
-
-        int readImpl(byte[] b, int off, int len) {
-            if (b == null) {
-                throw new NullPointerException();
-            }
-
-            if ((off < 0) || (off > b.length) || (len < 0)
-                    || ((off + len) > b.length) || ((off + len) < 0)) {
-                throw new IndexOutOfBoundsException();
-            }
-
-            if (len == 0) {
-                return 0;
-            }
-
-            int bytesLeft = len;
-            int currentOffset = off;
-            int bytesUnread = prepareRead();
-            int totalBytesRead = 0;
-            while (bytesLeft > 0 && bytesUnread != -1) {
-                int readBytes = Math.min(bytesUnread, bytesLeft);
-                currentReadChunk.read(b, currentOffset, readBytes);
-                bytesLeft -= readBytes;
-                currentOffset += readBytes;
-                totalBytesRead += readBytes;
-                bytesUnread = prepareRead();
-            }
-            if (totalBytesRead > 0) {
-                return totalBytesRead;
-            }
-
-            return -1;
-        }
-
-        @Override
-        public int available() throws IOException {
-            return totalBytesUnread();
-        }
-
-        public StreamByteBuffer getBuffer() {
-            return StreamByteBuffer.this;
-        }
+    StreamByteBufferChunk getCurrentReadChunk() {
+        return currentReadChunk;
     }
 
     public void clear() {
