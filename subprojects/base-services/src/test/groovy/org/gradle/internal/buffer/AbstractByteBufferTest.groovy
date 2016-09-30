@@ -265,7 +265,8 @@ abstract class AbstractByteBufferTest extends Specification {
         bytesOut.toByteArray() == testbuffer
     }
 
-    private static int copy(InputStream input, OutputStream output, int bufSize) throws IOException {
+    @CompileStatic
+    static int copy(InputStream input, OutputStream output, int bufSize) throws IOException {
         byte[] buffer = new byte[bufSize]
         int count = 0
         int n = 0
@@ -276,7 +277,8 @@ abstract class AbstractByteBufferTest extends Specification {
         return count
     }
 
-    private static int copyOneByOne(InputStream input, OutputStream output) throws IOException {
+    @CompileStatic
+    static int copyOneByOne(InputStream input, OutputStream output) throws IOException {
         int count = 0
         int b
         while (-1 != (b = input.read())) {
@@ -293,7 +295,8 @@ abstract class AbstractByteBufferTest extends Specification {
         return buffer
     }
 
-    private void copyAllFromTestBuffer(OutputStream output, int partsize) throws IOException {
+    @CompileStatic
+    void copyAllFromTestBuffer(OutputStream output, int partsize) throws IOException {
         int position = 0
         int bytesLeft = testbuffer.length
         while (bytesLeft > 0) {

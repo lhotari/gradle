@@ -16,10 +16,47 @@
 
 package org.gradle.internal.buffer
 
+import groovy.transform.CompileStatic
+import org.gradle.internal.io.NullOutputStream
+
+import java.security.DigestInputStream
+import java.security.MessageDigest
 
 class MemoryMappedFileByteBufferTest extends AbstractByteBufferTest {
     @Override
     Class<? extends AbstractByteBuffer> getBufferClass() {
         return MemoryMappedFileByteBuffer
+    }
+
+    def "should support large buffers"() {
+        given:
+        def buffer = new MemoryMappedFileByteBuffer(chunkSize)
+        def writeDigest = MessageDigest.getInstance("MD5")
+        def readDigest = MessageDigest.getInstance("MD5")
+
+        when:
+        writeToBuffer(buffer, bufferSize, writeDigest)
+        DigestInputStream digestInputStream = new DigestInputStream(buffer.getInputStream(), readDigest)
+        copy(digestInputStream, NullOutputStream.INSTANCE, 8192)
+
+        then:
+        writeDigest.digest() == readDigest.digest()
+
+        cleanup:
+        buffer.close()
+
+        where:
+        chunkSize = 10 * 1024 * 1024 // 10MB
+        bufferSize = 100 * 1024 * 1024 // 100MB
+    }
+
+    @CompileStatic
+    void writeToBuffer(AbstractByteBuffer buffer, int len, MessageDigest digest) {
+        OutputStream outputStream = buffer.getOutputStream()
+        for (int i = 0; i < len; i++) {
+            byte b = (byte) (i & 0xff)
+            digest.update(b)
+            outputStream.write(b)
+        }
     }
 }
