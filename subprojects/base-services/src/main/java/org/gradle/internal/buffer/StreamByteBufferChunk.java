@@ -21,7 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-class StreamByteBufferChunk {
+class StreamByteBufferChunk extends AbstractBufferChunk {
     private int pointer;
     private byte[] buffer;
     private int size;

@@ -19,11 +19,11 @@ package org.gradle.internal.buffer;
 import java.io.IOException;
 import java.io.OutputStream;
 
-class StreamByteBufferOutputStream extends OutputStream {
-    private StreamByteBuffer streamByteBuffer;
+class BufferOutputStream extends OutputStream {
+    private AbstractByteBuffer streamByteBuffer;
     private boolean closed;
 
-    public StreamByteBufferOutputStream(StreamByteBuffer streamByteBuffer) {
+    public BufferOutputStream(AbstractByteBuffer streamByteBuffer) {
         this.streamByteBuffer = streamByteBuffer;
     }
 
@@ -68,7 +68,7 @@ class StreamByteBufferOutputStream extends OutputStream {
         streamByteBuffer.getCurrentWriteChunk().write((byte) b);
     }
 
-    public StreamByteBuffer getBuffer() {
+    public AbstractByteBuffer getBuffer() {
         return streamByteBuffer;
     }
 }
