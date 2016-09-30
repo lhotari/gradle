@@ -29,7 +29,7 @@ import org.gradle.internal.ErroringAction;
 import org.gradle.internal.IoActions;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.installation.GradleRuntimeShadedJarDetector;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.internal.progress.PercentageProgressFormatter;

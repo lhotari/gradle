@@ -19,7 +19,7 @@ package org.gradle.launcher.daemon.server.health.memory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.gradle.api.internal.file.IdentityFileResolver;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 import org.gradle.process.internal.DefaultExecActionFactory;
 import org.gradle.process.internal.ExecHandleBuilder;
 

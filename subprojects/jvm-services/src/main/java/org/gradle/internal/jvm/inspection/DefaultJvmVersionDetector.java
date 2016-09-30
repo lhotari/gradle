@@ -20,7 +20,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.internal.io.NullOutputStream;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 import org.gradle.internal.jvm.JavaInfo;
 import org.gradle.process.internal.ExecHandleBuilder;
 import org.gradle.process.internal.ExecHandleFactory;

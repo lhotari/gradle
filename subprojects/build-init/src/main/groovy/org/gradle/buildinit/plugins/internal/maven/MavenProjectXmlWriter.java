@@ -18,7 +18,7 @@ package org.gradle.buildinit.plugins.internal.maven;
 
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.project.MavenProject;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 
 import java.io.IOException;
 import java.util.Set;

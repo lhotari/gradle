@@ -19,7 +19,7 @@ package org.gradle.nativeplatform.toolchain.internal.gcc.version;
 import com.google.common.base.Joiner;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.internal.io.NullOutputStream;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 import org.gradle.nativeplatform.platform.internal.ArchitectureInternal;
 import org.gradle.nativeplatform.platform.internal.Architectures;
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform;

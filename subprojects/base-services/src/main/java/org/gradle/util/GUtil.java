@@ -22,7 +22,7 @@ import org.gradle.api.UncheckedIOException;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.io.LineBufferingOutputStream;
 import org.gradle.internal.io.SkipFirstTextStream;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 import org.gradle.internal.io.WriterTextStream;
 
 import java.io.*;

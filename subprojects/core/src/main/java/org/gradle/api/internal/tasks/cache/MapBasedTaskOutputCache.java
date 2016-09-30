@@ -16,7 +16,7 @@
 
 package org.gradle.api.internal.tasks.cache;
 
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

@@ -25,7 +25,7 @@ import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.FileSystemSubset;
 import org.gradle.internal.Factory;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 import org.gradle.internal.nativeintegration.filesystem.Chmod;
 import org.gradle.util.CollectionUtils;
 import org.gradle.util.ConfigureUtil;

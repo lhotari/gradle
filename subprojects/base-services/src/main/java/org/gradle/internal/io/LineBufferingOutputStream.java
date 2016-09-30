@@ -16,6 +16,7 @@
 package org.gradle.internal.io;
 
 import org.gradle.internal.SystemProperties;
+import org.gradle.internal.buffer.StreamByteBuffer;
 
 import java.io.IOException;
 import java.io.OutputStream;

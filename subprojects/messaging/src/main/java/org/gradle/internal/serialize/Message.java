@@ -17,7 +17,7 @@
 package org.gradle.internal.serialize;
 
 import org.gradle.internal.io.ClassLoaderObjectInputStream;
-import org.gradle.internal.io.StreamByteBuffer;
+import org.gradle.internal.buffer.StreamByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
