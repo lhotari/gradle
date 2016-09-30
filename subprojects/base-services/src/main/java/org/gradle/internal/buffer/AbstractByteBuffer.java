@@ -192,7 +192,11 @@ public abstract class AbstractByteBuffer {
                 result.throwException();
             }
         }
-        clear();
+        if (readMode == ReadMode.RETAIN_AFTER_READING) {
+            reset();
+        } else {
+            clear();
+        }
         // push back remaining bytes of multi-byte unicode character
         while (hasRemaining(buf)) {
             byte b = buf.get();
