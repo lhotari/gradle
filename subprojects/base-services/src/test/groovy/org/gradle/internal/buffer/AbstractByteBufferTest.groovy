@@ -46,6 +46,8 @@ abstract class AbstractByteBufferTest extends Specification {
         def buffer = createTestInstance()
         expect:
         buffer.readAsByteArray() == testbuffer
+        cleanup:
+        buffer.close()
     }
 
     def "reads source InputStream fully"() {
@@ -59,6 +61,9 @@ abstract class AbstractByteBufferTest extends Specification {
         then:
         buffer.totalBytesUnread() == testbuffer.length
         buffer.readAsByteArray() == testbuffer
+
+        cleanup:
+        buffer.close()
     }
 
     def "can create buffer from InputStream"() {
@@ -71,6 +76,9 @@ abstract class AbstractByteBufferTest extends Specification {
         then:
         buffer.totalBytesUnread() == testbuffer.length
         buffer.readAsByteArray() == testbuffer
+
+        cleanup:
+        buffer.close()
     }
 
     def "reads source InputStream up to limit"() {
@@ -86,6 +94,9 @@ abstract class AbstractByteBufferTest extends Specification {
         then:
         buffer.totalBytesUnread() == limit
         buffer.readAsByteArray() == testBufferPart
+
+        cleanup:
+        buffer.close()
 
         where:
         chunkSize = 8192
@@ -104,6 +115,9 @@ abstract class AbstractByteBufferTest extends Specification {
         then:
         buffer.totalBytesUnread() == limit
         buffer.readAsByteArray() == testBufferPart
+
+        cleanup:
+        buffer.close()
 
         where:
         limit << [1, 8191, 8192, 8193, 8194]
@@ -127,6 +141,9 @@ abstract class AbstractByteBufferTest extends Specification {
         then:
         buffer.readAsString("UTF-8") == TEST_STRING
 
+        cleanup:
+        buffer.close()
+
         where:
         // make sure that multi-byte unicode characters get split in different chunks
         [chunkSize, preUseBuffer] << [(1..(TEST_STRING_BYTES.length * 3)).toList() + [100, 1000], [false, true]].combinations()
@@ -138,6 +155,9 @@ abstract class AbstractByteBufferTest extends Specification {
 
         expect:
         buffer.readAsString() == ''
+
+        cleanup:
+        buffer.close()
     }
 
     def "can use InputStream interface to read from buffer"() {
@@ -152,12 +172,15 @@ abstract class AbstractByteBufferTest extends Specification {
 
         then:
         bytesOut.toByteArray() == testbuffer
+
+        cleanup:
+        buffer.close()
     }
 
     def "can use InputStream and OutputStream interfaces to access buffer"() {
         given:
-        def streamBuf = createBuffer(32000)
-        def output = streamBuf.getOutputStream()
+        def buffer = createBuffer(32000)
+        def output = buffer.getOutputStream()
 
         when:
         output.write(1)
@@ -167,19 +190,22 @@ abstract class AbstractByteBufferTest extends Specification {
         output.close()
 
         then:
-        def input = streamBuf.getInputStream()
+        def input = buffer.getInputStream()
         input.read() == 1
         input.read() == 2
         input.read() == 3
         input.read() == 255
         input.read() == -1
         input.close()
+
+        cleanup:
+        buffer.close()
     }
 
     def "can write array and read one-by-one"() {
         given:
-        def streamBuf = createBuffer(32000)
-        def output = streamBuf.getOutputStream()
+        def buffer = createBuffer(32000)
+        def output = buffer.getOutputStream()
         byte[] bytes = [(byte) 1, (byte) 2, (byte) 3] as byte[]
 
         when:
@@ -187,33 +213,39 @@ abstract class AbstractByteBufferTest extends Specification {
         output.close()
 
         then:
-        def input = streamBuf.getInputStream()
+        def input = buffer.getInputStream()
         input.read() == 1
         input.read() == 2
         input.read() == 3
         input.read() == -1
         input.close()
+
+        cleanup:
+        buffer.close()
     }
 
     def "smoke test read to array"(int bufferSize, int testBufferSize) {
         expect:
-        def streamBuf = createBuffer(bufferSize)
-        def output = streamBuf.getOutputStream()
+        def buffer = createBuffer(bufferSize)
+        def output = buffer.getOutputStream()
         for (int i = 0; i < testBufferSize; i++) {
             output.write(i % (Byte.MAX_VALUE * 2))
         }
         output.close()
 
-        byte[] buffer = new byte[testBufferSize]
-        def input = streamBuf.getInputStream()
+        byte[] buf = new byte[testBufferSize]
+        def input = buffer.getInputStream()
         assert testBufferSize == input.available()
-        int readBytes = input.read(buffer)
+        int readBytes = input.read(buf)
         assert readBytes == testBufferSize
-        for (int i = 0; i < buffer.length; i++) {
-            assert (byte) (i % (Byte.MAX_VALUE * 2)) == buffer[i]
+        for (int i = 0; i < buf.length; i++) {
+            assert (byte) (i % (Byte.MAX_VALUE * 2)) == buf[i]
         }
         assert input.read() == -1
         input.close()
+
+        cleanup:
+        buffer.close()
 
         where:
         [bufferSize, testBufferSize] << [[10000, 10000], [1, 10000], [2, 10000], [10000, 2], [10000, 1]]
@@ -221,20 +253,23 @@ abstract class AbstractByteBufferTest extends Specification {
 
     def "smoke test read one by one"(int bufferSize, int testBufferSize) {
         expect:
-        def streamBuf = createBuffer(bufferSize)
-        def output = streamBuf.getOutputStream()
+        def buffer = createBuffer(bufferSize)
+        def output = buffer.getOutputStream()
         for (int i = 0; i < testBufferSize; i++) {
             output.write(i % (Byte.MAX_VALUE * 2))
         }
         output.close()
 
-        def input = streamBuf.getInputStream()
+        def input = buffer.getInputStream()
         assert input.available() == testBufferSize
         for (int i = 0; i < testBufferSize; i++) {
             assert input.read() == i % (Byte.MAX_VALUE * 2)
         }
         assert input.read() == -1
         input.close()
+
+        cleanup:
+        buffer.close()
 
         where:
         [bufferSize, testBufferSize] << [[10000, 10000], [1, 10000], [2, 10000], [10000, 2], [10000, 1]]
@@ -250,6 +285,9 @@ abstract class AbstractByteBufferTest extends Specification {
 
         then:
         bytesOut.toByteArray() == testbuffer
+
+        cleanup:
+        buffer.close()
     }
 
     def "can copy buffer to OutputStream one-by-one"() {
@@ -263,6 +301,9 @@ abstract class AbstractByteBufferTest extends Specification {
 
         then:
         bytesOut.toByteArray() == testbuffer
+
+        cleanup:
+        buffer.close()
     }
 
     @CompileStatic
@@ -331,6 +372,8 @@ abstract class AbstractByteBufferTest extends Specification {
         def buffer = bufferClass.createWithChunkSizeInDefaultRange(1)
         then:
         buffer.chunkSize == bufferClass.DEFAULT_CHUNK_SIZE
+        cleanup:
+        buffer.close()
     }
 
     def "reads available unicode characters in buffer and pushes in-progress ones back"() {
@@ -418,6 +461,9 @@ abstract class AbstractByteBufferTest extends Specification {
         expect:
         buffer.readAsString('UTF-8') == TEST_STRING
         buffer.readAsString('UTF-8') == TEST_STRING
+
+        cleanup:
+        buffer.close()
 
         where:
         // make sure that multi-byte unicode characters get split in different chunks
