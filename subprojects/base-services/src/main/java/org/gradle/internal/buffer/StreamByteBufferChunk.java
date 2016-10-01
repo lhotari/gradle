@@ -104,4 +104,8 @@ class StreamByteBufferChunk {
         }
         return readBytes;
     }
+
+    public void clear() {
+        used = pointer = 0;
+    }
 }

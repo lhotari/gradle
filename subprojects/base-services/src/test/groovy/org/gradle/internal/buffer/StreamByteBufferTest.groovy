@@ -395,4 +395,23 @@ class StreamByteBufferTest extends Specification {
         then:
         byteBuffer.totalBytesUnread() == 0
     }
+
+    def "retains buffer when using retain mode"() {
+        given:
+        def byteBuffer = new StreamByteBuffer(chunkSize, ReadMode.RETAIN_AFTER_READING)
+
+        when:
+        byteBuffer.getOutputStream().write(TEST_STRING_BYTES)
+
+        then:
+        byteBuffer.readAsString('UTF-8') == TEST_STRING
+
+        expect:
+        byteBuffer.readAsString('UTF-8') == TEST_STRING
+        byteBuffer.readAsString('UTF-8') == TEST_STRING
+
+        where:
+        // make sure that multi-byte unicode characters get split in different chunks
+        chunkSize << (1..(TEST_STRING_BYTES.length * 3)).toList() + [100, 1000]
+    }
 }
