@@ -53,6 +53,7 @@ public abstract class AbstractByteBuffer {
     private int totalBytesUnreadInIterator;
     private ReadMode readMode;
     private Iterator<AbstractBufferChunk> readIterator;
+    private byte[] remainingBytesBuffer;
 
     public AbstractByteBuffer(int chunkSize, int maxChunkSize, ReadMode readMode) {
         this.chunkSize = chunkSize;
@@ -192,22 +193,38 @@ public abstract class AbstractByteBuffer {
                 result.throwException();
             }
         }
+        int remainingBytesCount = storeRemainingBytes(buf);
         if (readMode == ReadMode.RETAIN_AFTER_READING) {
             reset();
         } else {
             clear();
         }
-        // push back remaining bytes of multi-byte unicode character
-        while (hasRemaining(buf)) {
-            byte b = buf.get();
-            try {
-                getOutputStream().write(b);
-            } catch (IOException e) {
-                throw UncheckedException.throwAsUncheckedException(e);
-            }
+        if (remainingBytesCount > 0) {
+            pushBackRemainingBytes(remainingBytesCount);
         }
         charbuffer.flip();
         return charbuffer;
+    }
+
+    // push back remaining bytes of multi-byte unicode character
+    private void pushBackRemainingBytes(int remainingBytesCount) {
+        try {
+            getOutputStream().write(remainingBytesBuffer, 0, remainingBytesCount);
+        } catch (IOException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
+        }
+    }
+
+    private int storeRemainingBytes(ByteBuffer buf) {
+        int remainingBytesCount = 0;
+        if (hasRemaining(buf)) {
+            remainingBytesCount = buf.remaining();
+            if (remainingBytesBuffer == null || remainingBytesBuffer.length < remainingBytesCount) {
+                remainingBytesBuffer = new byte[buf.remaining()];
+            }
+            buf.get(remainingBytesBuffer, 0, remainingBytesCount);
+        }
+        return remainingBytesCount;
     }
 
     private boolean hasRemaining(ByteBuffer nextBuf) {
