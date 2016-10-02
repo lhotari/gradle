@@ -29,9 +29,17 @@ import java.util.Map;
  * Path Factory.
  */
 public class PathFactory {
-
     private final List<Variable> variables = Lists.newArrayList();
     private final Map<String, File> varsByName = Maps.newHashMap();
+    private final PathCache pathCache;
+
+    public PathFactory() {
+        this(new PathCache());
+    }
+
+    public PathFactory(PathCache pathCache) {
+        this.pathCache = pathCache;
+    }
 
     public PathFactory addPathVariable(String name, File dir) {
         variables.add(new Variable('$' + name + '$', dir.getAbsolutePath() + File.separator, dir));
@@ -52,7 +60,7 @@ public class PathFactory {
      * @param file The file to generate a path for
      * @param useFileScheme Whether 'file://' prefixed URI should be used even for JAR files
      */
-    public FilePath path(File file, boolean useFileScheme) {
+    public FilePath path(final File file, boolean useFileScheme) {
         Variable match = null;
         for (Variable variable : variables) {
             if (file.getAbsolutePath().equals(variable.getDir().getAbsolutePath())) {
@@ -71,9 +79,9 @@ public class PathFactory {
         }
 
         // IDEA doesn't like the result of file.toURI() so use the absolute path instead
-        String relPath = file.getAbsolutePath().replace(File.separatorChar, '/');
-        String url = relativePathToURI(relPath, useFileScheme);
-        return new FilePath(file, url, url, relPath);
+        final String relPath = file.getAbsolutePath().replace(File.separatorChar, '/');
+        final String url = relativePathToURI(relPath, useFileScheme);
+        return pathCache.createFilePath(file, useFileScheme, relPath, url);
     }
 
     /**
@@ -83,11 +91,11 @@ public class PathFactory {
         return resolvePath(varsByName.get(pathVar), "$" + pathVar + "$", file);
     }
 
-    private static FilePath resolvePath(File rootDir, String rootDirName, File file) {
-        String relPath = getRelativePath(rootDir, rootDirName, file);
-        String url = relativePathToURI(relPath);
-        String canonicalUrl = relativePathToURI(file.getAbsolutePath().replace(File.separatorChar, '/'));
-        return new FilePath(file, url, canonicalUrl, relPath);
+    private FilePath resolvePath(File rootDir, String rootDirName, final File file) {
+        final String relPath = getRelativePath(rootDir, rootDirName, file);
+        final String url = relativePathToURI(relPath);
+        final String canonicalUrl = relativePathToURI(file.getAbsolutePath().replace(File.separatorChar, '/'));
+        return pathCache.createRelativeFilePath(rootDir, rootDirName, file, relPath, url, canonicalUrl);
     }
 
     /**
@@ -100,7 +108,7 @@ public class PathFactory {
     /**
      * Creates a path for the given URL.
      */
-    public Path path(String url, String relPath) {
+    public Path path(final String url, final String relPath) {
         try {
             String expandedUrl = url;
             for (Variable variable : variables) {
@@ -114,7 +122,7 @@ public class PathFactory {
                     expandedUrl = toUrl("jar", new File(parts[0]).getCanonicalFile()) + "!" + parts[1];
                 }
             }
-            return new Path(url, expandedUrl, relPath);
+            return pathCache.createPath(url, relPath, expandedUrl);
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
