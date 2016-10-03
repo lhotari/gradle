@@ -18,6 +18,7 @@ package org.gradle.api.internal.artifacts.ivyservice.resolveengine.store;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.gradle.api.internal.cache.HeapProportionalCacheSizer;
 import org.gradle.api.internal.cache.Store;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -34,23 +35,31 @@ public class CachedStoreFactory<T> implements Closeable {
     private static final Logger LOG = Logging.getLogger(CachedStoreFactory.class);
 
     private final Cache<Object, T> cache;
+    private final Cache<Object, T> secondLayerCache;
     private final Stats stats;
     private String displayName;
 
     public CachedStoreFactory(String displayName) {
         this.displayName = displayName;
         cache = CacheBuilder.newBuilder().maximumSize(100).expireAfterAccess(10000, TimeUnit.MILLISECONDS).build();
+        secondLayerCache = CacheBuilder.newBuilder().maximumSize(new HeapProportionalCacheSizer().scaleCacheSize(1000)).softValues().build();
         stats = new Stats();
     }
 
     public Store<T> createCachedStore(final Object id) {
-        return new SimpleStore<T>(cache, id, stats);
+        return new SimpleStore<T>(cache, secondLayerCache, id, stats);
     }
 
     public void close() {
-        LOG.debug(displayName + " cache closed. Cache reads: "
-                + stats.readsFromCache + ", disk reads: "
-                + stats.readsFromDisk + " (avg: " + prettyTime(stats.getDiskReadsAvgMs()) + ", total: " + prettyTime(stats.diskReadsTotalMs.get()) + ")");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(displayName + " cache closed. Cache reads: "
+                    + stats.readsFromCache + ", disk reads: "
+                    + stats.readsFromDisk + " (avg: " + prettyTime(stats.getDiskReadsAvgMs()) + ", total: " + prettyTime(stats.diskReadsTotalMs.get()) + ")"
+                    + " Cache size: " + cache.size()
+                    + " 2nd layer Cache size: " + secondLayerCache.size());
+        }
+        cache.invalidateAll();
+        secondLayerCache.invalidateAll();
     }
 
     private static class Stats {
@@ -77,18 +86,23 @@ public class CachedStoreFactory<T> implements Closeable {
     }
 
     private static class SimpleStore<T> implements Store<T> {
-        private Cache<Object, T> cache;
+        private final Cache<Object, T> cache;
+        private final Cache<Object, T> secondLayerCache;
         private final Object id;
-        private Stats stats;
+        private final Stats stats;
 
-        public SimpleStore(Cache<Object, T> cache, Object id, Stats stats) {
+        public SimpleStore(Cache<Object, T> cache, Cache<Object, T> secondLayerCache, Object id, Stats stats) {
             this.cache = cache;
+            this.secondLayerCache = secondLayerCache;
             this.id = id;
             this.stats = stats;
         }
 
         public T load(Factory<T> createIfNotPresent) {
             T out = cache.getIfPresent(id);
+            if (out == null) {
+                secondLayerCache.getIfPresent(id);
+            }
             if (out != null) {
                 stats.readFromCache();
                 return out;
@@ -97,6 +111,7 @@ public class CachedStoreFactory<T> implements Closeable {
             T value = createIfNotPresent.create();
             stats.readFromDisk(start);
             cache.put(id, value);
+            secondLayerCache.put(id, value);
             return value;
         }
     }
