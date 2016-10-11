@@ -15,6 +15,7 @@
  */
 package org.gradle.integtests.tooling
 
+import org.gradle.api.artifacts.ResolveException
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
 import org.gradle.integtests.fixtures.executer.GradleDistribution
 import org.gradle.integtests.fixtures.executer.GradleHandle
@@ -23,6 +24,7 @@ import org.gradle.integtests.fixtures.versions.ReleasedVersionDistributions
 import org.gradle.integtests.tooling.fixture.TextUtil
 import org.gradle.integtests.tooling.fixture.ToolingApi
 import org.gradle.test.fixtures.file.TestFile
+import org.gradle.tooling.BuildException
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.model.GradleProject
@@ -282,4 +284,46 @@ allprojects {
 
         handle.waitForFinish()
     }
+
+    def "tooling API should report errors in dependency resolution"() {
+        given:
+        def buildFile = projectDir.file("build.gradle")
+        buildFile << '''
+buildscript {
+    ext {
+        springBootVersion = '1.4.0.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'spring-boot'
+
+dependencyManagement {
+  imports {
+    mavenBom 'org.springframework.cloud:spring-cloud-dependencies:Camden.RELEASE'
+  }
+}
+
+dependencies {
+    compile 'org.springframework.cloud:spring-cloud-starter-config'
+    compile 'org.springframework.cloud:spring-cloud-starter-eureka'
+}
+'''
+        projectDir.file('src/main/java/Hello.java').text = 'public class Hello {}'
+        when:
+        toolingApi.withConnector { connector ->
+            connector.useGradleVersion("3.1")
+        }
+        toolingApi.withConnection { connection -> connection.newBuild().forTasks('classes').run() }
+        then:
+        def buildException = thrown(BuildException)
+        buildException.cause.cause.getClass().name == ResolveException.name
+    }
+
 }
