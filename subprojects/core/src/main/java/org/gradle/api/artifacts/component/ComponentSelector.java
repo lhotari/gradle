@@ -17,6 +17,8 @@ package org.gradle.api.artifacts.component;
 
 import org.gradle.api.Incubating;
 
+import java.io.Serializable;
+
 /**
  * Represents some opaque criteria used to select a component instance during dependency resolution. Various sub-interfaces
  * expose specific details about the criteria.
@@ -24,7 +26,7 @@ import org.gradle.api.Incubating;
  * @since 1.10
  */
 @Incubating
-public interface ComponentSelector {
+public interface ComponentSelector extends Serializable {
     /**
      * Returns a human-consumable display name for this selector.
      *

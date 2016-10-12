@@ -18,10 +18,12 @@ package org.gradle.api.artifacts;
 
 import org.gradle.api.Incubating;
 
+import java.io.Serializable;
+
 /**
  * Selects a module version
  */
-public interface ModuleVersionSelector {
+public interface ModuleVersionSelector extends Serializable {
 
     /**
      * The group of the module.
