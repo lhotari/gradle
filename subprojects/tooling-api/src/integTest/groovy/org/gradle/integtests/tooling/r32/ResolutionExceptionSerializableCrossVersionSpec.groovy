@@ -20,6 +20,7 @@ import org.gradle.api.artifacts.ResolveException
 import org.gradle.integtests.tooling.fixture.TargetGradleVersion
 import org.gradle.integtests.tooling.fixture.ToolingApiSpecification
 import org.gradle.integtests.tooling.fixture.ToolingApiVersion
+import org.gradle.internal.serialize.PlaceholderException
 import spock.lang.Issue
 
 class ResolutionExceptionSerializableCrossVersionSpec extends ToolingApiSpecification {
@@ -85,6 +86,7 @@ dependencies {
         failure != null
         failure.getClass().name == ResolveException.name
         failure.cause.toString().contains('Cannot resolve external dependency commons-lang:commons-lang:10.0-NOTEXISTS because no repositories are defined.')
+        failure.cause.getClass().name != PlaceholderException.name
     }
 
 }
