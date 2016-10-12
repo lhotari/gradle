@@ -17,9 +17,11 @@ package org.gradle.internal.component.local.model
 
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.internal.artifacts.component.DefaultBuildIdentifier
+import org.gradle.test.fixtures.SerializationFixture
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static org.gradle.test.fixtures.SerializationFixture.serializationRoundtrip
 import static org.gradle.util.Matchers.strictlyEquals
 
 class DefaultProjectComponentIdentifierTest extends Specification {
@@ -31,6 +33,14 @@ class DefaultProjectComponentIdentifierTest extends Specification {
         defaultBuildComponentIdentifier.projectPath == ':myPath'
         defaultBuildComponentIdentifier.displayName == 'project :myPath'
         defaultBuildComponentIdentifier.toString() == 'project :myPath'
+    }
+
+    def "is serializable"() {
+        when:
+        ProjectComponentIdentifier defaultBuildComponentIdentifier = newProjectId(':myPath')
+
+        then:
+        defaultBuildComponentIdentifier == serializationRoundtrip(defaultBuildComponentIdentifier)
     }
 
     def "non-current build includes build name in display name"() {

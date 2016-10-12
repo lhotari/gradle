@@ -17,6 +17,8 @@ package org.gradle.api.artifacts.component;
 
 import org.gradle.api.Incubating;
 
+import java.io.Serializable;
+
 /**
  * An opaque identifier for a component instance. There are various sub-interfaces that expose specific details
  * about the identifier.
@@ -24,7 +26,7 @@ import org.gradle.api.Incubating;
  * @since 1.10
  */
 @Incubating
-public interface ComponentIdentifier {
+public interface ComponentIdentifier extends Serializable {
     /**
      * Returns a human-consumable display name for this identifier.
      *

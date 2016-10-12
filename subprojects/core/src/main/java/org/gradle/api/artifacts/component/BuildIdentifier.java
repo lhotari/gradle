@@ -18,11 +18,13 @@ package org.gradle.api.artifacts.component;
 
 import org.gradle.api.Incubating;
 
+import java.io.Serializable;
+
 /**
  * Identifies a Gradle build.
  */
 @Incubating
-public interface BuildIdentifier {
+public interface BuildIdentifier extends Serializable {
     /**
      * The name of the build.
      */
