@@ -388,4 +388,9 @@ public interface GradleExecuter extends Stoppable {
      * Clears previous settings so that instance can be reused
      */
     GradleExecuter reset();
+
+    /**
+     * Sets flag to cleanup temp directory on shutdown of the executer
+     */
+    GradleExecuter withCleanupTempDirectory(boolean flag);
 }
