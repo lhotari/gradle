@@ -1105,4 +1105,20 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
         this.durationMeasurement = durationMeasurement;
         return this;
     }
+
+    protected void startMeasurement() {
+        if (durationMeasurement != null) {
+            durationMeasurement.start();
+        }
+    }
+
+    protected void stopMeasurement() {
+        if (durationMeasurement != null) {
+            durationMeasurement.stop();
+        }
+    }
+
+    protected DurationMeasurement getDurationMeasurement() {
+        return durationMeasurement;
+    }
 }

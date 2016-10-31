@@ -18,7 +18,6 @@ package org.gradle.performance.fixture
 
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
-import org.gradle.integtests.fixtures.executer.DurationMeasurement
 import org.gradle.integtests.fixtures.executer.GradleExecuter
 import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext
 import org.gradle.performance.measure.MeasuredOperation
