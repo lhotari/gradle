@@ -22,7 +22,7 @@ import org.gradle.performance.measure.MeasuredOperation;
 public class OperationTimer {
     public MeasuredOperation measure(final Action<? super MeasuredOperation> action) {
         final MeasuredOperation result = new MeasuredOperation();
-        result.measure(new Runnable() {
+        DurationMeasurementImpl.measure(result, new Runnable() {
             @Override
             public void run() {
                 action.execute(result);

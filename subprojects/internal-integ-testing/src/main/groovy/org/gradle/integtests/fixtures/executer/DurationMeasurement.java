@@ -17,5 +17,7 @@
 package org.gradle.integtests.fixtures.executer;
 
 public interface DurationMeasurement {
-    void measure(Runnable runnable);
+    void start();
+    void stop();
+    void fail(Exception e);
 }

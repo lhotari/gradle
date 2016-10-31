@@ -66,7 +66,7 @@ class ToolingApiBackedGradleSession implements GradleSession {
             .setStandardError(System.err)
 
         return { MeasuredOperation measuredOperation ->
-            measuredOperation.measure(new Runnable() {
+            DurationMeasurementImpl.measure(measuredOperation, new Runnable() {
                 @Override
                 void run() {
                     buildLauncher.run()

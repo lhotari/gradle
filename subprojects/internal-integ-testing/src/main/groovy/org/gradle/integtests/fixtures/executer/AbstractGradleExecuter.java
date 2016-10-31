@@ -331,6 +331,10 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
             executer.noDeprecationChecks();
         }
 
+        if (durationMeasurement != null) {
+            executer.withDurationMeasurement(durationMeasurement);
+        }
+
         return executer;
     }
 

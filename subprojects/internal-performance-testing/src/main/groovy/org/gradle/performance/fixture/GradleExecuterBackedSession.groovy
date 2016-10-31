@@ -49,16 +49,15 @@ class GradleExecuterBackedSession implements GradleSession {
     Action<MeasuredOperation> runner(BuildExperimentInvocationInfo invocationInfo, InvocationCustomizer invocationCustomizer) {
         def runner = createExecuter(invocationInfo, invocationCustomizer)
         return { MeasuredOperation measuredOperation ->
-            runner.withDurationMeasurement(new DurationMeasurement() {
-                @Override
-                void measure(Runnable runnable) {
-                    measuredOperation.measure(runnable)
+            runner.withDurationMeasurement(new DurationMeasurementImpl(measuredOperation))
+            try {
+                if (invocation.expectFailure) {
+                    runner.runWithFailure()
+                } else {
+                    runner.run()
                 }
-            })
-            if (invocation.expectFailure) {
-                runner.runWithFailure()
-            } else {
-                runner.run()
+            } catch (Exception e) {
+                measuredOperation.setException(e)
             }
         } as Action<MeasuredOperation>
     }

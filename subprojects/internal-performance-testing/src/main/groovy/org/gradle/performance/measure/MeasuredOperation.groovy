@@ -42,22 +42,6 @@ public class MeasuredOperation {
     Amount<Duration> compileTotalTime
     Amount<Duration> gcTotalTime
 
-    public void measure(Runnable runnable) {
-        DateTime start = DateTime.now()
-        long startNanos = System.nanoTime()
-        try {
-            runnable.run()
-        } catch (Exception e) {
-            setException(e)
-        } finally {
-            DateTime end = DateTime.now()
-            long endNanos = System.nanoTime()
-            setStart(start)
-            setEnd(end)
-            setTotalTime(Duration.millis((endNanos - startNanos) / 1000000L))
-        }
-    }
-
     boolean isValid() {
         start!=null &&
             end != null &&
