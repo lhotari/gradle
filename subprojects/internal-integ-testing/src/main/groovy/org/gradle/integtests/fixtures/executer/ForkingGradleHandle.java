@@ -160,6 +160,9 @@ class ForkingGradleHandle extends OutputScrapingGradleHandle {
     protected ExecutionResult waitForStop(boolean expectFailure) {
         ExecHandle execHandle = getExecHandle();
         ExecResult execResult = execHandle.waitForFinish();
+        if (durationMeasurement != null) {
+            durationMeasurement.stop();
+        }
         execResult.rethrowFailure(); // nop if all ok
 
         String output = getStandardOutput();
@@ -178,9 +181,6 @@ class ForkingGradleHandle extends OutputScrapingGradleHandle {
 
         ExecutionResult executionResult = expectFailure ? toExecutionFailure(output, error) : toExecutionResult(output, error);
         resultAssertion.execute(executionResult);
-        if (durationMeasurement != null) {
-            durationMeasurement.stop();
-        }
         return executionResult;
     }
 }
