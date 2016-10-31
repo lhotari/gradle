@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.gradle.integtests.fixtures.executer.AbstractGradleExecuter.CliDaemonArgument.*;
 import static org.gradle.integtests.fixtures.executer.OutputScrapingExecutionResult.STACK_TRACE_ELEMENT;
@@ -850,18 +849,7 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
         assertCanExecute();
         collectStateBeforeExecution();
         try {
-            if (durationMeasurement != null) {
-                final AtomicReference<ExecutionResult> result = new AtomicReference<ExecutionResult>();
-                durationMeasurement.measure(new Runnable() {
-                    @Override
-                    public void run() {
-                        result.set(doRun());
-                    }
-                });
-                return result.get();
-            } else {
-                return doRun();
-            }
+            return doRun();
         } finally {
             finished();
         }
@@ -880,18 +868,7 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
         assertCanExecute();
         collectStateBeforeExecution();
         try {
-            if (durationMeasurement != null) {
-                final AtomicReference<ExecutionFailure> result = new AtomicReference<ExecutionFailure>();
-                durationMeasurement.measure(new Runnable() {
-                    @Override
-                    public void run() {
-                        result.set(doRunWithFailure());
-                    }
-                });
-                return result.get();
-            } else {
-                return doRunWithFailure();
-            }
+            return doRunWithFailure();
         } finally {
             finished();
         }
