@@ -21,23 +21,21 @@ import org.apache.commons.io.output.TeeOutputStream;
 import org.gradle.api.Action;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.internal.Factory;
-import org.gradle.internal.UncheckedException;
+import org.gradle.internal.io.StreamByteBuffer;
 import org.gradle.process.ExecResult;
 import org.gradle.process.internal.AbstractExecHandleBuilder;
 import org.gradle.process.internal.ExecHandle;
 import org.gradle.process.internal.ExecHandleState;
 import org.gradle.util.TextUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PipedOutputStream;
-import java.io.UnsupportedEncodingException;
 
 class ForkingGradleHandle extends OutputScrapingGradleHandle {
     final private Factory<? extends AbstractExecHandleBuilder> execHandleFactory;
 
-    final private ByteArrayOutputStream standardOutput = new ByteArrayOutputStream();
-    final private ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
+    final private StreamByteBuffer standardOutputBuffer = new StreamByteBuffer();
+    final private StreamByteBuffer errorOutputBuffer = new StreamByteBuffer();
     private final Action<ExecutionResult> resultAssertion;
     private final PipedOutputStream stdinPipe;
     private final boolean isDaemon;
@@ -59,19 +57,11 @@ class ForkingGradleHandle extends OutputScrapingGradleHandle {
     }
 
     public String getStandardOutput() {
-        try {
-            return standardOutput.toString(outputEncoding);
-        } catch (UnsupportedEncodingException e) {
-            throw UncheckedException.throwAsUncheckedException(e);
-        }
+        return standardOutputBuffer.readAsString(outputEncoding);
     }
 
     public String getErrorOutput() {
-        try {
-            return errorOutput.toString(outputEncoding);
-        } catch (UnsupportedEncodingException e) {
-            throw UncheckedException.throwAsUncheckedException(e);
-        }
+        return errorOutputBuffer.readAsString(outputEncoding);
     }
 
     public GradleHandle start() {
@@ -80,8 +70,8 @@ class ForkingGradleHandle extends OutputScrapingGradleHandle {
         }
 
         AbstractExecHandleBuilder execBuilder = execHandleFactory.create();
-        execBuilder.setStandardOutput(new CloseShieldOutputStream(new TeeOutputStream(System.out, standardOutput)));
-        execBuilder.setErrorOutput(new CloseShieldOutputStream(new TeeOutputStream(System.err, errorOutput)));
+        execBuilder.setStandardOutput(new CloseShieldOutputStream(new TeeOutputStream(System.out, standardOutputBuffer.getOutputStream())));
+        execBuilder.setErrorOutput(new CloseShieldOutputStream(new TeeOutputStream(System.err, errorOutputBuffer.getOutputStream())));
         execHandle = execBuilder.build();
 
         System.out.println("Starting build with: " + execHandle.getCommand() + " " + Joiner.on(" ").join(execHandle.getArguments()));
