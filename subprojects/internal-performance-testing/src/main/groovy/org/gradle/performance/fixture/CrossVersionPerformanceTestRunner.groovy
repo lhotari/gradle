@@ -106,13 +106,17 @@ public class CrossVersionPerformanceTestRunner extends PerformanceTestSpec {
         )
 
         runVersion(current, perVersionWorkingDirectory('current'), results.current)
-
+        // compare against same version
+        def baselineVersion = results.baseline(current.version.version)
+        runVersion(current, perVersionWorkingDirectory(current.version.version), baselineVersion.results)
+        /*
         def baselineVersions = toBaselineVersions(releases, targetVersions)
 
         baselineVersions.each { it ->
             def baselineVersion = results.baseline(it)
             runVersion(buildContext.distribution(baselineVersion.version), perVersionWorkingDirectory(baselineVersion.version), baselineVersion.results)
         }
+        */
 
         results.endTime = timeProvider.getCurrentTime()
 
