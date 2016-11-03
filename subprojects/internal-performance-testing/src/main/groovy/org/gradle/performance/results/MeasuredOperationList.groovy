@@ -74,6 +74,18 @@ public class MeasuredOperationList extends LinkedList<MeasuredOperation> {
         format(totalMemoryUsed)
     }
 
+    void removeMinAndMaxForTotalTime() {
+        def totalTime = getTotalTime()
+        def min = totalTime.min
+        def max = totalTime.max
+        for (def it = iterator(); it.hasNext();) {
+            def operation = it.next()
+            if (operation.totalTime == min || operation.totalTime == max) {
+                it.remove()
+            }
+        }
+    }
+
     private String format(DataSeries<?> measurement) {
         """  ${name} avg: ${measurement.average.format()} min: ${measurement.min.format()}, max: ${measurement.max.format()}, se: ${measurement.standardError.format()}, sem: ${measurement.standardErrorOfMean.format()}
   > ${measurement.collect { it.format() }}

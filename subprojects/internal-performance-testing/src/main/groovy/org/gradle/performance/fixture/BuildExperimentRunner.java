@@ -116,6 +116,7 @@ public class BuildExperimentRunner {
         doWarmup(experiment, projectDir, session);
         waitForMillis(experiment, experiment.getSleepAfterWarmUpMillis());
         doMeasure(experiment, results, projectDir, session);
+        results.removeMinAndMaxForTotalTime();
     }
 
     protected void prepareNextExperiment(BuildExperimentSpec experiment, File projectDir) {

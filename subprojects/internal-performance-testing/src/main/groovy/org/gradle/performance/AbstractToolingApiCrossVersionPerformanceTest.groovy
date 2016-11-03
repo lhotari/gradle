@@ -264,6 +264,7 @@ abstract class AbstractToolingApiCrossVersionPerformanceTest extends Specificati
                     sleep(sleepAfterTestRoundMillis)
                 }
             }
+            versionResults.removeMinAndMaxForTotalTime()
         }
 
         private void warmup(toolingApi, File workingDir) {
